@@ -72,7 +72,7 @@ except Exception as setup_error:
 app = Flask(__name__)
 
 # ================== [앱 설정] ==================
-app.secret_key = os.environ.get("SESSION_SECRET", "fallback")
+app.secret_key = os.environ.get("SECRET_KEY", "fallback")
 
 # ✅ 테스트 라우트: Firebase 저장 테스트
 @app.route('/test')
