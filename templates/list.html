@@ -1,430 +1,81 @@
-{% extends "layout.html" %}
-
-{% block title %}출석 명단 - 도서실 출석 시스템{% endblock %}
-
-{% block head %}
-<style>
-    /* 정렬 가능한 헤더 스타일 */
-    th.sortable {
-        cursor: pointer;
-        transition: all 0.2s;
-        user-select: none;
-        position: relative;
-    }
-    
-    th.sortable:hover {
-        background-color: rgba(0, 123, 255, 0.7);
-    }
-    
-    th.sortable i {
-        margin-left: 5px;
-        font-size: 0.8rem;
-        position: relative;
-        top: 1px;
-    }
-    
-    /* 정렬된 행 효과 */
-    tbody tr {
-        transition: all 0.2s;
-    }
-    
-    /* 정렬 활성화 시 효과 */
-    th.sortable.active {
-        background-color: #0056b3;
-    }
-    
-    /* 정렬 효과 강조 */
-    .fa-sort-up, .fa-sort-down {
-        color: #ffc107; /* 노란색으로 강조 */
-    }
-    
-    /* 체크박스 스타일 커스터마이징 */
-    .form-check-input {
-        background-color: #ffffff !important;
-        border-color: #adb5bd;
-    }
-    
-    .form-check-input:checked {
-        background-color: #6f42c1 !important;
-        border-color: #6f42c1 !important;
-        background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 20 20'%3e%3cpath fill='none' stroke='%23ffffff' stroke-linecap='round' stroke-linejoin='round' stroke-width='3' d='M6 10l3 3l6-6'/%3e%3c/svg%3e") !important;
-    }
-    
-    /* 선택된 행 스타일 */
-    tr.selected {
-        background-color: rgba(111, 66, 193, 0.1) !important;
-    }
-    
-    /* 삭제 모달 스타일 */
-    .modal-confirm {
-        color: #636363;
-    }
-    
-    .modal-confirm .modal-content {
-        padding: 20px;
-        border-radius: 5px;
-        border: none;
-    }
-    
-    .modal-confirm .modal-header {
-        border-bottom: none;
-        position: relative;
-        text-align: center;
-        margin: -20px -20px 0;
-        border-radius: 5px 5px 0 0;
-        padding: 35px;
-        background: #ff0000;
-        color: #fff;
-    }
-    
-    .modal-confirm .modal-header i {
-        font-size: 60px;
-    }
-    
-    .modal-confirm h4 {
-        text-align: center;
-        font-size: 26px;
-        margin: 30px 0 -15px;
-    }
-    
-    .modal-confirm .form-control, .modal-confirm .btn {
-        min-height: 40px;
-        border-radius: 3px;
-    }
-    
-    .modal-confirm .modal-footer {
-        border: none;
-        text-align: center;
-        border-radius: 0 0 5px 5px;
-        padding: 20px 0 10px;
-    }
-    
-    .modal-confirm .btn-danger {
-        background: #ff0000;
-        border: none;
-    }
-    
-    .modal-confirm .btn-danger:hover, .modal-confirm .btn-danger:focus {
-        background: #ef0000;
-    }
-    
-    .modal-confirm .btn-secondary {
-        background: #c1c1c1;
-    }
-    
-    .modal-confirm .btn-secondary:hover, .modal-confirm .btn-secondary:focus {
-        background: #a8a8a8;
-    }
-</style>
-{% endblock %}
-
-{% block content %}
-<!-- 삭제 확인 모달 -->
-<div class="modal fade" id="deleteConfirmModal" tabindex="-1" aria-hidden="true">
-    <div class="modal-dialog modal-confirm">
-        <div class="modal-content">
-            <div class="modal-header">
-                <div class="icon-box">
-                    <i class="fas fa-exclamation-triangle"></i>
-                </div>
-            </div>
-            <div class="modal-body text-center">
-                <h4>삭제 확인</h4>
-                <p>선택한 <span id="deleteCount" class="fw-bold text-danger">0</span>개의 출석 기록을 삭제하시겠습니까?</p>
-                <p class="text-muted small">이 작업은 되돌릴 수 없습니다!</p>
-            </div>
-            <div class="modal-footer justify-content-center">
-                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">취소</button>
-                <button type="button" class="btn btn-danger" id="confirmDelete">삭제</button>
-            </div>
-        </div>
-    </div>
-</div>
-
-<div class="card shadow mb-4 mt-0">
-    <div class="card-header bg-secondary text-white d-flex justify-content-between align-items-center py-2">
-        <h2 class="h5 mb-0">
-            <i class="fas fa-clipboard-list me-2"></i>출석 명단
-        </h2>
-        <div>
-            <button id="deleteBtn" class="btn btn-sm btn-danger me-2" disabled>
-                <i class="fas fa-trash-alt me-1"></i>선택 삭제
-            </button>
-            <a href="/by_period" class="btn btn-sm btn-light me-2">
-                <i class="fas fa-clock me-1"></i>교시별 보기
-            </a>
-            <a href="/export" class="btn btn-sm btn-light me-2">
-                <i class="fas fa-file-csv me-1"></i>CSV 다운로드
-            </a>
-            <a href="/print" class="btn btn-sm btn-light" target="_blank">
-                <i class="fas fa-print me-1"></i>인쇄용 보기
-            </a>
-        </div>
-    </div>
-    <div class="card-body">
-        <!-- 검색 필터 섹션 -->
-        <div class="row mb-4">
-            <div class="col-md-8 col-lg-6">
-                <div class="input-group">
-                    <span class="input-group-text bg-primary text-white">
-                        <i class="fas fa-search"></i>
-                    </span>
-                    <input type="text" id="searchInput" class="form-control" placeholder="학번, 이름, 교시로 검색..." aria-label="검색">
-                    <button class="btn btn-outline-secondary" type="button" id="clearSearch">
-                        <i class="fas fa-times"></i>
-                    </button>
-                </div>
-                <div class="form-text text-muted mt-1">
-                    <i class="fas fa-info-circle me-1"></i>검색어를 입력하면 실시간으로 결과가 필터링됩니다.
-                </div>
-            </div>
-            <div class="col-md-4 col-lg-6 d-flex align-items-center justify-content-md-end mt-3 mt-md-0">
-                <span class="text-secondary me-2" id="resultCount">전체: {{ records|length }}명</span>
-            </div>
-        </div>
-        
-        <div class="table-responsive">
-            <table class="table table-hover table-striped" id="attendanceTable">
-                <thead class="table-dark">
-                    <tr>
-                        <th class="text-center">
-                            <div class="form-check">
-                                <input class="form-check-input" type="checkbox" id="selectAll">
-                            </div>
-                        </th>
-                        <th class="sortable" onclick="sortTable('attendanceTable', 1)">출석일 <i class="fas fa-sort"></i></th>
-                        <th class="sortable" onclick="sortTable('attendanceTable', 2)">교시 <i class="fas fa-sort"></i></th>
-                        <th class="sortable" onclick="sortTable('attendanceTable', 3)">학번 <i class="fas fa-sort"></i></th>
-                        <th class="sortable" onclick="sortTable('attendanceTable', 4)">이름 <i class="fas fa-sort"></i></th>
-                        <th class="sortable" onclick="sortTable('attendanceTable', 5)">공강좌석번호 <i class="fas fa-sort"></i></th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {% if records %}
-                        {% for r in records %}
-                        <tr>
-                            <td class="text-center">
-                                <div class="form-check">
-                                    <input class="form-check-input record-check" type="checkbox" 
-                                           data-id="{{ loop.index0 }}"
-                                           value="{{ r['출석일'] }},{{ r.get('교시', '-') }},{{ r['학번'] }},{{ r['이름'] }},{{ r['공강좌석번호'] }}">
-                                </div>
-                            </td>
-                            <td>
-                                {% if r.get('display_time') %}
-                                    {{ r['출석일'] }} {{ r['display_time'] }}
-                                {% elif r.get('time_only') %}
-                                    {{ r['출석일'] }} {{ r['time_only'] }}
-                                {% else %}
-                                    {{ r['출석일_표시'] }}
-                                {% endif %}
-                            </td>
-                            <td>{{ r.get('교시', '-') }}</td>
-                            <td>{{ r['학번'] }}</td>
-                            <td>{{ r['이름'] }}</td>
-                            <td>{{ r['공강좌석번호'] }}</td>
-                        </tr>
-                        {% endfor %}
-                        <tr id="noSearchResults" style="display: none;">
-                            <td colspan="6" class="text-center py-4">
-                                <div class="alert alert-warning mb-0">
-                                    <i class="fas fa-search me-2"></i>검색 결과가 없습니다. 다른 검색어를 입력해주세요.
-                                </div>
-                            </td>
-                        </tr>
-                    {% else %}
-                        <tr>
-                            <td colspan="6" class="text-center py-4">
-                                <div class="alert alert-info mb-0">
-                                    <i class="fas fa-info-circle me-2"></i>출석 기록이 없습니다.
-                                </div>
-                            </td>
-                        </tr>
-                    {% endif %}
-                </tbody>
-            </table>
-        </div>
-    </div>
-    <div class="card-footer d-flex justify-content-between">
-        <a href="/stats" class="btn btn-outline-primary">
-            <i class="fas fa-chart-bar me-1"></i>통계 보기
-        </a>
-        <a href="/" class="btn btn-outline-secondary">
-            <i class="fas fa-home me-1"></i>메인 페이지로
-        </a>
-    </div>
-</div>
-{% endblock %}
-
-{% block scripts %}
-<script src="{{ url_for('static', filename='js/table-sort.js') }}"></script>
-<script>
-document.addEventListener('DOMContentLoaded', function() {
-    const selectAllCheckbox = document.getElementById('selectAll');
-    const recordCheckboxes = document.querySelectorAll('.record-check');
-    const deleteBtn = document.getElementById('deleteBtn');
-    const deleteModal = new bootstrap.Modal(document.getElementById('deleteConfirmModal'));
-    const deleteCountSpan = document.getElementById('deleteCount');
-    const confirmDeleteBtn = document.getElementById('confirmDelete');
-    
-    // 모든 체크박스 토글 함수
-    function toggleAllCheckboxes(checked) {
-        recordCheckboxes.forEach(checkbox => {
-            checkbox.checked = checked;
-            toggleRowSelection(checkbox);
-        });
-        updateDeleteButtonState();
-    }
-    
-    // 행 선택 스타일 토글
-    function toggleRowSelection(checkbox) {
-        const row = checkbox.closest('tr');
-        if (checkbox.checked) {
-            row.classList.add('selected');
-        } else {
-            row.classList.remove('selected');
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>출석 목록</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
         }
-    }
-    
-    // 삭제 버튼 상태 업데이트
-    function updateDeleteButtonState() {
-        const checkedBoxes = document.querySelectorAll('.record-check:checked');
-        const count = checkedBoxes.length;
-        
-        if (count > 0) {
-            deleteBtn.disabled = false;
-            deleteBtn.innerHTML = `<i class="fas fa-trash-alt me-1"></i>선택 삭제 (${count})`;
-        } else {
-            deleteBtn.disabled = true;
-            deleteBtn.innerHTML = `<i class="fas fa-trash-alt me-1"></i>선택 삭제`;
+        h1 {
+            color: #333;
         }
-        
-        // 전체 선택 체크박스 상태 업데이트
-        selectAllCheckbox.checked = count > 0 && count === recordCheckboxes.length;
-        selectAllCheckbox.indeterminate = count > 0 && count < recordCheckboxes.length;
-    }
-    
-    // 전체 선택 체크박스 이벤트
-    selectAllCheckbox.addEventListener('change', function() {
-        toggleAllCheckboxes(this.checked);
-    });
-    
-    // 각 체크박스에 이벤트 리스너 등록
-    recordCheckboxes.forEach(checkbox => {
-        checkbox.addEventListener('change', function() {
-            toggleRowSelection(this);
-            updateDeleteButtonState();
-        });
-    });
-    
-    // 삭제 버튼 클릭 시
-    deleteBtn.addEventListener('click', function() {
-        const checkedBoxes = document.querySelectorAll('.record-check:checked');
-        deleteCountSpan.textContent = checkedBoxes.length;
-        deleteModal.show();
-    });
-    
-    // 삭제 확인 버튼 클릭 시
-    confirmDeleteBtn.addEventListener('click', function() {
-        const checkedBoxes = document.querySelectorAll('.record-check:checked');
-        // 새로운 형식으로 삭제할 데이터 생성 - 학번, 날짜, 교시 객체 배열로 변환
-        const recordsToDelete = Array.from(checkedBoxes).map(checkbox => {
-            const value = checkbox.value;
-            const parts = value.split(',');
-            return {
-                date: parts[0],
-                period: parts[1],
-                student_id: parts[2]
-            };
-        });
-        
-        // AJAX 요청으로 데이터 삭제
-        fetch('/delete_records', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({ records: recordsToDelete }),
-        })
-        .then(response => response.json())
-        .then(data => {
-            if (data.success) {
-                deleteModal.hide();
-                // 성공 시 페이지 새로고침
-                window.location.reload();
-            } else {
-                alert('삭제 중 오류가 발생했습니다: ' + data.error);
-            }
-        })
-        .catch(error => {
-            console.error('Error:', error);
-            alert('삭제 요청 중 오류가 발생했습니다.');
-        });
-    });
-    
-    // 초기 삭제 버튼 상태 설정
-    updateDeleteButtonState();
-    
-    // 검색 기능 구현
-    const searchInput = document.getElementById('searchInput');
-    const clearSearchBtn = document.getElementById('clearSearch');
-    const resultCountSpan = document.getElementById('resultCount');
-    const tableRows = document.querySelectorAll('#attendanceTable tbody tr');
-    const totalCount = tableRows.length;
-    
-    // 테이블 필터링 함수
-    function filterTable() {
-        const searchTerm = searchInput.value.toLowerCase().trim();
-        let visibleCount = 0;
-        
-        tableRows.forEach(row => {
-            // 검색어가 비어있으면 모든 행 표시
-            if (!searchTerm) {
-                row.style.display = '';
-                visibleCount++;
-                return;
-            }
-            
-            // 각 셀의 텍스트 추출 (체크박스 셀 제외)
-            const cells = Array.from(row.querySelectorAll('td')).slice(1); // 첫 번째 열(체크박스) 제외
-            const rowText = cells.map(cell => cell.textContent.toLowerCase()).join(' ');
-            
-            // 검색어가 포함되어 있는지 확인
-            const matches = rowText.includes(searchTerm);
-            row.style.display = matches ? '' : 'none';
-            
-            if (matches) visibleCount++;
-        });
-        
-        // 결과 카운트 업데이트
-        resultCountSpan.textContent = `검색결과: ${visibleCount}/${totalCount}명`;
-        
-        // "검색 결과 없음" 메시지 표시/숨김
-        const noResultsRow = document.getElementById('noSearchResults');
-        if (noResultsRow) {
-            if (searchTerm && visibleCount === 0) {
-                noResultsRow.style.display = 'table-row';
-            } else {
-                noResultsRow.style.display = 'none';
-            }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
         }
-        
-        // 클리어 버튼 상태 업데이트
-        clearSearchBtn.disabled = !searchTerm;
-    }
+        th, td {
+            padding: 10px;
+            border: 1px solid #ddd;
+            text-align: left;
+        }
+        th {
+            background-color: #f2f2f2;
+            font-weight: bold;
+        }
+        tr:nth-child(even) {
+            background-color: #f9f9f9;
+        }
+        .btn {
+            display: inline-block;
+            padding: 6px 12px;
+            margin-bottom: 0;
+            font-size: 14px;
+            font-weight: 400;
+            text-align: center;
+            white-space: nowrap;
+            vertical-align: middle;
+            cursor: pointer;
+            border: 1px solid transparent;
+            border-radius: 4px;
+            color: #fff;
+            background-color: #337ab7;
+            text-decoration: none;
+        }
+    </style>
+</head>
+<body>
+    <h1>출석 목록</h1>
     
-    // 검색 입력 이벤트
-    searchInput.addEventListener('input', filterTable);
+    <a href="/" class="btn">출석 페이지로 돌아가기</a>
     
-    // 클리어 버튼 클릭 이벤트
-    clearSearchBtn.addEventListener('click', function() {
-        searchInput.value = '';
-        filterTable();
-        searchInput.focus();
-    });
-    
-    // 초기 상태 설정
-    clearSearchBtn.disabled = true;
-});
-</script>
-{% endblock %}
+    <table>
+        <thead>
+            <tr>
+                <th>ID</th>
+                <th>학번</th>
+                <th>이름</th>
+                <th>좌석</th>
+                <th>교시</th>
+                <th>날짜</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for record in records %}
+            <tr>
+                <td>{{ record.id }}</td>
+                <td>{{ record.student_id }}</td>
+                <td>{{ record.name }}</td>
+                <td>{{ record.seat }}</td>
+                <td>{{ record.period }}</td>
+                <td>{{ record.date }}</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</body>
+</html>
