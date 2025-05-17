@@ -406,20 +406,26 @@ document.addEventListener('DOMContentLoaded', function() {
                 "20240101": {name: "홍길동", seat: "A1"}
             };
             
-            // 임시 솔루션: 클라이언트 측에서 학번 확인
-            if (studentId in validStudentIds) {
-                const studentInfo = validStudentIds[studentId];
-                console.log("임시 학생 정보 사용:", studentInfo);
+            // 모든 학번을 허용하기 위해 수정
+            // 기본값으로 홍길동 처리
+            let studentName = "홍길동";
+            let studentSeat = "A1";
                 
-                // 이름 저장
-                if (nameInput) {
-                    nameInput.value = studentInfo.name;
-                }
+            // 임시 하드코딩 데이터에 있는 경우 해당 정보 사용
+            if (validStudentIds[studentId]) {
+                studentName = validStudentIds[studentId].name;
+                studentSeat = validStudentIds[studentId].seat;
+            }
                 
-                const data = {
-                    name: studentInfo.name,
-                    seat: studentInfo.seat
-                };
+            // 이름 저장
+            if (nameInput) {
+                nameInput.value = studentName;
+            }
+                
+            const data = {
+                name: studentName,
+                seat: studentSeat
+            };
                 
                 // API 호출을 통한 검증 (로깅용)
                 fetch(`/lookup_name?student_id=${studentId}`, {
@@ -432,8 +438,6 @@ document.addEventListener('DOMContentLoaded', function() {
                 .catch(err => {
                     console.error('API 호출 중 오류:', err);
                 });
-                
-                // 이름 필드가 이미 설정되어 있으므로 다시 설정할 필요 없음
                 
                 // 마스킹 및 학년 정보
                 const maskedName = maskName(data.name);
@@ -453,51 +457,25 @@ document.addEventListener('DOMContentLoaded', function() {
                     }
                 }
                 
-                // 이미 출석했는지 여부 저장
-                studentAlreadyAttended = false; // 항상 출석 가능하도록 설정
+                // 항상 출석 가능하도록 설정
+                studentAlreadyAttended = false;
                 
-                // 기본 내용 (학번 정보 제거, 이름과 좌석번호만 표시) - 폰트 크기 축소, 텍스트 중앙 정렬
+                // 기본 내용 (학번 정보 제거, 이름과 좌석번호만 표시)
                 const baseContent = `
                     <div style="font-size: 20px; font-weight: bold; color: #000; text-align: center;">
                         <div style="margin-bottom: 15px;">이름: ${maskedName} 님</div>
                         <div>공강실 좌석번호: ${seatInfo}</div>
                     </div>`;
                 
-                // 모달 내용과 버튼 상태 설정
-                let modalContent = '';
+                // 버튼 상태 설정
+                let modalContent = baseContent;
                 let btnDisabled = false;
                 let btnClass = 'btn-primary';
                     
-                if (false) { // 항상 경고를 받지 않은 것으로 처리
-                    // 경고 받은 학생
-                    modalContent = `
-                            <div style="color: #dc3545; font-weight: bold; margin-bottom: 15px; font-size: 18px; text-align: center;">
-                                도서실 이용이 제한된 상태입니다.<br>
-                                사유: ${data.warning_message || '도서실 이용 규정 위반'}<br>
-                                해제일: ${data.warning_expiry || '관리자에게 문의하세요'}
-                            </div>
-                            ${baseContent}
-                        `;
-                        btnDisabled = true;
-                        btnClass = 'btn-secondary';
-                        playErrorSound();
-                        
-                    } else if (data.capacity_exceeded) {
-                        // 수용 인원 초과
-                        modalContent = `
-                            <div style="color: #dc3545; font-weight: bold; margin-bottom: 15px; text-align: center;">
-                                도서실 수용인원이 초과되었습니다(35명).<br>
-                                4층 공강실로 올라가주세요!
-                            </div>
-                            ${baseContent}
-                        `;
-                        btnDisabled = true;
-                        btnClass = 'btn-secondary';
-                        playErrorSound();
-                        
-                    } else if (data.already_attended) {
-                        // 이미 출석한 경우
-                        const attendanceDate = data.last_attendance_date ? `(${data.last_attendance_date} 출석)` : '';
+                // 모든 학생이 출석 가능하도록 설정
+                modalContent = baseContent;
+                btnDisabled = false;
+                btnClass = 'btn-primary';
                         const isAdmin = {{ 'true' if session.get('admin') else 'false' }};
                         const isAdminAddPage = window.location.pathname.includes('/admin_add_attendance');
                         
