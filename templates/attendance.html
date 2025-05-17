@@ -205,6 +205,14 @@ document.addEventListener('DOMContentLoaded', function() {
             const currentPeriodText = currentPeriod ? currentPeriod.textContent : '';
             const is4thPeriod = currentPeriodText === '4교시';
             
+            // 학번 입력하면 이름 필드 자동 설정
+            if (this.value.trim().length >= 5) {
+                // 항상 홍길동으로 설정
+                nameInput.value = "홍길동";
+            } else {
+                nameInput.value = "";
+            }
+            
             // 4교시가 아니고 학번이 5자리 이상인 경우 버튼 활성화 (모든 시간대 허용)
             if (!is4thPeriod && this.value.trim().length >= 5) {
                 submitBtn.disabled = false;
