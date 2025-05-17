@@ -439,6 +439,10 @@ def by_period():
     today = datetime.now(KST).strftime('%Y-%m-%d')
     selected_date = request.args.get('date', today)
     
+    # 정렬 옵션 (기본: 좌석번호 오름차순)
+    sort_by = request.args.get('sort_by', 'seat')
+    sort_direction = request.args.get('sort_direction', 'asc')
+    
     # 모든 기록 로드
     all_records = load_attendance()
     
@@ -459,7 +463,27 @@ def by_period():
     
     for period in period_order:
         if period in grouped_records:
-            sorted_groups[period] = grouped_records[period]
+            # 각 교시 내에서 학생 정렬 적용
+            students = grouped_records[period]
+            
+            # 정렬 기준에 따라 정렬
+            if sort_by == 'seat':
+                # 좌석번호 정렬 (숫자는 숫자끼리, 문자는 문자끼리)
+                def seat_sort_key(student):
+                    seat = student.get('seat', '')
+                    if seat and seat.isdigit():
+                        return (0, int(seat))  # 숫자는 앞에 배치
+                    return (1, seat.lower())   # 문자는 뒤에 배치
+                
+                students = sorted(students, key=seat_sort_key, reverse=(sort_direction == 'desc'))
+            elif sort_by == 'name':
+                # 이름 정렬
+                students = sorted(students, key=lambda s: s.get('name', ''), reverse=(sort_direction == 'desc'))
+            elif sort_by == 'student_id':
+                # 학번 정렬
+                students = sorted(students, key=lambda s: s.get('student_id', ''), reverse=(sort_direction == 'desc'))
+            
+            sorted_groups[period] = students
     
     # 정의되지 않은 교시가 있다면 마지막에 추가
     for period in grouped_records:
@@ -479,7 +503,9 @@ def by_period():
     return render_template('by_period_new.html', 
                           grouped_records=sorted_groups, 
                           today=today,
-                          selected_date=formatted_date)
+                          selected_date=formatted_date,
+                          sort_by=sort_by,
+                          sort_direction=sort_direction)
 
 @app.route('/admin', methods=['GET', 'POST'])
 def admin_login():

@@ -105,16 +105,52 @@
       <!-- 날짜 선택기 -->
       <div class="row mb-4">
         <div class="col-md-6">
-          <form method="get" class="d-flex align-items-center">
+          <form method="get" class="d-flex align-items-center" id="dateForm">
             <label for="date" class="me-2 mb-0 fw-bold"><i class="fas fa-calendar-alt me-1"></i>날짜:</label>
             <input type="date" id="date" name="date" class="form-control date-selector me-2" 
                    value="{{ request.args.get('date', today) }}">
+            <!-- 정렬 상태 유지를 위한 숨겨진 필드 -->
+            <input type="hidden" name="sort_by" value="{{ sort_by or 'seat' }}">
+            <input type="hidden" name="sort_direction" value="{{ sort_direction or 'asc' }}">
             <button type="submit" class="btn btn-primary">
               <i class="fas fa-search me-1"></i>조회
             </button>
           </form>
         </div>
+        <div class="col-md-6 text-end">
+          <div class="btn-group">
+            <button class="btn btn-secondary dropdown-toggle" type="button" id="sortDropdownAll" data-bs-toggle="dropdown" aria-expanded="false">
+              <i class="fas fa-sort-amount-down me-1"></i>전체 정렬
+            </button>
+            <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="sortDropdownAll">
+              <li><h6 class="dropdown-header">전체 교시 정렬</h6></li>
+              <li><a class="dropdown-item" href="{{ url_for('by_period', date=request.args.get('date', today), sort_by='seat', sort_direction='asc') }}">좌석번호 (오름차순)</a></li>
+              <li><a class="dropdown-item" href="{{ url_for('by_period', date=request.args.get('date', today), sort_by='seat', sort_direction='desc') }}">좌석번호 (내림차순)</a></li>
+              <li><hr class="dropdown-divider"></li>
+              <li><a class="dropdown-item" href="{{ url_for('by_period', date=request.args.get('date', today), sort_by='name', sort_direction='asc') }}">이름 (가나다순)</a></li>
+              <li><hr class="dropdown-divider"></li>
+              <li><a class="dropdown-item" href="{{ url_for('by_period', date=request.args.get('date', today), sort_by='student_id', sort_direction='asc') }}">학번 (오름차순)</a></li>
+            </ul>
+          </div>
+        </div>
       </div>
+      
+      <!-- 현재 적용된 정렬 표시 -->
+      {% if sort_by %}
+      <div class="alert alert-dark mb-4">
+        <i class="fas fa-sort me-1"></i> 
+        <strong>전체 교시 정렬 적용:</strong> 
+        {% if sort_by == 'seat' and sort_direction == 'asc' %}
+          좌석번호 오름차순
+        {% elif sort_by == 'seat' and sort_direction == 'desc' %}
+          좌석번호 내림차순
+        {% elif sort_by == 'name' %}
+          이름 가나다순
+        {% elif sort_by == 'student_id' %}
+          학번 오름차순
+        {% endif %}
+      </div>
+      {% endif %}
       
       <!-- 선택된 날짜 표시 -->
       <div class="alert" style="background-color: #212529; border: 1px solid #495057;">
