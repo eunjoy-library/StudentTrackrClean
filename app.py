@@ -331,10 +331,10 @@ def attendance():
             flash('학번을 입력해주세요.', 'danger')
             return redirect(url_for('attendance'))
         
-        # 주 2회 출석 제한 확인
+        # 주간 출석 제한 확인 (1회만 허용)
         exceeded, count, recent_dates = check_weekly_attendance_limit(student_id)
         if exceeded:
-            # 주 1회 초과 출석 제한
+            # 주간 1회 초과 출석 제한
             formatted_dates = ', '.join(recent_dates)
             flash(f'주간 출석 제한 (1회/주)을 초과했습니다. 최근 출석일: {formatted_dates}', 'danger')
             return redirect(url_for('attendance'))
