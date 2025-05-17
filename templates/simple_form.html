@@ -520,46 +520,72 @@ document.addEventListener('DOMContentLoaded', function() {
                     .then(function(statusData) {
                         // 이미 출석한 학생인지 여부
                         studentAlreadyAttended = statusData.already_attended || false;
+                        var attendanceCount = statusData.attendance_count || 0;
                         var attendanceDate = statusData.last_attendance_date || '';
                         
-                        var content = '';
-                        
-                        if (studentAlreadyAttended) {
-                            // 이미 출석한 학생
-                            content = '<div style="color: #dc3545; font-weight: bold; margin-bottom: 15px; text-align: center; font-size: 18px;">' +
-                                     '이번주에 이미 출석하셨습니다.<br>' +
-                                     '4층 공강실로 올라가주세요~!';
-                            
-                            if (attendanceDate) {
-                                content += '<div style="font-size: 16px; margin-top: 5px;">출석일: ' + attendanceDate + '</div>';
-                            }
-                            
-                            content += '</div>' +
-                                     '<div style="font-size: 20px; font-weight: bold; color: #000; text-align: center;">' +
-                                     '<div style="margin-bottom: 15px;">이름: ' + maskedName + ' 님</div>' +
-                                     '<div>공강실 좌석번호: ' + seatNumber + '</div>' +
-                                     '</div>';
-                            
-                            // 버튼 비활성화
-                            modalConfirmBtn.disabled = true;
-                            modalConfirmBtn.className = 'btn modal-button btn-secondary';
-                            console.log('이미 출석한 학생:', studentId, studentAlreadyAttended);
-                        } else {
-                            // 처음 출석하는 학생
-                            content = '<div style="font-size: 20px; font-weight: bold; color: #000; text-align: center;">' +
-                                     '<div style="margin-bottom: 15px;">이름: ' + maskedName + ' 님</div>' +
-                                     '<div>공강실 좌석번호: ' + seatNumber + '</div>' +
-                                     '</div>';
-                            
-                            // 버튼 활성화
-                            modalConfirmBtn.disabled = false;
-                            modalConfirmBtn.className = 'btn modal-button modal-confirm';
-                            console.log('첫 출석 학생:', studentId, studentAlreadyAttended);
-                        }
-                        
-                        // 모달에 내용 설정 및 표시
-                        studentInfoText.innerHTML = content;
-                        customModal.style.display = 'block';
+                        // 학생 출석 상태 체크
+                        fetch('/api/check_attendance?student_id=' + studentId)
+                            .then(function(resp) { return resp.json(); })
+                            .then(function(attendData) {
+                                var hasAttendance = attendData.has_attendance || false;
+                                var attendDate = attendData.attendance_date || '';
+                                console.log('출석 확인 결과:', studentId, hasAttendance);
+                                
+                                var content = '';
+                                
+                                // 이번 주에 출석했는지 확인
+                                if (hasAttendance) {
+                                    // 이미 출석한 학생
+                                    content = '<div style="color: #dc3545; font-weight: bold; margin-bottom: 15px; text-align: center; font-size: 18px;">' +
+                                             '이번주에 이미 출석하셨습니다.<br>' +
+                                             '4층 공강실로 올라가주세요~!';
+                                    
+                                    if (attendDate) {
+                                        content += '<div style="font-size: 16px; margin-top: 5px;">출석일: ' + attendDate + '</div>';
+                                    }
+                                    
+                                    content += '</div>' +
+                                             '<div style="font-size: 20px; font-weight: bold; color: #000; text-align: center;">' +
+                                             '<div style="margin-bottom: 15px;">이름: ' + maskedName + ' 님</div>' +
+                                             '<div>공강실 좌석번호: ' + seatNumber + '</div>' +
+                                             '</div>';
+                                    
+                                    // 버튼 비활성화
+                                    modalConfirmBtn.disabled = true;
+                                    modalConfirmBtn.className = 'btn modal-button btn-secondary';
+                                    console.log('이미 출석한 학생 모달창:', studentId);
+                                } else {
+                                    // 처음 출석하는 학생
+                                    content = '<div style="font-size: 20px; font-weight: bold; color: #000; text-align: center;">' +
+                                             '<div style="margin-bottom: 15px;">이름: ' + maskedName + ' 님</div>' +
+                                             '<div>공강실 좌석번호: ' + seatNumber + '</div>' +
+                                             '</div>';
+                                    
+                                    // 버튼 활성화
+                                    modalConfirmBtn.disabled = false;
+                                    modalConfirmBtn.className = 'btn modal-button modal-confirm';
+                                    console.log('첫 출석 학생 모달창:', studentId);
+                                }
+                                
+                                // 모달에 내용 설정 및 표시
+                                studentInfoText.innerHTML = content;
+                                customModal.style.display = 'block';
+                            })
+                            .catch(function(error) {
+                                console.error('출석 확인 오류:', error);
+                                // 오류 발생 시 기본적으로 출석 허용
+                                var content = '<div style="font-size: 20px; font-weight: bold; color: #000; text-align: center;">' +
+                                         '<div style="margin-bottom: 15px;">이름: ' + maskedName + ' 님</div>' +
+                                         '<div>공강실 좌석번호: ' + seatNumber + '</div>' +
+                                         '</div>';
+                                
+                                modalConfirmBtn.disabled = false;
+                                modalConfirmBtn.className = 'btn modal-button modal-confirm';
+                                
+                                studentInfoText.innerHTML = content;
+                                customModal.style.display = 'block';
+                            });
+                        });
                     })
                     .catch(function(error) {
                         console.error('출석 상태 확인 오류:', error);

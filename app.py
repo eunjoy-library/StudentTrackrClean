@@ -324,6 +324,49 @@ def check_weekly_attendance_limit(student_id):
 
 # ================== [ROUTES] ==================
 
+@app.route('/api/check_attendance')
+def api_check_attendance():
+    """
+    학생 ID로 해당 주에 출석 기록이 있는지 직접 확인하는 API
+    - 정확한 기록 확인을 위해 DB에서 직접 조회
+    """
+    student_id = request.args.get('student_id')
+    if not student_id:
+        return jsonify({'error': '학번이 필요합니다.', 'has_attendance': False})
+    
+    try:
+        # 현재 주의 날짜 범위 가져오기
+        sunday_str, saturday_str = get_current_week_range()
+        
+        # Firebase에서 해당 학생 ID와 이번 주 기간에 해당하는 기록 직접 조회
+        attendance_records = []
+        
+        # 모든 출석 기록 불러오기
+        records = db.collection('attendances').where('student_id', '==', student_id).get()
+        
+        # 이번 주에 해당하는 기록만 필터링
+        has_attendance = False
+        attendance_date = ""
+        
+        for record in records:
+            data = record.to_dict()
+            date_only = data.get('date_only', '')
+            
+            # 이번 주 날짜 범위에 있는지 확인
+            if sunday_str <= date_only <= saturday_str:
+                has_attendance = True
+                attendance_date = date_only
+                break  # 하나라도 찾으면 중지
+        
+        return jsonify({
+            'has_attendance': has_attendance,
+            'attendance_date': attendance_date
+        })
+        
+    except Exception as e:
+        logging.error(f"출석 확인 API 오류: {e}")
+        return jsonify({'error': str(e), 'has_attendance': False})
+
 @app.route('/check_attendance_status')
 def check_attendance_status():
     """학생의 출석 상태를 확인하는 API (주간 출석 제한용)"""
