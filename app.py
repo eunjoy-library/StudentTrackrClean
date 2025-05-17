@@ -1,7 +1,8 @@
 import os
 import json
 import logging
-from datetime import datetime, timedelta, time
+import time
+from datetime import datetime, timedelta
 from collections import Counter
 
 import pytz
@@ -198,9 +199,14 @@ def load_attendance():
         logging.error(f"출석 기록 로딩 중 오류: {e}")
         return []
 
+# 출석 상태 캐싱을 위한 딕셔너리와 캐시 만료 시간 (초)
+attendance_status_cache = {}
+CACHE_EXPIRY = 30  # 30초 캐시
+
 def check_weekly_attendance_limit(student_id):
     """
     학생이 이번 주(일~토)에 1회 이상 출석했는지 확인
+    캐싱 기능 추가: 같은 학생 ID에 대해 반복 쿼리 최소화
     
     Returns:
         (exceeded, count, recent_dates): 
@@ -208,6 +214,16 @@ def check_weekly_attendance_limit(student_id):
         - count: 이번 주 출석 횟수
         - recent_dates: 최근 출석 날짜 목록
     """
+    global attendance_status_cache
+    
+    # 캐시에 있고 만료되지 않았으면 캐시된 결과 반환
+    cache_key = f"weekly_limit_{student_id}"
+    if cache_key in attendance_status_cache:
+        cache_entry = attendance_status_cache[cache_key]
+        if time.time() - cache_entry['timestamp'] < CACHE_EXPIRY:
+            logging.debug(f"학생 {student_id}의 출석 상태 캐시 사용")
+            return cache_entry['exceeded'], cache_entry['count'], cache_entry['recent_dates']
+    
     try:
         if not db:
             logging.error("Firebase DB 연결이 설정되지 않았습니다.")
@@ -234,8 +250,12 @@ def check_weekly_attendance_limit(student_id):
         logging.debug(f"학생 {student_id}의 이번 주({sunday_str} ~ {saturday_str}) 출석 기록 확인 중")
         
         try:
-            # 학생 ID로 출석 기록 검색
-            records = db.collection('attendances').where('student_id', '==', student_id).get()
+            # 현재 주에 해당하는 날짜 범위로 쿼리 최적화
+            records = db.collection('attendances')\
+                       .where('student_id', '==', student_id)\
+                       .where('date_only', '>=', sunday_str)\
+                       .where('date_only', '<=', saturday_str)\
+                       .get()
             
             # 이번 주 출석 횟수 카운트
             count = 0
@@ -244,11 +264,9 @@ def check_weekly_attendance_limit(student_id):
             for record in records:
                 data = record.to_dict()
                 date_only = data.get('date_only', '')
-                
-                if sunday_str <= date_only <= saturday_str:
-                    count += 1
-                    recent_dates.append(date_only)
-                    logging.debug(f"학생 {student_id}의 출석일: {date_only}")
+                count += 1
+                recent_dates.append(date_only)
+                logging.debug(f"학생 {student_id}의 출석일: {date_only}")
             
             # 중복 날짜 제거 (같은 날 여러 번 출석한 경우)
             unique_dates = sorted(list(set(recent_dates)))
@@ -256,6 +274,14 @@ def check_weekly_attendance_limit(student_id):
             # 주간 출석 제한 (일주일에 1번만 허용)
             # 1회까지 허용하고, 이미 1회 출석한 경우 2번째 출석을 제한
             exceeded = len(unique_dates) >= 1  # 이미 1회 출석했으면 제한
+            
+            # 결과 캐싱
+            attendance_status_cache[cache_key] = {
+                'exceeded': exceeded,
+                'count': count,
+                'recent_dates': recent_dates,
+                'timestamp': time.time()
+            }
             
             logging.debug(f"학생 {student_id}의 이번 주 출석 횟수: {count}, 초과 여부: {exceeded}")
             return exceeded, count, recent_dates
