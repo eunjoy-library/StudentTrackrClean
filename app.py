@@ -388,9 +388,27 @@ def list_attendance():
     if session.get('admin'):
         current_page = request.args.get('page', 1, type=int)
         limit = request.args.get('limit', 50, type=int)
+        sort_by = request.args.get('sort_by', 'date')  # 기본 정렬: 날짜
+        sort_direction = request.args.get('sort_direction', 'desc')  # 기본 방향: 내림차순
         
         # 모든 출석 기록 로드
         all_records = load_attendance()
+        
+        # 정렬 처리
+        if sort_by and all_records:
+            reverse = sort_direction.lower() == 'desc'
+            
+            def get_sort_key(record):
+                value = record.get(sort_by)
+                # 날짜는 특별 처리
+                if sort_by == 'date':
+                    try:
+                        return datetime.strptime(value, '%Y-%m-%d %H:%M:%S')
+                    except:
+                        return datetime.min
+                return str(value).lower() if value is not None else ""
+                
+            all_records = sorted(all_records, key=get_sort_key, reverse=reverse)
         
         # 간단한 페이지네이션
         total_pages = (len(all_records) + limit - 1) // limit if all_records else 1
@@ -403,7 +421,9 @@ def list_attendance():
                               records=paged_records, 
                               current_page=current_page, 
                               total_pages=total_pages, 
-                              limit=limit)
+                              limit=limit,
+                              sort_by=sort_by,
+                              sort_direction=sort_direction)
     else:
         flash('관리자 로그인이 필요합니다.', 'warning')
         return redirect(url_for('admin_login'))

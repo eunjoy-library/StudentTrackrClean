@@ -5,10 +5,49 @@
 {% block content %}
 <div class="card">
     <div class="card-header bg-primary text-white">
-        <h2>출석 목록</h2>
+        <div class="d-flex justify-content-between align-items-center">
+            <h2>출석 목록</h2>
+            <div>
+                <div class="btn-group">
+                    <button class="btn btn-light dropdown-toggle" type="button" id="sortDropdown" data-bs-toggle="dropdown" aria-expanded="false">
+                        <i class="fas fa-sort-amount-down me-1"></i>정렬
+                    </button>
+                    <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="sortDropdown">
+                        <li><h6 class="dropdown-header">정렬 기준</h6></li>
+                        <li><a class="dropdown-item {% if sort_by == 'date' %}active{% endif %}" href="{{ url_for('list_attendance', sort_by='date', sort_direction='desc') }}">날짜 (최신순)</a></li>
+                        <li><a class="dropdown-item {% if sort_by == 'date' and sort_direction == 'asc' %}active{% endif %}" href="{{ url_for('list_attendance', sort_by='date', sort_direction='asc') }}">날짜 (오래된순)</a></li>
+                        <li><hr class="dropdown-divider"></li>
+                        <li><a class="dropdown-item {% if sort_by == 'student_id' %}active{% endif %}" href="{{ url_for('list_attendance', sort_by='student_id', sort_direction='asc') }}">학번 (오름차순)</a></li>
+                        <li><a class="dropdown-item {% if sort_by == 'student_id' and sort_direction == 'desc' %}active{% endif %}" href="{{ url_for('list_attendance', sort_by='student_id', sort_direction='desc') }}">학번 (내림차순)</a></li>
+                        <li><hr class="dropdown-divider"></li>
+                        <li><a class="dropdown-item {% if sort_by == 'name' %}active{% endif %}" href="{{ url_for('list_attendance', sort_by='name', sort_direction='asc') }}">이름 (가나다순)</a></li>
+                        <li><a class="dropdown-item {% if sort_by == 'name' and sort_direction == 'desc' %}active{% endif %}" href="{{ url_for('list_attendance', sort_by='name', sort_direction='desc') }}">이름 (역순)</a></li>
+                        <li><hr class="dropdown-divider"></li>
+                        <li><a class="dropdown-item {% if sort_by == 'period' %}active{% endif %}" href="{{ url_for('list_attendance', sort_by='period', sort_direction='asc') }}">교시 (오름차순)</a></li>
+                    </ul>
+                </div>
+            </div>
+        </div>
     </div>
     <div class="card-body">
         {% if records %}
+        <div class="mb-3">
+            {% if sort_by == 'date' and sort_direction == 'desc' %}
+                <span class="badge bg-info">날짜 (최신순) 정렬 적용됨</span>
+            {% elif sort_by == 'date' and sort_direction == 'asc' %}
+                <span class="badge bg-info">날짜 (오래된순) 정렬 적용됨</span>
+            {% elif sort_by == 'student_id' and sort_direction == 'asc' %}
+                <span class="badge bg-info">학번 (오름차순) 정렬 적용됨</span>
+            {% elif sort_by == 'student_id' and sort_direction == 'desc' %}
+                <span class="badge bg-info">학번 (내림차순) 정렬 적용됨</span>
+            {% elif sort_by == 'name' and sort_direction == 'asc' %}
+                <span class="badge bg-info">이름 (가나다순) 정렬 적용됨</span>
+            {% elif sort_by == 'name' and sort_direction == 'desc' %}
+                <span class="badge bg-info">이름 (역순) 정렬 적용됨</span>
+            {% elif sort_by == 'period' and sort_direction == 'asc' %}
+                <span class="badge bg-info">교시 (오름차순) 정렬 적용됨</span>
+            {% endif %}
+        </div>
         <form action="{{ url_for('delete_records') }}" method="post" onsubmit="return confirm('선택한 항목을 삭제하시겠습니까?');">
             <div class="table-responsive">
                 <table class="table table-striped table-hover">
@@ -50,19 +89,19 @@
                         <ul class="pagination">
                             {% if current_page > 1 %}
                             <li class="page-item">
-                                <a class="page-link" href="{{ url_for('list_attendance', page=current_page-1) }}">이전</a>
+                                <a class="page-link" href="{{ url_for('list_attendance', page=current_page-1, sort_by=sort_by, sort_direction=sort_direction) }}">이전</a>
                             </li>
                             {% endif %}
                             
                             {% for p in range(1, total_pages + 1) %}
                             <li class="page-item {% if p == current_page %}active{% endif %}">
-                                <a class="page-link" href="{{ url_for('list_attendance', page=p) }}">{{ p }}</a>
+                                <a class="page-link" href="{{ url_for('list_attendance', page=p, sort_by=sort_by, sort_direction=sort_direction) }}">{{ p }}</a>
                             </li>
                             {% endfor %}
                             
                             {% if current_page < total_pages %}
                             <li class="page-item">
-                                <a class="page-link" href="{{ url_for('list_attendance', page=current_page+1) }}">다음</a>
+                                <a class="page-link" href="{{ url_for('list_attendance', page=current_page+1, sort_by=sort_by, sort_direction=sort_direction) }}">다음</a>
                             </li>
                             {% endif %}
                         </ul>
