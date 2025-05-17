@@ -235,5 +235,121 @@ def list_attendance():
     records = load_attendance()
     return render_template('list.html', records=records)
 
+@app.route('/admin', methods=['GET', 'POST'])
+def admin_login():
+    """Admin login page"""
+    # 이미 로그인 되어 있으면 교시별 출석현황 페이지로 바로 리다이렉트
+    if session.get('admin'):
+        return redirect('/by_period')
+        
+    if request.method == 'POST':
+        password = request.form.get('password')
+        if password == "1234":  # 관리자 비밀번호
+            session['admin'] = True
+            return redirect('/by_period')
+        else:
+            flash('❌ 비밀번호가 틀렸습니다.', "danger")
+    return render_template('admin_login.html')
+
+@app.route('/by_period')
+def by_period():
+    """교시별 출석 현황 보기 (admin only)"""
+    if not session.get('admin'):
+        flash("관리자 로그인이 필요합니다.", "danger")
+        return redirect('/admin')
+        
+    records = load_attendance()
+    
+    # 교시별로만 학생 데이터 그룹화
+    period_groups = {}
+    
+    for record in records:
+        period = record.get('period', '시간 외')
+        date = record.get('date_only', '날짜 없음')
+        
+        # 날짜 형식 변환 (YYYY-MM-DD -> n월n일) - 시, 분, 초 제거
+        if date != '날짜 없음':
+            try:
+                # 날짜 객체로 변환
+                date_obj = datetime.strptime(date, "%Y-%m-%d")
+                # 월, 일만 표시 (n월n일 형식)
+                date_md = f"{date_obj.month}월{date_obj.day}일"
+                # 원래 날짜도 저장 (정렬용)
+                original_date = date_obj
+                # 메모 검색을 위한 원본 날짜 문자열
+                original_date_str = date_obj.strftime('%Y-%m-%d')
+            except ValueError:
+                date_md = date
+                original_date = datetime(1900, 1, 1)  # 날짜 변환 실패시 고정 날짜로
+                original_date_str = date
+        else:
+            date_md = date
+            original_date = datetime(1900, 1, 1)  # 날짜 없음은 고정 날짜로
+            original_date_str = date
+        
+        # 원본 기록에 날짜 정보 추가
+        record_copy = record.copy()
+        record_copy['날짜_md'] = date_md
+        record_copy['원본_날짜'] = original_date  # 정렬용 원본 날짜 저장
+        
+        # 날짜와 교시를 조합하여 키 생성 (예: "5월7일 6교시")
+        period_num = int(period[0]) if period and period[0].isdigit() else 999
+        
+        # 교시만 키로 사용하는 것이 아니라, 날짜+교시로 새로운 키 생성
+        new_period_key = f"{date_md} {period}"
+        
+        if new_period_key not in period_groups:
+            period_groups[new_period_key] = {
+                '학생_목록': [],
+                '교시_번호': period_num,
+                '날짜': original_date_str,
+                '교시': period
+            }
+        
+        period_groups[new_period_key]['학생_목록'].append(record_copy)
+    
+    # 최근 날짜가 먼저 나오도록 정렬하고, 같은 날짜 내에서는 교시 번호가 큰 순서대로 정렬
+    sorted_periods = sorted(
+        period_groups.keys(), 
+        key=lambda p: (
+            # 날짜 추출 (기본 형식: "n월n일 m교시")
+            # 각 교시에 속한 가장 최근 날짜를 기준으로 정렬 (내림차순)
+            -1 * max([r['원본_날짜'].timestamp() for r in period_groups[p]['학생_목록']]) if period_groups[p]['학생_목록'] else 0,
+            # 같은 날짜면 교시 번호 내림차순 (큰 교시 먼저)
+            -period_groups[p]['교시_번호']
+        )
+    )
+    
+    # 각 교시 내에서 학생을 날짜 최신순, 이름으로 정렬
+    for period in period_groups:
+        period_groups[period]['학생_목록'] = sorted(
+            period_groups[period]['학생_목록'], 
+            key=lambda r: (-r['원본_날짜'].timestamp(), r.get('name', ''))
+        )
+    
+    return render_template(
+        'by_period.html', 
+        period_groups=period_groups, 
+        sorted_periods=sorted_periods
+    )
+
+@app.route('/stats')
+def stats():
+    """Show attendance statistics (admin only)"""
+    if not session.get('admin'):
+        flash("관리자 로그인이 필요합니다.", "danger")
+        return redirect('/admin')
+    records = load_attendance()
+    counts = Counter(r['name'] for r in records)
+    sorted_counts = sorted(counts.items(), key=lambda x: x[1], reverse=True)
+    return render_template('stats.html', attendance_counts=sorted_counts)
+
+@app.route('/logout')
+def logout():
+    """Logout from admin"""
+    session.pop('admin', None)
+    flash('로그아웃 되었습니다.', 'info')
+    return redirect('/')
+
 if __name__ == '__main__':
     app.run(debug=True)
