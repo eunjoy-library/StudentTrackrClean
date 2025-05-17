@@ -210,6 +210,7 @@ def check_weekly_attendance_limit(student_id):
     """
     try:
         if not db:
+            logging.error("Firebase DB 연결이 설정되지 않았습니다.")
             return False, 0, []
         
         # 현재 날짜 기준으로 이번 주의 월요일 찾기
@@ -227,24 +228,37 @@ def check_weekly_attendance_limit(student_id):
         monday_str = monday.strftime('%Y-%m-%d')
         friday_str = friday.strftime('%Y-%m-%d')
         
-        # 학생 ID로 출석 기록 검색
-        records = db.collection('attendances').where('student_id', '==', student_id).get()
+        logging.debug(f"학생 {student_id}의 이번 주({monday_str} ~ {friday_str}) 출석 기록 확인 중")
         
-        # 이번 주 출석 횟수 카운트
-        count = 0
-        recent_dates = []
-        
-        for record in records:
-            data = record.to_dict()
-            date_only = data.get('date_only', '')
+        try:
+            # 학생 ID로 출석 기록 검색
+            records = db.collection('attendances').where('student_id', '==', student_id).get()
             
-            if monday_str <= date_only <= friday_str:
-                count += 1
-                recent_dates.append(date_only)
-        
-        # 주 2회 초과 여부 반환
-        exceeded = count >= 2
-        return exceeded, count, recent_dates
+            # 이번 주 출석 횟수 카운트
+            count = 0
+            recent_dates = []
+            
+            for record in records:
+                data = record.to_dict()
+                date_only = data.get('date_only', '')
+                
+                if monday_str <= date_only <= friday_str:
+                    count += 1
+                    recent_dates.append(date_only)
+                    logging.debug(f"학생 {student_id}의 출석일: {date_only}")
+            
+            # 중복 날짜 제거 (같은 날 여러 번 출석한 경우)
+            recent_dates = sorted(list(set(recent_dates)))
+            
+            # 주 2회 이상 출석 여부
+            exceeded = count >= 2  # 주 2회까지만 허용 (3번째부터 제한)
+            
+            logging.debug(f"학생 {student_id}의 이번 주 출석 횟수: {count}, 초과 여부: {exceeded}")
+            return exceeded, count, recent_dates
+            
+        except Exception as db_error:
+            logging.error(f"Firebase 쿼리 실행 중 오류: {db_error}")
+            raise
         
     except Exception as e:
         logging.error(f"주간 출석 제한 확인 중 오류: {e}")
