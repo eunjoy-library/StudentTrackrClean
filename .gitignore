@@ -1,0 +1,16 @@
+# 캐시 및 임시 파일 제외
+__pycache__/
+*.pyc
+
+# 환경변수 및 DB 파일 제외
+.env
+*.sqlite
+*.db
+instance/
+
+# Replit 관련
+.replit
+*.swp
+firebase-key.json
+firebase_credentials.env
+.env
