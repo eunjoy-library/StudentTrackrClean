@@ -61,10 +61,6 @@ except Exception as e:
 # models.py 초기화 - db 인스턴스 전달
 try:
     import models
-    if models.setup_firebase(db):
-        logging.info("models.py Firebase 설정 완료")
-    else:
-        logging.error("models.py Firebase 설정 실패")
 except Exception as setup_error:
     logging.error(f"models.py 설정 오류: {setup_error}")
 
