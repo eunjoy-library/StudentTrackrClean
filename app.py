@@ -171,25 +171,45 @@ def load_attendance():
 @app.route('/', methods=['GET', 'POST'])
 def index():
     """Main attendance page and form submission handler"""
+    # 현재 시간과 교시 정보 계산
+    now = datetime.now(KST)
+    current_period = get_current_period()
+    weekday_korean = ['월', '화', '수', '목', '금', '토', '일'][now.weekday()]
+    
+    # 교시 텍스트 생성
+    if current_period == -1:
+        period_text = "시간 외"
+    elif current_period == 0:
+        period_text = "4교시 (도서실 이용 불가)"
+    else:
+        period_text = f"{current_period}교시"
+    
     if request.method == 'POST':
         student_id = request.form.get('student_id', '').strip()
         name = request.form.get('name', '').strip()
         seat = request.form.get('seat', '').strip()
-        period = request.form.get('period', '').strip()
         
         if not student_id or not name:
             flash("학번과 이름을 입력해주세요.", "danger")
             return redirect(url_for('index'))
             
-        # 출석 저장
-        if save_attendance(student_id, name, seat, period):
+        # 출석 저장 (현재 교시 정보 사용)
+        if save_attendance(student_id, name, seat, period_text):
             flash("출석이 완료되었습니다.", "success")
         else:
             flash("출석 저장에 실패했습니다.", "danger")
             
         return redirect(url_for('index'))
-        
-    return render_template('index.html')
+    
+    # 현재 교시의 출석 인원 수 (최대 인원 제한을 위해)    
+    return render_template(
+        'index.html',
+        current_date=now.strftime("%Y년 %m월 %d일"),
+        current_time=now.strftime("%H:%M"),
+        weekday_korean=weekday_korean,
+        current_period=current_period,
+        period_text=period_text
+    )
 
 @app.route('/lookup_name')
 def lookup_name():

@@ -13,6 +13,32 @@
         h1 {
             color: #333;
         }
+        .current-info {
+            background-color: #f9f9f9;
+            padding: 15px;
+            border-radius: 5px;
+            margin-bottom: 20px;
+            text-align: center;
+        }
+        .current-info h2 {
+            color: #333;
+            margin: 0 0 10px 0;
+        }
+        .current-info h3 {
+            color: #666;
+            margin: 0;
+            font-weight: normal;
+        }
+        .alert {
+            padding: 10px;
+            margin: 15px 0;
+            border-radius: 4px;
+        }
+        .alert-warning {
+            background-color: #fcf8e3;
+            border: 1px solid #faebcc;
+            color: #8a6d3b;
+        }
         .form-group {
             margin-bottom: 15px;
         }
@@ -35,6 +61,8 @@
             border: none;
             border-radius: 4px;
             cursor: pointer;
+            font-size: 16px;
+            font-weight: bold;
         }
         button:hover {
             background-color: #45a049;
@@ -113,6 +141,17 @@
 <body>
     <h1>학생 도서관 출석</h1>
     
+    <div class="current-info">
+        <h2>{{ current_date }} ({{ weekday_korean }})</h2>
+        <h3>현재 시간: {{ current_time }} | {{ period_text }}</h3>
+        
+        {% if current_period == 0 %}
+        <div class="alert alert-warning">
+            <strong>알림:</strong> 4교시는 도서실 이용 시간이 아닙니다.
+        </div>
+        {% endif %}
+    </div>
+    
     {% with messages = get_flashed_messages() %}
       {% if messages %}
         {% for message in messages %}
@@ -128,7 +167,7 @@
     <form method="POST">
         <div class="form-group">
             <label for="student_id">학번:</label>
-            <input type="text" id="student_id" name="student_id" required>
+            <input type="text" id="student_id" name="student_id" required autofocus>
         </div>
         
         <div class="form-group">
@@ -141,12 +180,10 @@
             <input type="text" id="seat" name="seat" required readonly class="readonly-field">
         </div>
         
-        <div class="form-group">
-            <label for="period">교시:</label>
-            <input type="text" id="period" name="period" required>
-        </div>
+        <!-- 교시 정보를 숨김 입력 필드로 변경 -->
+        <input type="hidden" id="period" name="period" value="{{ period_text }}">
         
-        <button type="submit">출석하기</button>
+        <button type="submit" id="submit-btn">출석하기</button>
     </form>
 </body>
 </html>
