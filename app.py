@@ -170,6 +170,11 @@ def load_attendance():
 # ================== [라우트 정의] ==================
 @app.route('/', methods=['GET', 'POST'])
 def index():
+    """Redirect to attendance page"""
+    return redirect(url_for('attendance'))
+
+@app.route('/attendance', methods=['GET', 'POST'])
+def attendance():
     """Main attendance page and form submission handler"""
     # 현재 시간과 교시 정보 계산
     now = datetime.now(KST)
@@ -186,24 +191,43 @@ def index():
     
     if request.method == 'POST':
         student_id = request.form.get('student_id', '').strip()
-        name = request.form.get('name', '').strip()
-        seat = request.form.get('seat', '').strip()
         
-        if not student_id or not name:
-            flash("학번과 이름을 입력해주세요.", "danger")
-            return redirect(url_for('index'))
+        # 학생 데이터 로드
+        student_data = load_student_data()
+        student_info = student_data.get(student_id)
+        
+        # 학번 검증
+        if not student_info:
+            flash("❌ 학번이 올바르지 않습니다. 다시 확인해주세요.", "danger")
+            return redirect(url_for('attendance'))
             
-        # 출석 저장 (현재 교시 정보 사용)
-        if save_attendance(student_id, name, seat, period_text):
-            flash("출석이 완료되었습니다.", "success")
+        name = student_info[0]
+        seat = student_info[1]
+        
+        # 출석 가능 여부 확인 (이미 출석했거나 경고를 받은 경우)
+        already_attended, last_attendance_date, is_warned, warning_info = check_attendance(student_id)
+        
+        if current_period == 0:
+            flash("⚠️ 지금은 도서실 이용 시간이 아닙니다.", "danger")
+            return redirect(url_for('attendance'))
+        elif already_attended:
+            flash("⚠️ 이번 주에 이미 출석하셨습니다. 4층 공강실로 올라가주세요!", "warning")
+            return redirect(url_for('attendance'))
+        elif is_warned:
+            flash("⚠️ 경고를 받은 학생입니다. 관리자에게 문의하세요.", "danger")
+            return redirect(url_for('attendance'))
         else:
-            flash("출석 저장에 실패했습니다.", "danger")
+            # 출석 저장 (현재 교시 정보 사용)
+            if save_attendance(student_id, name, seat, period_text):
+                flash(f"✅ 출석이 완료되었습니다. 공강좌석번호: {seat}", "success")
+            else:
+                flash("❌ 출석 저장에 실패했습니다.", "danger")
             
-        return redirect(url_for('index'))
+            return redirect(url_for('attendance'))
     
-    # 현재 교시의 출석 인원 수 (최대 인원 제한을 위해)    
+    # 현재 교시의 출석 인원 수 (최대 인원 제한을 위해)
     return render_template(
-        'index.html',
+        'attendance.html',
         current_date=now.strftime("%Y년 %m월 %d일"),
         current_time=now.strftime("%H:%M"),
         weekday_korean=weekday_korean,
