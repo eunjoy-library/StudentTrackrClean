@@ -1,0 +1,93 @@
+{% extends "layout.html" %}
+
+{% block title %}도서실 출석 시스템{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-8 col-lg-6">
+        <div class="card shadow">
+            <div class="card-header bg-primary text-white">
+                <h1 class="h3 mb-0">
+                    <i class="fas fa-book me-2"></i>도서실 출석체크
+                </h1>
+            </div>
+            <div class="alert alert-info m-3 p-3 position-relative" style="overflow: hidden;">
+                <div class="row align-items-center position-relative">
+                    <div class="col-12 text-center mb-3">
+                        <div class="d-inline-block p-2 rounded shadow-sm time-display" 
+                             style="min-width: 300px; background: linear-gradient(135deg, #2b5876 0%, #4e4376 100%); border: 2px solid rgba(255,255,255,0.1);">
+                            <h4 class="mb-0 py-1">
+                                <span id="currentMonthDay" 
+                                      style="font-family: 'Noto Sans KR', sans-serif; font-weight: 700; font-size: 1.5rem; letter-spacing: 1px; color: #ffffff; text-shadow: 1px 1px 2px rgba(0,0,0,0.3);">
+                                    {{ now.strftime('%m월 %d일 (%a)') | replace('Mon', '월') | replace('Tue', '화') | replace('Wed', '수') | replace('Thu', '목') | replace('Fri', '금') | replace('Sat', '토') | replace('Sun', '일') }}
+                                </span>
+                            </h4>
+                        </div>
+                    </div>
+                    <div class="col-12 text-center">
+                        <div class="d-flex justify-content-center align-items-center">
+                            <div class="text-center p-3 rounded border border-secondary shadow-sm period-time-info" 
+                                 style="background-color: rgba(255,255,255,0.9); min-width: 220px;">
+                                <div class="mb-2">
+                                    <span class="badge bg-dark" style="font-size: 0.9rem;">현재 교시</span>
+                                </div>
+                                <div>
+                                    <span id="currentPeriod" class="badge bg-primary" 
+                                          style="font-size: 1.3rem; padding: 0.5rem 0.8rem;">{{ period_text }}</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="card-body">
+                <form id="attendanceForm" method="post" class="needs-validation" novalidate>
+                    <div class="mb-4">
+                        <label for="student_id" class="form-label fs-5">학번</label>
+                        <div class="input-group input-group-lg">
+                            <span class="input-group-text"><i class="fas fa-id-card"></i></span>
+                            <input type="text" id="student_id" name="student_id" class="form-control form-control-lg py-3"
+                                   placeholder="학번을 입력하세요 예)10101" required autocomplete="off" 
+                                   inputmode="numeric" pattern="[0-9]*" style="font-size: 1.2rem;">
+                            <div class="invalid-feedback">학번을 입력해주세요.</div>
+                        </div>
+                    </div>
+                    <!-- 이름 입력 필드 (숨김) -->
+                    <input type="hidden" id="name" name="name" value="홍길동">
+                    <div class="d-grid mt-4">
+                        <button type="submit" id="submitBtn" class="btn btn-primary btn-lg py-3" style="font-size: 1.25rem; font-weight: bold;">
+                            <i class="fas fa-check-circle me-2"></i><span id="submitBtnText">출석하기</span>
+                        </button>
+                    </div>
+                </form>
+            </div>
+            <div class="card-footer">
+                <div class="small text-muted">
+                    <i class="fas fa-info-circle me-1"></i>
+                    출석체크는 일주일에 한 번만 가능합니다.
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const studentIdInput = document.getElementById('student_id');
+    const submitBtn = document.getElementById('submitBtn');
+    
+    // 학번 입력 이벤트 - 5자리 이상이면 버튼 활성화
+    if (studentIdInput) {
+        studentIdInput.addEventListener('input', function() {
+            if (this.value.trim().length >= 5) {
+                submitBtn.disabled = false;
+            } else {
+                submitBtn.disabled = true;
+            }
+        });
+    }
+});
+</script>
+{% endblock %}

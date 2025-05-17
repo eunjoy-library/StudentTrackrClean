@@ -307,20 +307,24 @@ def attendance():
     else:
         period_text = f"{current_period}교시"
     
+    # 간소화된 버전의 템플릿 사용
+    if True:
+        return render_template('attendance_simple.html', 
+                              now=now, 
+                              period_text=period_text)
+    
     if request.method == 'POST':
         student_id = request.form.get('student_id', '').strip()
+        name = request.form.get('name', '홍길동').strip()  # 이름 필드에서 값 가져오기, 기본값 홍길동
         
-        # 학생 데이터 로드
-        student_data = load_student_data()
-        student_info = student_data.get(student_id)
+        # 간소화된 프로세스: 모든 학번 허용, 이름은 폼에서 제공한 값 사용
+        student_name = name
+        student_seat = "A1"  # 기본 좌석
         
-        # 학번 검증
-        if not student_info:
-            flash("❌ 학번이 올바르지 않습니다. 다시 확인해주세요.", "danger")
-            return redirect(url_for('attendance'))
-            
-        name = student_info[0]
-        seat = student_info[1]
+        # 학생 정보가 있으면 해당 정보 사용
+        if student_info:
+            student_name = student_info[0]
+            student_seat = student_info[1]
         
         # 출석 가능 여부 확인 (이미 출석했거나 경고를 받은 경우)
         already_attended, last_attendance_date, is_warned, warning_info = check_attendance(student_id)
