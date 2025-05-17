@@ -395,7 +395,16 @@ document.addEventListener('DOMContentLoaded', function() {
             })
             .then(response => response.json())
             .then(data => {
-                if (data.success) {
+                console.log('학생 정보 응답:', data); // 디버깅용 로그
+                
+                // 오류 메시지가 있는 경우 체크
+                if (data.error) {
+                    alert(data.error);
+                    return;
+                }
+                
+                // 응답에 name이 있으면 성공으로 처리 (success 필드가 없더라도)
+                if (data.name) {
                     // 이름 저장
                     if (nameInput) {
                         nameInput.value = data.name;
