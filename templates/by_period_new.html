@@ -202,9 +202,45 @@
                     <th width="40" class="text-center">
                       <input type="checkbox" class="period-select-all" data-period="{{ period }}">
                     </th>
-                    <th>학번</th>
-                    <th>이름</th>
-                    <th>좌석</th>
+                    <th>
+                      <div class="d-flex align-items-center">
+                        학번
+                        <div class="ms-2">
+                          <a href="#" class="column-sort text-white" data-period="{{ period }}" data-sort-by="student_id" data-sort-direction="asc">
+                            <i class="fas fa-sort-up fa-sm"></i>
+                          </a>
+                          <a href="#" class="column-sort text-white" data-period="{{ period }}" data-sort-by="student_id" data-sort-direction="desc">
+                            <i class="fas fa-sort-down fa-sm"></i>
+                          </a>
+                        </div>
+                      </div>
+                    </th>
+                    <th>
+                      <div class="d-flex align-items-center">
+                        이름
+                        <div class="ms-2">
+                          <a href="#" class="column-sort text-white" data-period="{{ period }}" data-sort-by="name" data-sort-direction="asc">
+                            <i class="fas fa-sort-up fa-sm"></i>
+                          </a>
+                          <a href="#" class="column-sort text-white" data-period="{{ period }}" data-sort-by="name" data-sort-direction="desc">
+                            <i class="fas fa-sort-down fa-sm"></i>
+                          </a>
+                        </div>
+                      </div>
+                    </th>
+                    <th>
+                      <div class="d-flex align-items-center">
+                        좌석
+                        <div class="ms-2">
+                          <a href="#" class="column-sort text-white" data-period="{{ period }}" data-sort-by="seat" data-sort-direction="asc">
+                            <i class="fas fa-sort-up fa-sm"></i>
+                          </a>
+                          <a href="#" class="column-sort text-white" data-period="{{ period }}" data-sort-by="seat" data-sort-direction="desc">
+                            <i class="fas fa-sort-down fa-sm"></i>
+                          </a>
+                        </div>
+                      </div>
+                    </th>
                     <th width="150">시간</th>
                   </tr>
                 </thead>
@@ -417,7 +453,7 @@ document.addEventListener('DOMContentLoaded', function() {
     }
     
     // 교시별 정렬 기능
-    const sortButtons = document.querySelectorAll('.sort-students');
+    const sortButtons = document.querySelectorAll('.sort-students, .column-sort');
     sortButtons.forEach(button => {
         button.addEventListener('click', function(e) {
             e.preventDefault();
@@ -473,6 +509,18 @@ document.addEventListener('DOMContentLoaded', function() {
             // 정렬된 행을 테이블에 다시 추가
             rows.forEach(row => tableBody.appendChild(row));
             
+            // 헤더의 정렬 아이콘 상태 업데이트
+            const tableHeaders = document.querySelectorAll(`.period-card[data-period="${period}"] .column-sort`);
+            tableHeaders.forEach(header => {
+                // 모든 헤더에서 활성화 클래스 제거
+                header.classList.remove('active-sort');
+                
+                // 현재 정렬 중인 헤더에 활성화 클래스 추가
+                if (header.dataset.sortBy === sortBy && header.dataset.sortDirection === sortDirection) {
+                    header.classList.add('active-sort');
+                }
+            });
+            
             // 정렬 중임을 알리는 알림 추가
             const sortInfoDiv = document.createElement('div');
             sortInfoDiv.className = 'alert alert-info mt-2 mb-2 sort-info';
@@ -481,9 +529,9 @@ document.addEventListener('DOMContentLoaded', function() {
             if (sortBy === 'seat') {
                 sortText = `좌석번호 ${sortDirection === 'asc' ? '오름차순' : '내림차순'}`;
             } else if (sortBy === 'name') {
-                sortText = '이름 가나다순';
+                sortText = `이름 ${sortDirection === 'asc' ? '가나다순' : '역순'}`;
             } else if (sortBy === 'student_id') {
-                sortText = '학번 오름차순';
+                sortText = `학번 ${sortDirection === 'asc' ? '오름차순' : '내림차순'}`;
             }
             
             sortInfoDiv.innerHTML = `<i class="fas fa-sort-amount-down me-1"></i> ${sortText} 정렬 적용됨`;
