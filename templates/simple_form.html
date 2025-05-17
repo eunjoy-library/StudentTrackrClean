@@ -572,16 +572,63 @@ document.addEventListener('DOMContentLoaded', function() {
                     // 이름 마스킹 처리
                     const maskedName = maskName(studentName);
                     
-                    // 모달에 표시할 정보 설정
-                    studentInfoText.innerHTML = `
-                        <div style="font-size: 20px; font-weight: bold; color: #000; text-align: center;">
-                            <div style="margin-bottom: 15px;">이름: ${maskedName} 님</div>
-                            <div>공강실 좌석번호: ${seatNumber}</div>
-                        </div>
-                    `;
+                    // 학생의 출석 여부 확인
+                    fetch(`/check_attendance_status?student_id=${studentId}`, {
+                        cache: 'no-store'
+                    })
+                    .then(response => response.json())
+                    .then(statusData => {
+                        console.log('출석 상태:', statusData);
+                        
+                        // 이미 출석한 학생인지 여부 설정
+                        studentAlreadyAttended = statusData.already_attended || false;
+                        const attendanceDate = statusData.last_attendance_date || '';
+                        
+                        let modalContent = '';
+                        
+                        // 이미 출석한 학생이면
+                        if (studentAlreadyAttended) {
+                            modalContent = `
+                                <div style="color: #dc3545; font-weight: bold; margin-bottom: 15px; text-align: center; font-size: 18px;">
+                                    이번주에 이미 출석하셨습니다.<br>
+                                    4층 공강실로 올라가주세요~!
+                                    ${attendanceDate ? `<div style="font-size: 16px; margin-top: 5px;">${attendanceDate}</div>` : ''}
+                                </div>
+                                <div style="font-size: 20px; font-weight: bold; color: #000; text-align: center;">
+                                    <div style="margin-bottom: 15px;">이름: ${maskedName} 님</div>
+                                    <div>공강실 좌석번호: ${seatNumber}</div>
+                                </div>
+                            `;
+                            
+                            // 버튼 비활성화
+                            modalConfirmBtn.disabled = true;
+                            modalConfirmBtn.classList.add('btn-secondary');
+                            modalConfirmBtn.classList.remove('modal-confirm');
+                        } else {
+                            modalContent = `
+                                <div style="font-size: 20px; font-weight: bold; color: #000; text-align: center;">
+                                    <div style="margin-bottom: 15px;">이름: ${maskedName} 님</div>
+                                    <div>공강실 좌석번호: ${seatNumber}</div>
+                                </div>
+                            `;
+                            
+                            // 버튼 활성화
+                            modalConfirmBtn.disabled = false;
+                            modalConfirmBtn.classList.remove('btn-secondary');
+                            modalConfirmBtn.classList.add('modal-confirm');
+                        }
+                        
+                        // 모달에 표시할 정보 설정
+                        studentInfoText.innerHTML = modalContent;
                     
                     // 모달 표시
                     customModal.style.display = 'block';
+                    
+                    // 소리 효과 재생
+                    if (studentAlreadyAttended) {
+                        // 이미 출석했으면 경고음
+                        playErrorSound();
+                    }
                 })
                 .catch(error => {
                     console.error('Error:', error);
