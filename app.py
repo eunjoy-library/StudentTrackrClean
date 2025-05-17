@@ -372,12 +372,30 @@ def lookup_name():
     if not student_id:
         return jsonify({"error": "학번이 입력되지 않았습니다."}), 400
     
+    # 디버깅 정보 로깅
+    logging.info(f"학번 조회 요청: {student_id}")
+    
+    # 학생 정보 로드
     student_data = load_student_data()
+    logging.info(f"로드된 학생 데이터 수: {len(student_data)}")
+    
+    # 학생 정보 검색
     student = student_data.get(student_id)
+    
+    # 임시 디버깅: 지정된 학번이 없으면 첫 번째 학생 데이터 사용
+    if not student and student_data:
+        example_id = list(student_data.keys())[0]
+        logging.info(f"학번 {student_id}를 찾을 수 없어 예시 데이터 {example_id} 사용")
+        
+        # 디버깅 메시지
+        return jsonify({
+            "error": f"학번 {student_id}를 찾을 수 없습니다. (사용 가능한 예시 학번: {example_id})"
+        }), 404
     
     if not student:
         return jsonify({"error": "존재하지 않는 학번입니다."}), 404
     
+    # 학생 정보 반환
     return jsonify({
         "name": student[0],
         "seat": student[1]
