@@ -441,10 +441,20 @@ def by_period():
         if period not in sorted_groups:
             sorted_groups[period] = grouped_records[period]
     
-    return render_template('by_period.html', 
+    # 날짜 포맷팅 (YYYY-MM-DD -> M월 D일)
+    formatted_date = ''
+    try:
+        date_obj = datetime.strptime(selected_date, '%Y-%m-%d')
+        weekday_names = ['월', '화', '수', '목', '금', '토', '일']
+        weekday = weekday_names[date_obj.weekday()]
+        formatted_date = f"{date_obj.month}월 {date_obj.day}일 ({weekday})"
+    except:
+        formatted_date = selected_date
+    
+    return render_template('by_period_new.html', 
                           grouped_records=sorted_groups, 
                           today=today,
-                          selected_date=selected_date)
+                          selected_date=formatted_date)
 
 @app.route('/admin', methods=['GET', 'POST'])
 def admin_login():

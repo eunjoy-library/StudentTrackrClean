@@ -1,0 +1,371 @@
+{% extends "layout.html" %}
+
+{% block title %}교시별 출석 현황{% endblock %}
+
+{% block head %}
+<style>
+  body {
+    background-color: #212529;
+    color: white;
+  }
+  
+  .dark-card {
+    background-color: #343a40;
+    color: white;
+  }
+  
+  .dark-card .card-header,
+  .dark-card .card-footer {
+    background-color: #212529;
+  }
+  
+  .date-selector {
+    background-color: #212529;
+    border: 1px solid #495057;
+    color: white;
+  }
+  
+  .period-card {
+    border: none;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+    margin-bottom: 20px;
+    overflow: hidden;
+  }
+  
+  .period-card .card-header {
+    padding: 12px 20px;
+  }
+  
+  .period-card-1 .card-header { background-color: #007bff; color: white; }
+  .period-card-2 .card-header { background-color: #6610f2; color: white; }
+  .period-card-3 .card-header { background-color: #6f42c1; color: white; }
+  .period-card-4 .card-header { background-color: #e83e8c; color: white; }
+  .period-card-5 .card-header { background-color: #fd7e14; color: white; }
+  .period-card-6 .card-header { background-color: #28a745; color: white; }
+  .period-card-other .card-header { background-color: #6c757d; color: white; }
+  
+  .period-card .card-body {
+    background-color: #343a40;
+    color: white;
+  }
+  
+  .period-card .table {
+    color: #fff;
+  }
+  
+  .period-card .table-hover tbody tr:hover {
+    background-color: rgba(255, 255, 255, 0.1);
+  }
+  
+  .badge-period {
+    font-size: 1rem;
+    padding: 5px 10px;
+    display: inline-block;
+    margin-right: 10px;
+    border-radius: 5px;
+  }
+  
+  .btn-copy {
+    background-color: rgba(255, 255, 255, 0.1);
+    color: white;
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    transition: all 0.3s;
+  }
+  
+  .btn-copy:hover {
+    background-color: rgba(255, 255, 255, 0.2);
+    color: white;
+  }
+  
+  .btn-check-all {
+    background-color: rgba(255, 255, 255, 0.1);
+    color: white;
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    transition: all 0.3s;
+  }
+  
+  .btn-check-all:hover {
+    background-color: rgba(255, 255, 255, 0.2);
+    color: white;
+  }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid mt-4">
+  <div class="card dark-card">
+    <div class="card-header d-flex justify-content-between align-items-center bg-primary">
+      <h2 class="mb-0"><i class="fas fa-clock me-2"></i>교시별 출석 현황</h2>
+      <button id="copyAllBtn" class="btn btn-light btn-sm">
+        <i class="fas fa-copy me-1"></i>전체 복사
+      </button>
+    </div>
+    
+    <div class="card-body">
+      <!-- 날짜 선택기 -->
+      <div class="row mb-4">
+        <div class="col-md-6">
+          <form method="get" class="d-flex align-items-center">
+            <label for="date" class="me-2 mb-0 fw-bold"><i class="fas fa-calendar-alt me-1"></i>날짜:</label>
+            <input type="date" id="date" name="date" class="form-control date-selector me-2" 
+                   value="{{ request.args.get('date', today) }}">
+            <button type="submit" class="btn btn-primary">
+              <i class="fas fa-search me-1"></i>조회
+            </button>
+          </form>
+        </div>
+      </div>
+      
+      <!-- 선택된 날짜 표시 -->
+      <div class="alert" style="background-color: #212529; border: 1px solid #495057;">
+        <h4 class="mb-0">{{ selected_date }} 도서실 이용 현황</h4>
+      </div>
+      
+      <!-- 삭제 폼 시작 -->
+      <form id="deleteForm" action="{{ url_for('delete_records') }}" method="post" onsubmit="return confirm('선택한 항목을 삭제하시겠습니까?');">
+        
+        <!-- 교시별 학생 목록 표시 -->
+        {% for period, students in grouped_records.items() %}
+        <div class="card period-card {% if '1교시' in period %}period-card-1{% elif '2교시' in period %}period-card-2{% elif '3교시' in period %}period-card-3{% elif '4교시' in period %}period-card-4{% elif '5교시' in period %}period-card-5{% elif '6교시' in period %}period-card-6{% else %}period-card-other{% endif %}" 
+             data-period="{{ period }}">
+          <div class="card-header d-flex justify-content-between align-items-center">
+            <h4 class="mb-0 d-flex align-items-center">
+              <span class="badge-period">{{ period }}</span>
+              <span class="badge bg-dark">{{ students|length }}명</span>
+            </h4>
+            {% if students %}
+            <div>
+              <button type="button" class="btn btn-sm btn-copy copy-period" data-period="{{ period }}">
+                <i class="fas fa-copy me-1"></i>복사
+              </button>
+              <button type="button" class="btn btn-sm btn-check-all toggle-check" data-period="{{ period }}">
+                <i class="fas fa-check-square me-1"></i>전체 선택
+              </button>
+            </div>
+            {% endif %}
+          </div>
+          <div class="card-body">
+            {% if students %}
+            <div class="table-responsive">
+              <table class="table table-striped table-hover">
+                <thead>
+                  <tr>
+                    <th width="40" class="text-center">
+                      <input type="checkbox" class="period-select-all" data-period="{{ period }}">
+                    </th>
+                    <th>학번</th>
+                    <th>이름</th>
+                    <th>좌석</th>
+                    <th width="150">시간</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {% for student in students %}
+                  <tr>
+                    <td class="text-center">
+                      <input type="checkbox" name="record_ids[]" value="{{ student.id }}" class="record-checkbox" data-period="{{ period }}">
+                    </td>
+                    <td>{{ student.student_id }}</td>
+                    <td>{{ student.name }}</td>
+                    <td>{{ student.seat }}</td>
+                    <td>{{ student.date.split(' ')[1] if ' ' in student.date else student.date }}</td>
+                  </tr>
+                  {% endfor %}
+                </tbody>
+              </table>
+            </div>
+            {% else %}
+            <div class="alert alert-dark">
+              <i class="fas fa-info-circle me-1"></i>
+              이 교시에 출석한 학생이 없습니다.
+            </div>
+            {% endif %}
+          </div>
+        </div>
+        {% else %}
+        <div class="alert alert-dark">
+          <i class="fas fa-exclamation-circle me-1"></i>
+          해당 날짜에 출석 기록이 없습니다.
+        </div>
+        {% endfor %}
+        
+        <div class="d-flex justify-content-between mt-3 mb-3">
+          <div>
+            <button type="submit" class="btn btn-danger" id="deleteSelectedBtn" disabled>
+              <i class="fas fa-trash me-1"></i>선택 항목 삭제
+            </button>
+          </div>
+        </div>
+      </form>
+    </div>
+    <div class="card-footer">
+      <div class="row">
+        <div class="col-md-6">
+          <a href="{{ url_for('list_attendance') }}" class="btn btn-secondary">
+            <i class="fas fa-list me-1"></i>전체 출석 목록
+          </a>
+          <a href="{{ url_for('attendance') }}" class="btn btn-info ms-2">
+            <i class="fas fa-home me-1"></i>출석 페이지
+          </a>
+          <a href="{{ url_for('logout') }}" class="btn btn-danger ms-2">
+            <i class="fas fa-sign-out-alt me-1"></i>로그아웃
+          </a>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // 체크박스 관련 요소
+    const checkboxes = document.querySelectorAll('.record-checkbox');
+    const deleteBtn = document.getElementById('deleteSelectedBtn');
+    const periodSelectAllCheckboxes = document.querySelectorAll('.period-select-all');
+    
+    // 삭제 버튼 활성화 상태 업데이트
+    function updateDeleteButtonState() {
+        const anyChecked = [...checkboxes].some(cb => cb.checked);
+        if (deleteBtn) {
+            deleteBtn.disabled = !anyChecked;
+        }
+    }
+    
+    // 개별 체크박스 이벤트
+    checkboxes.forEach(checkbox => {
+        checkbox.addEventListener('change', function() {
+            updateDeleteButtonState();
+            
+            // 해당 교시의 전체 선택 체크박스 상태 업데이트
+            const period = this.dataset.period;
+            const periodCheckboxes = document.querySelectorAll(`.record-checkbox[data-period="${period}"]`);
+            const periodSelectAllCheckbox = document.querySelector(`.period-select-all[data-period="${period}"]`);
+            
+            if (periodSelectAllCheckbox) {
+                const allChecked = [...periodCheckboxes].every(cb => cb.checked);
+                periodSelectAllCheckbox.checked = allChecked;
+            }
+        });
+    });
+    
+    // 교시별 전체 선택 체크박스 이벤트
+    periodSelectAllCheckboxes.forEach(checkbox => {
+        checkbox.addEventListener('change', function() {
+            const period = this.dataset.period;
+            const periodCheckboxes = document.querySelectorAll(`.record-checkbox[data-period="${period}"]`);
+            
+            periodCheckboxes.forEach(cb => {
+                cb.checked = this.checked;
+            });
+            
+            updateDeleteButtonState();
+        });
+    });
+    
+    // 교시별 전체 선택 버튼 이벤트
+    const toggleCheckButtons = document.querySelectorAll('.toggle-check');
+    toggleCheckButtons.forEach(button => {
+        button.addEventListener('click', function() {
+            const period = this.dataset.period;
+            const periodCheckboxes = document.querySelectorAll(`.record-checkbox[data-period="${period}"]`);
+            const periodSelectAllCheckbox = document.querySelector(`.period-select-all[data-period="${period}"]`);
+            
+            // 현재 상태 확인 (하나라도 체크 안되어 있으면 전체 선택)
+            const someUnchecked = [...periodCheckboxes].some(cb => !cb.checked);
+            
+            // 모든 체크박스 상태 변경
+            periodCheckboxes.forEach(cb => {
+                cb.checked = someUnchecked;
+            });
+            
+            // 전체 선택 체크박스도 업데이트
+            if (periodSelectAllCheckbox) {
+                periodSelectAllCheckbox.checked = someUnchecked;
+            }
+            
+            updateDeleteButtonState();
+        });
+    });
+    
+    // 복사 기능
+    function copyToClipboard(text) {
+        const textarea = document.createElement('textarea');
+        textarea.value = text;
+        document.body.appendChild(textarea);
+        textarea.select();
+        document.execCommand('copy');
+        document.body.removeChild(textarea);
+        
+        // 사용자에게 알림
+        alert('클립보드에 복사되었습니다.');
+    }
+    
+    // 날짜 형식 설정
+    function formatDate(dateStr) {
+        const date = new Date(dateStr);
+        return `${date.getMonth() + 1}월 ${date.getDate()}일`;
+    }
+    
+    // 교시별 복사 버튼 이벤트
+    const copyPeriodButtons = document.querySelectorAll('.copy-period');
+    copyPeriodButtons.forEach(button => {
+        button.addEventListener('click', function() {
+            const period = this.dataset.period;
+            const dateStr = document.getElementById('date').value;
+            const formattedDate = formatDate(dateStr);
+            
+            // 텍스트 생성
+            let text = `${formattedDate} ${period} 도서실에 있는 학생 명단입니다~!\n\n`;
+            
+            // 해당 교시 학생 목록 추가
+            const periodRows = document.querySelectorAll(`.record-checkbox[data-period="${period}"]`);
+            periodRows.forEach(checkbox => {
+                const row = checkbox.closest('tr');
+                const name = row.cells[2].textContent.trim();
+                const seat = row.cells[3].textContent.trim();
+                text += `${name} (${seat})\n`;
+            });
+            
+            copyToClipboard(text);
+        });
+    });
+    
+    // 전체 복사 버튼 이벤트
+    const copyAllBtn = document.getElementById('copyAllBtn');
+    if (copyAllBtn) {
+        copyAllBtn.addEventListener('click', function() {
+            const dateStr = document.getElementById('date').value;
+            const formattedDate = formatDate(dateStr);
+            
+            let text = `${formattedDate} 도서실 출석 명단입니다~!\n\n`;
+            
+            // 각 교시별로 학생 목록 추가
+            document.querySelectorAll('[data-period]').forEach(periodDiv => {
+                if (periodDiv.tagName === 'DIV' && periodDiv.classList.contains('period-card')) {
+                    const period = periodDiv.dataset.period;
+                    const studentCount = periodDiv.querySelectorAll('.record-checkbox').length;
+                    
+                    if (studentCount > 0) {
+                        text += `====== ${period} (${studentCount}명) ======\n`;
+                        
+                        const periodRows = document.querySelectorAll(`.record-checkbox[data-period="${period}"]`);
+                        periodRows.forEach(checkbox => {
+                            const row = checkbox.closest('tr');
+                            const name = row.cells[2].textContent.trim();
+                            const seat = row.cells[3].textContent.trim();
+                            text += `${name} (${seat})\n`;
+                        });
+                        
+                        text += '\n';
+                    }
+                }
+            });
+            
+            copyToClipboard(text);
+        });
+    }
+});
+</script>
+{% endblock %}
