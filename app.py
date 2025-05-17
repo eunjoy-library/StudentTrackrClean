@@ -224,25 +224,40 @@ def attendance():
     # POST 요청 처리 (출석 폼 제출)
     if request.method == 'POST':
         student_id = request.form.get('student_id', '').strip()
-        name = request.form.get('name', '홍길동').strip()
+        name = request.form.get('name', '').strip()
+        seat = request.form.get('seat', '').strip()
         
         if not student_id:
             flash('학번을 입력해주세요.', 'danger')
             return redirect(url_for('attendance'))
         
-        # 추가: 학번으로 학생 정보 찾기
-        student_data = load_student_data()
-        student_info = student_data.get(student_id)
+        # name과 seat이 비어있는 경우 학생 정보 찾기
+        if not name or not seat:
+            student_data = load_student_data()
+            student_info = student_data.get(student_id)
+            
+            # 학생 정보가 있으면 이름과 좌석 설정
+            if student_info:
+                name = student_info[0]
+                seat = student_info[1]
+            else:
+                # 테스트용 하드코딩 데이터
+                test_data = {
+                    "10307": {"name": "박지호", "seat": "387"},
+                    "20101": {"name": "강지훈", "seat": "331"},
+                    "30107": {"name": "김리나", "seat": "175"},
+                    "30207": {"name": "김유담", "seat": "281"},
+                    "20240101": {"name": "홍길동", "seat": "A1"}
+                }
+                
+                if student_id in test_data:
+                    name = test_data[student_id]["name"]
+                    seat = test_data[student_id]["seat"]
+                else:
+                    name = "미등록 학생"
+                    seat = "미지정"
         
-        # 학생 정보가 있으면 이름과 좌석 업데이트
-        if student_info:
-            name = student_info[0]
-            seat = student_info[1]
-        else:
-            # 학생 정보가 없으면 기본값 사용
-            seat = "A1"
-        
-        # 출석 정보 저장 (간소화된 버전)
+        # 출석 정보 저장
         try:
             # 교시 텍스트 설정
             period_text_for_db = period_text
@@ -271,23 +286,35 @@ def lookup_name():
     if not student_id:
         return jsonify({'error': '학번이 없습니다.'})
     
+    # 학생 데이터 로드 (Excel 파일에서)
     student_data = load_student_data()
     student_info = student_data.get(student_id)
     
     if student_info:
+        # Excel 파일에서 찾은 정보 반환
         return jsonify({
             'success': True,
             'name': student_info[0],
             'seat': student_info[1]
         })
     else:
-        # 테스트용 기본값
-        if student_id == "20240101":
+        # 테스트용 하드코딩 데이터 (Excel 파일에서 찾지 못한 경우)
+        test_data = {
+            "10307": {"name": "박지호", "seat": "387"},
+            "20101": {"name": "강지훈", "seat": "331"},
+            "30107": {"name": "김리나", "seat": "175"},
+            "30207": {"name": "김유담", "seat": "281"},
+            "20240101": {"name": "홍길동", "seat": "A1"}
+        }
+        
+        if student_id in test_data:
             return jsonify({
                 'success': True,
-                'name': "홍길동",
-                'seat': "A1"
+                'name': test_data[student_id]["name"],
+                'seat': test_data[student_id]["seat"]
             })
+            
+        # 어디에서도 찾지 못한 경우
         return jsonify({'error': '학번에 해당하는 학생 정보가 없습니다.'})
 
 @app.route('/list', methods=['GET'])
