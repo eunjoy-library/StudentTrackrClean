@@ -543,6 +543,7 @@ document.addEventListener('DOMContentLoaded', function() {
                             // 버튼 비활성화
                             modalConfirmBtn.disabled = true;
                             modalConfirmBtn.className = 'btn modal-button btn-secondary';
+                            console.log('이미 출석한 학생:', studentId, studentAlreadyAttended);
                         } else {
                             // 처음 출석하는 학생
                             content = '<div style="font-size: 20px; font-weight: bold; color: #000; text-align: center;">' +
@@ -553,6 +554,7 @@ document.addEventListener('DOMContentLoaded', function() {
                             // 버튼 활성화
                             modalConfirmBtn.disabled = false;
                             modalConfirmBtn.className = 'btn modal-button modal-confirm';
+                            console.log('첫 출석 학생:', studentId, studentAlreadyAttended);
                         }
                         
                         // 모달에 내용 설정 및 표시
