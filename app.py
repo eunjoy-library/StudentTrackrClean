@@ -424,10 +424,10 @@ def by_period():
             original_date = datetime(1900, 1, 1)  # 날짜 없음은 고정 날짜로
             original_date_str = date
         
-        # 원본 기록에 날짜 정보 추가
+        # 원본 기록에 날짜 정보 추가 (새로운 필드는 한글 대신 영어로)
         record_copy = record.copy()
-        record_copy['날짜_md'] = date_md
-        record_copy['원본_날짜'] = original_date  # 정렬용 원본 날짜 저장
+        record_copy['date_md'] = date_md
+        record_copy['original_date'] = original_date  # 정렬용 원본 날짜 저장
         
         # 날짜와 교시를 조합하여 키 생성 (예: "5월7일 6교시")
         period_num = int(period[0]) if period and period[0].isdigit() else 999
@@ -451,7 +451,7 @@ def by_period():
         key=lambda p: (
             # 날짜 추출 (기본 형식: "n월n일 m교시")
             # 각 교시에 속한 가장 최근 날짜를 기준으로 정렬 (내림차순)
-            -1 * max([r['원본_날짜'].timestamp() for r in period_groups[p]['학생_목록']]) if period_groups[p]['학생_목록'] else 0,
+            -1 * max([r['original_date'].timestamp() for r in period_groups[p]['학생_목록']]) if period_groups[p]['학생_목록'] else 0,
             # 같은 날짜면 교시 번호 내림차순 (큰 교시 먼저)
             -period_groups[p]['교시_번호']
         )
@@ -461,7 +461,7 @@ def by_period():
     for period in period_groups:
         period_groups[period]['학생_목록'] = sorted(
             period_groups[period]['학생_목록'], 
-            key=lambda r: (-r['원본_날짜'].timestamp(), r.get('name', ''))
+            key=lambda r: (-r['original_date'].timestamp(), r.get('name', ''))
         )
     
     # 현재 날짜 포맷팅 (템플릿에서 사용)
