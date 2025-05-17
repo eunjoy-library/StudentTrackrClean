@@ -513,28 +513,48 @@ def delete_records():
         records = request.json.get('records', [])
         deleted_count = 0
         
+        # DB가 초기화되지 않은 경우 처리
+        if db is None:
+            return jsonify({"success": False, "message": "Firebase DB가 초기화되지 않았습니다."}), 500
+        
         # 각 기록 삭제
         for record in records:
             student_id = record.get('student_id')
             date = record.get('date')
             period = record.get('period')
             
-            # Firebase에서 삭제 처리
+            # 삭제를 위한 필수 조건 확인
+            if not student_id:
+                continue  # 학번이 없으면 건너뜀
+                
             try:
-                # 해당 조건과 일치하는 문서 찾기
-                query = db.collection("attendances")
+                # 학번으로만 검색 (가장 안전한 방법)
+                results = db.collection("attendances").where("student_id", "==", student_id).get()
                 
-                if student_id:
-                    query = query.where("student_id", "==", student_id)
-                if date:
-                    query = query.where("date_only", "==", date)
-                if period:
-                    query = query.where("period", "==", period)
-                
-                results = query.get()
+                # 추가 필터링 (클라이언트 측에서 수행)
                 for doc in results:
-                    doc.reference.delete()
-                    deleted_count += 1
+                    doc_data = doc.to_dict()
+                    
+                    # date와 period가 모두 일치하는 경우에만 삭제 (둘 다 있는 경우)
+                    if date and period:
+                        if doc_data.get('date_only') == date and doc_data.get('period') == period:
+                            doc.reference.delete()
+                            deleted_count += 1
+                    # date만 있는 경우
+                    elif date and not period:
+                        if doc_data.get('date_only') == date:
+                            doc.reference.delete()
+                            deleted_count += 1
+                    # period만 있는 경우
+                    elif period and not date:
+                        if doc_data.get('period') == period:
+                            doc.reference.delete() 
+                            deleted_count += 1
+                    # 둘 다 없는 경우 (학번만으로 삭제)
+                    else:
+                        doc.reference.delete()
+                        deleted_count += 1
+                        
             except Exception as e:
                 logging.error(f"기록 삭제 중 오류: {e}")
         
