@@ -1,0 +1,103 @@
+# app.py (혼합형 구조 - 핵심 부분만 요약)
+
+import os
+import json
+import logging
+import pandas as pd
+from flask import Flask, request, render_template, redirect, url_for, flash, session
+from datetime import datetime
+from dotenv import load_dotenv
+
+# Firebase
+import firebase_admin
+from firebase_admin import credentials, firestore
+
+# ====== 환경변수 로드 ======
+load_dotenv()
+
+FIREBASE_CREDENTIALS_JSON = os.environ.get("FIREBASE_CREDENTIALS_JSON")
+SESSION_SECRET = os.environ.get("SESSION_SECRET", "default")
+
+# ====== Firebase 초기화 ======
+db = None
+try:
+    if not FIREBASE_CREDENTIALS_JSON:
+        raise ValueError("FIREBASE_CREDENTIALS_JSON 환경변수가 없습니다.")
+
+    cred_dict = json.loads(FIREBASE_CREDENTIALS_JSON)
+    cred = credentials.Certificate(cred_dict)
+
+    if not firebase_admin._apps:
+        firebase_admin.initialize_app(cred)
+    db = firestore.client()
+    logging.info("Firebase 초기화 성공")
+except Exception as e:
+    logging.error(f"Firebase 초기화 실패: {e}")
+
+# ====== Flask 앱 설정 ======
+app = Flask(__name__)
+app.secret_key = SESSION_SECRET
+
+# ====== 학생 정보 캐싱 ======
+_student_data_cache = None
+_last_student_data_load_time = None
+
+def load_student_data():
+    global _student_data_cache, _last_student_data_load_time
+    now = datetime.now()
+    if _student_data_cache and _last_student_data_load_time and (now - _last_student_data_load_time).seconds < 1800:
+        return _student_data_cache
+
+    try:
+        df = pd.read_excel('students.xlsx', dtype={'학번': str})
+        student_data = {
+            str(row['학번']).strip(): (row['이름'], row.get('공강좌석번호', ''))
+            for _, row in df.iterrows() if pd.notna(row['학번']) and pd.notna(row['이름'])
+        }
+        _student_data_cache = student_data
+        _last_student_data_load_time = now
+        return student_data
+    except Exception as e:
+        logging.error(f"학생 정보 로드 실패: {e}")
+        return {}
+
+# ====== 출석 저장 ======
+def save_attendance(student_id, name, seat):
+    try:
+        now = datetime.now()
+        db.collection("attendances").add({
+            "student_id": student_id,
+            "name": name,
+            "seat": seat,
+            "date": now
+        })
+        return True
+    except Exception as e:
+        logging.error(f"출석 저장 실패: {e}")
+        return False
+
+# ====== 라우트 ======
+@app.route('/', methods=['GET', 'POST'])
+def index():
+    if request.method == 'POST':
+        student_id = request.form.get('student_id', '').strip()
+        name = request.form.get('name', '').strip()
+        student_data = load_student_data()
+
+        student = student_data.get(student_id)
+        if not student:
+            flash("학번이 존재하지 않습니다.", "danger")
+        elif student[0].replace(' ', '') != name.replace(' ', ''):
+            flash("이름이 학번과 일치하지 않습니다.", "danger")
+        else:
+            seat = student[1]
+            if save_attendance(student_id, name, seat):
+                flash("출석이 완료되었습니다.", "success")
+            else:
+                flash("출석 저장에 실패했습니다.", "danger")
+        return redirect(url_for('index'))
+
+    return render_template('attendance.html')
+
+if __name__ == '__main__':
+    app.run(debug=True)

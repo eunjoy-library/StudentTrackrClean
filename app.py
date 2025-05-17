@@ -37,37 +37,26 @@ else:
     logging.warning(f"Project ID: {'설정됨' if firebase_project_id else '설정되지 않음'}")
     logging.warning(f"App ID: {'설정됨' if firebase_app_id else '설정되지 않음'}")
 
-# ================== [Firebase 초기화] ==================
+# ====== Firebase 초기화 ======
 db = None
-
 try:
-    # ✅ 환경변수에서 인증 정보 가져와 cred 생성
-    firebase_json = os.environ.get("FIREBASE_CREDENTIALS_JSON")
-    if not firebase_json:
-        raise ValueError("환경변수 FIREBASE_CREDENTIALS_JSON이 설정되지 않았습니다.")
+    FIREBASE_CREDENTIALS_JSON = os.environ.get("FIREBASE_CREDENTIALS_JSON")
+    if not FIREBASE_CREDENTIALS_JSON:
+        raise ValueError("FIREBASE_CREDENTIALS_JSON 환경변수가 없습니다.")
 
-    cred = credentials.Certificate(json.loads(firebase_json))  # ← 요 줄이 try 블록 안에 있어야 해요!
+    cred_dict = json.loads(FIREBASE_CREDENTIALS_JSON)
+    cred = credentials.Certificate(cred_dict)
 
-    # ✅ Firebase 앱 초기화
     if not firebase_admin._apps:
         firebase_admin.initialize_app(cred)
-        logging.info("Firebase 앱 초기화 성공")
-    else:
-        logging.info("Firebase 앱 이미 초기화됨")
-
-    # ✅ Firestore 객체 가져오기
     db = firestore.client()
-    logging.info("✅ Firebase Firestore 클라이언트 생성 성공")
-
-    # DB 연결 테스트
-    try:
-        test_ref = db.collection('test').document('connection')
-        test_ref.set({'timestamp': datetime.now()})
-        logging.info("Firebase 연결 테스트 성공")
-    except Exception as test_error:
-        logging.error(f"Firebase 연결 테스트 실패: {test_error}")
+    logging.info("Firebase 초기화 성공")
+    
+    # 테스트 연결
+    test_ref = db.collection('test').document('connection')
+    test_ref.set({'timestamp': datetime.now()})
 except Exception as e:
-    logging.error(f"❌ Firebase 초기화 오류: {e}")
+    logging.error(f"Firebase 초기화 실패: {e}")
 
 # models.py 초기화 - db 인스턴스 전달
 try:
