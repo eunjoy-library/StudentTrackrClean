@@ -200,11 +200,11 @@ def load_attendance():
 
 def check_weekly_attendance_limit(student_id):
     """
-    학생이 이번 주(월~금)에 2회 이상 출석했는지 확인
+    학생이 이번 주(일~토)에 1회 이상 출석했는지 확인
     
     Returns:
         (exceeded, count, recent_dates): 
-        - exceeded: 주 2회 초과 여부 (True/False)
+        - exceeded: 주 1회 초과 여부 (True/False)
         - count: 이번 주 출석 횟수
         - recent_dates: 최근 출석 날짜 목록
     """
@@ -220,15 +220,18 @@ def check_weekly_attendance_limit(student_id):
         monday = now - timedelta(days=days_since_monday)
         monday = monday.replace(hour=0, minute=0, second=0, microsecond=0)
         
-        # 이번 주 금요일 끝 시간
-        friday = monday + timedelta(days=4)
-        friday = friday.replace(hour=23, minute=59, second=59, microsecond=999999)
+        # 이번 주 토요일 끝 시간 (일요일부터 토요일까지)
+        sunday = monday - timedelta(days=1)  # 일요일은 월요일 하루 전
+        sunday = sunday.replace(hour=0, minute=0, second=0, microsecond=0)
+        
+        saturday = monday + timedelta(days=5)  # 토요일은 월요일부터 5일 후
+        saturday = saturday.replace(hour=23, minute=59, second=59, microsecond=999999)
         
         # Firebase에서 학생의 이번 주 출석 기록 조회
-        monday_str = monday.strftime('%Y-%m-%d')
-        friday_str = friday.strftime('%Y-%m-%d')
+        sunday_str = sunday.strftime('%Y-%m-%d')
+        saturday_str = saturday.strftime('%Y-%m-%d')
         
-        logging.debug(f"학생 {student_id}의 이번 주({monday_str} ~ {friday_str}) 출석 기록 확인 중")
+        logging.debug(f"학생 {student_id}의 이번 주({sunday_str} ~ {saturday_str}) 출석 기록 확인 중")
         
         try:
             # 학생 ID로 출석 기록 검색
@@ -242,7 +245,7 @@ def check_weekly_attendance_limit(student_id):
                 data = record.to_dict()
                 date_only = data.get('date_only', '')
                 
-                if monday_str <= date_only <= friday_str:
+                if sunday_str <= date_only <= saturday_str:
                     count += 1
                     recent_dates.append(date_only)
                     logging.debug(f"학생 {student_id}의 출석일: {date_only}")
@@ -250,9 +253,9 @@ def check_weekly_attendance_limit(student_id):
             # 중복 날짜 제거 (같은 날 여러 번 출석한 경우)
             unique_dates = sorted(list(set(recent_dates)))
             
-            # 주간 출석 제한 (1주일 2회로 제한)
-            # 2회까지 허용하고, 이미 2회 출석한 경우 3번째 출석을 제한
-            exceeded = len(unique_dates) >= 2  # 이미 2회 출석했으면 제한
+            # 주간 출석 제한 (일주일에 1번만 허용)
+            # 1회까지 허용하고, 이미 1회 출석한 경우 2번째 출석을 제한
+            exceeded = len(unique_dates) >= 1  # 이미 1회 출석했으면 제한
             
             logging.debug(f"학생 {student_id}의 이번 주 출석 횟수: {count}, 초과 여부: {exceeded}")
             return exceeded, count, recent_dates
