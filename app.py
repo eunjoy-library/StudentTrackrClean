@@ -250,12 +250,8 @@ def check_weekly_attendance_limit(student_id):
         logging.debug(f"학생 {student_id}의 이번 주({sunday_str} ~ {saturday_str}) 출석 기록 확인 중")
         
         try:
-            # 현재 주에 해당하는 날짜 범위로 쿼리 최적화
-            records = db.collection('attendances')\
-                       .where('student_id', '==', student_id)\
-                       .where('date_only', '>=', sunday_str)\
-                       .where('date_only', '<=', saturday_str)\
-                       .get()
+            # 일반 쿼리 실행 (인덱스 없이도 작동)
+            records = db.collection('attendances').where('student_id', '==', student_id).get()
             
             # 이번 주 출석 횟수 카운트
             count = 0
@@ -264,9 +260,11 @@ def check_weekly_attendance_limit(student_id):
             for record in records:
                 data = record.to_dict()
                 date_only = data.get('date_only', '')
-                count += 1
-                recent_dates.append(date_only)
-                logging.debug(f"학생 {student_id}의 출석일: {date_only}")
+                
+                if sunday_str <= date_only <= saturday_str:
+                    count += 1
+                    recent_dates.append(date_only)
+                    logging.debug(f"학생 {student_id}의 출석일: {date_only}")
             
             # 중복 날짜 제거 (같은 날 여러 번 출석한 경우)
             unique_dates = sorted(list(set(recent_dates)))
