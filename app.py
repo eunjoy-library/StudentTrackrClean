@@ -502,5 +502,51 @@ def logout():
     flash('로그아웃 되었습니다.', 'info')
     return redirect('/')
 
+@app.route('/delete_records', methods=['POST'])
+def delete_records():
+    """Delete selected attendance records (admin only)"""
+    if not session.get('admin'):
+        return jsonify({"success": False, "message": "관리자 로그인이 필요합니다."}), 403
+    
+    try:
+        # 요청에서 삭제할 기록 목록 가져오기
+        records = request.json.get('records', [])
+        deleted_count = 0
+        
+        # 각 기록 삭제
+        for record in records:
+            student_id = record.get('student_id')
+            date = record.get('date')
+            period = record.get('period')
+            
+            # Firebase에서 삭제 처리
+            try:
+                # 해당 조건과 일치하는 문서 찾기
+                query = db.collection("attendances")
+                
+                if student_id:
+                    query = query.where("student_id", "==", student_id)
+                if date:
+                    query = query.where("date_only", "==", date)
+                if period:
+                    query = query.where("period", "==", period)
+                
+                results = query.get()
+                for doc in results:
+                    doc.reference.delete()
+                    deleted_count += 1
+            except Exception as e:
+                logging.error(f"기록 삭제 중 오류: {e}")
+        
+        return jsonify({
+            "success": True,
+            "deleted_count": deleted_count,
+            "message": f"{deleted_count}개의 기록이 삭제되었습니다."
+        })
+    
+    except Exception as e:
+        logging.error(f"기록 삭제 처리 중 오류: {e}")
+        return jsonify({"success": False, "message": str(e)}), 500
+
 if __name__ == '__main__':
     app.run(debug=True)
