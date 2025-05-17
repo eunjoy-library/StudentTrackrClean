@@ -464,10 +464,15 @@ def by_period():
             key=lambda r: (-r['원본_날짜'].timestamp(), r.get('name', ''))
         )
     
+    # 현재 날짜 포맷팅 (템플릿에서 사용)
+    now = datetime.now(KST)
+    current_date = now.strftime('%Y-%m-%d')
+    
     return render_template(
         'by_period.html', 
         period_groups=period_groups, 
-        sorted_periods=sorted_periods
+        sorted_periods=sorted_periods,
+        current_date=current_date
     )
 
 @app.route('/stats')
