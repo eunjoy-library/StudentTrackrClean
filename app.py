@@ -204,7 +204,7 @@ def check_weekly_attendance_limit(student_id):
     
     Returns:
         (exceeded, count, recent_dates): 
-        - exceeded: 주 1회 초과 여부 (True/False)
+        - exceeded: 주 1회 초과 여부 (True/False) - 1회 이미 있으면 True
         - count: 이번 주 출석 횟수
         - recent_dates: 최근 출석 날짜 목록
     """
