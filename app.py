@@ -173,6 +173,107 @@ def index():
     """Redirect to attendance page"""
     return redirect(url_for('attendance'))
 
+# 출석 관련 함수들
+def check_attendance(student_id, admin_override=False):
+    """
+    Check if the student has already attended this week or has an active warning
+    Returns tuple:
+      (already_attended, last_attendance_date, is_warned, warning_info)
+      
+    이미 출석했거나 경고를 받은 학생은 출석을 제한함
+    
+    admin_override: 관리자 수동 추가 시 체크를 건너뛰는 옵션
+    """
+    # 학생 경고 여부 확인 - 임시 비활성화
+    is_warned = False
+    warning_info = None
+    
+    # 이번 주 출석 여부 확인
+    try:
+        # 오늘 날짜로 해당 주의 월요일 계산 (한국 시간 기준)
+        now = datetime.now(KST)
+        today = now.date()
+        days_since_monday = today.weekday()  # 0=월요일, 1=화요일, ..., 6=일요일
+        monday = today - timedelta(days=days_since_monday)
+        
+        # 방학 중에는 한 달에 한 번 출석 가능하도록 수정 가능
+        # month_start = today.replace(day=1)
+        
+        # 모든 출석 기록 로드
+        attendances = load_attendance()
+        
+        # 이번 주에 이미 출석했는지 확인 (월~일 기준 주간 체크)
+        this_week_attendance = None
+        
+        for attendance in attendances:
+            # 학번 체크
+            if attendance.get('student_id') != student_id:
+                continue
+                
+            # 날짜 파싱
+            attendance_date = attendance.get('date')
+            if isinstance(attendance_date, str):
+                try:
+                    if 'T' in attendance_date:
+                        attendance_date = datetime.fromisoformat(attendance_date).date()
+                    else:
+                        attendance_date = datetime.strptime(attendance_date, '%Y-%m-%d').date()
+                except ValueError:
+                    continue
+            elif hasattr(attendance_date, 'timestamp'):
+                # Firebase Timestamp 객체인 경우
+                attendance_date = datetime.fromtimestamp(attendance_date.timestamp()).date()
+            else:
+                # 알 수 없는 타입이면 스킵
+                continue
+                
+            # 이번 주 출석인지 체크 (월요일 이후 출석)
+            if attendance_date >= monday:
+                this_week_attendance = attendance
+                break
+                
+        if this_week_attendance and not admin_override:
+            return (True, this_week_attendance.get('date'), is_warned, warning_info)
+            
+        return (False, None, is_warned, warning_info)
+    except Exception as e:
+        logging.error(f"출석 체크 중 오류 발생: {e}")
+        # 오류 발생시 출석 허용 (오류 때문에 학생이 피해받지 않도록)
+        return (False, None, False, None)
+
+def get_current_period_attendance_count():
+    """
+    현재 교시의 출석 인원 수를 반환하는 함수
+    - 현재 교시에 출석한 사람들의 수를 계산
+    - 최대 인원 초과 여부 확인에 사용됨
+    """
+    try:
+        now = datetime.now(KST)
+        today = now.date().strftime('%Y-%m-%d')
+        current_period = get_current_period()
+        
+        # 시간대 외인 경우 0 반환
+        if current_period < 1:  # -1, 0인 경우
+            return 0
+            
+        period_text = f"{current_period}교시"
+        count = 0
+        
+        # 오늘 날짜의 모든 출석 중에서 현재 교시 출석만 카운트
+        all_attendances = load_attendance()
+        for attendance in all_attendances:
+            # 출석일 문자열 추출 (날짜만)
+            date_str = attendance.get('date_only', '')
+            
+            # 오늘 날짜와 현재 교시 일치 여부 확인
+            if date_str == today and attendance.get('period') == period_text:
+                count += 1
+                
+        return count
+    except Exception as e:
+        logging.error(f"현재 교시 출석 인원 계산 중 오류: {e}")
+        return 0  # 오류 발생 시 0 반환
+
 @app.route('/attendance', methods=['GET', 'POST'])
 def attendance():
     """Main attendance page and form submission handler"""
@@ -207,8 +308,15 @@ def attendance():
         # 출석 가능 여부 확인 (이미 출석했거나 경고를 받은 경우)
         already_attended, last_attendance_date, is_warned, warning_info = check_attendance(student_id)
         
+        # 현재 교시의 출석 인원 수 확인 (최대 35명)
+        MAX_CAPACITY = 35
+        current_count = get_current_period_attendance_count()
+        
         if current_period == 0:
             flash("⚠️ 지금은 도서실 이용 시간이 아닙니다.", "danger")
+            return redirect(url_for('attendance'))
+        elif current_count >= MAX_CAPACITY:
+            flash(f"⚠️ 도서실 수용인원이 초과되었습니다({MAX_CAPACITY}명). 4층 공강실로 올라가주세요!", "danger")
             return redirect(url_for('attendance'))
         elif already_attended:
             flash("⚠️ 이번 주에 이미 출석하셨습니다. 4층 공강실로 올라가주세요!", "warning")
@@ -226,13 +334,18 @@ def attendance():
             return redirect(url_for('attendance'))
     
     # 현재 교시의 출석 인원 수 (최대 인원 제한을 위해)
+    current_count = get_current_period_attendance_count()
+    MAX_CAPACITY = 35
+    
     return render_template(
         'attendance.html',
         current_date=now.strftime("%Y년 %m월 %d일"),
         current_time=now.strftime("%H:%M"),
         weekday_korean=weekday_korean,
         current_period=current_period,
-        period_text=period_text
+        period_text=period_text,
+        current_count=current_count,
+        max_capacity=MAX_CAPACITY
     )
 
 @app.route('/lookup_name')
