@@ -443,7 +443,16 @@ def by_period():
                 '교시': period
             }
         
-        period_groups[new_period_key]['학생_목록'].append(record_copy)
+        # 템플릿에서 .name, .student_id 등으로 접근할 수 있도록 필드명 수정
+        student_record = {
+            'name': record_copy.get('name', ''),
+            'student_id': record_copy.get('student_id', ''),
+            'seat': record_copy.get('seat', ''),
+            'date_only': record_copy.get('date_only', ''),
+            'period': record_copy.get('period', ''),
+            'original_date': record_copy.get('original_date', datetime(1900, 1, 1))
+        }
+        period_groups[new_period_key]['학생_목록'].append(student_record)
     
     # 최근 날짜가 먼저 나오도록 정렬하고, 같은 날짜 내에서는 교시 번호가 큰 순서대로 정렬
     sorted_periods = sorted(
