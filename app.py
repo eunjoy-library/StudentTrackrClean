@@ -250,8 +250,9 @@ def check_weekly_attendance_limit(student_id):
             # 중복 날짜 제거 (같은 날 여러 번 출석한 경우)
             unique_dates = sorted(list(set(recent_dates)))
             
-            # 주간 출석 제한 (1주일 1회로 제한)
-            exceeded = len(unique_dates) >= 1  # 1회 이상 출석 시 제한
+            # 주간 출석 제한 (1주일 2회로 제한)
+            # 2회까지 허용하고, 이미 2회 출석한 경우 3번째 출석을 제한
+            exceeded = len(unique_dates) >= 2  # 이미 2회 출석했으면 제한
             
             logging.debug(f"학생 {student_id}의 이번 주 출석 횟수: {count}, 초과 여부: {exceeded}")
             return exceeded, count, recent_dates
