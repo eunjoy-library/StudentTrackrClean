@@ -309,9 +309,9 @@ def attendance():
         # 주 2회 출석 제한 확인
         exceeded, count, recent_dates = check_weekly_attendance_limit(student_id)
         if exceeded:
-            # 주 2회 초과 출석 제한
+            # 주 1회 초과 출석 제한
             formatted_dates = ', '.join(recent_dates)
-            flash(f'주간 출석 제한 (2회/주)을 초과했습니다. 최근 출석일: {formatted_dates}', 'danger')
+            flash(f'주간 출석 제한 (1회/주)을 초과했습니다. 최근 출석일: {formatted_dates}', 'danger')
             return redirect(url_for('attendance'))
         
         # name과 seat이 비어있는 경우 학생 정보 찾기
