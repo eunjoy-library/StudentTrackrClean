@@ -19,13 +19,35 @@
                         <button type="submit" class="btn btn-primary ms-2">조회</button>
                     </form>
                 </div>
+                <div class="col-md-6 text-end">
+                    <button id="copyAllBtn" class="btn btn-info">
+                        <i class="fas fa-copy me-1"></i>전체 복사
+                    </button>
+                </div>
             </div>
+            
+            <!-- 삭제 폼 시작 -->
+            <form id="deleteForm" action="{{ url_for('delete_records') }}" method="post" onsubmit="return confirm('선택한 항목을 삭제하시겠습니까?');">
             
             <!-- 교시별 학생 목록 표시 -->
             {% for period, students in grouped_records.items() %}
-            <div class="card mb-4">
-                <div class="card-header bg-info text-white">
-                    <h4>{{ period }} ({{ students|length }}명)</h4>
+            <div class="card mb-4" data-period="{{ period }}">
+                <div class="card-header text-white" style="background-color: {% if period == '시간 외' %}#6c757d{% elif '교시' in period %}#17a2b8{% else %}#28a745{% endif %};">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <h4 class="mb-0">
+                            {{ period }} ({{ students|length }}명)
+                        </h4>
+                        {% if students %}
+                        <div>
+                            <button type="button" class="btn btn-light btn-sm copy-period" data-period="{{ period }}">
+                                <i class="fas fa-copy"></i> 복사
+                            </button>
+                            <button type="button" class="btn btn-light btn-sm toggle-check" data-period="{{ period }}">
+                                <i class="fas fa-check-square"></i> 전체 선택
+                            </button>
+                        </div>
+                        {% endif %}
+                    </div>
                 </div>
                 <div class="card-body">
                     {% if students %}
@@ -33,6 +55,7 @@
                         <table class="table table-striped table-hover">
                             <thead>
                                 <tr>
+                                    <th width="30"><input type="checkbox" class="period-select-all" data-period="{{ period }}"></th>
                                     <th>학번</th>
                                     <th>이름</th>
                                     <th>좌석</th>
@@ -42,6 +65,9 @@
                             <tbody>
                                 {% for student in students %}
                                 <tr>
+                                    <td>
+                                        <input type="checkbox" name="record_ids[]" value="{{ student.id }}" class="record-checkbox" data-period="{{ period }}">
+                                    </td>
                                     <td>{{ student.student_id }}</td>
                                     <td>{{ student.name }}</td>
                                     <td>{{ student.seat }}</td>
@@ -63,6 +89,15 @@
                 해당 날짜에 출석 기록이 없습니다.
             </div>
             {% endfor %}
+            
+            <div class="d-flex justify-content-between mt-3 mb-3">
+                <div>
+                    <button type="submit" class="btn btn-danger" id="deleteSelectedBtn" disabled>
+                        <i class="fas fa-trash me-1"></i>선택 항목 삭제
+                    </button>
+                </div>
+            </div>
+            </form>
         </div>
         <div class="card-footer">
             <div class="row">
@@ -74,4 +109,160 @@
         </div>
     </div>
 </div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // 체크박스 기능
+        const checkboxes = document.querySelectorAll('.record-checkbox');
+        const deleteBtn = document.getElementById('deleteSelectedBtn');
+        const periodSelectAllCheckboxes = document.querySelectorAll('.period-select-all');
+        
+        // 삭제 버튼 활성화 상태 업데이트
+        function updateDeleteButtonState() {
+            const anyChecked = [...checkboxes].some(cb => cb.checked);
+            deleteBtn.disabled = !anyChecked;
+        }
+        
+        // 개별 체크박스 이벤트
+        checkboxes.forEach(checkbox => {
+            checkbox.addEventListener('change', function() {
+                updateDeleteButtonState();
+                
+                // 해당 교시의 전체 선택 체크박스 상태 업데이트
+                const period = this.dataset.period;
+                const periodCheckboxes = document.querySelectorAll(`.record-checkbox[data-period="${period}"]`);
+                const periodSelectAllCheckbox = document.querySelector(`.period-select-all[data-period="${period}"]`);
+                
+                if (periodSelectAllCheckbox) {
+                    const allChecked = [...periodCheckboxes].every(cb => cb.checked);
+                    periodSelectAllCheckbox.checked = allChecked;
+                }
+            });
+        });
+        
+        // 교시별 전체 선택 체크박스 이벤트
+        periodSelectAllCheckboxes.forEach(checkbox => {
+            checkbox.addEventListener('change', function() {
+                const period = this.dataset.period;
+                const periodCheckboxes = document.querySelectorAll(`.record-checkbox[data-period="${period}"]`);
+                
+                periodCheckboxes.forEach(cb => {
+                    cb.checked = this.checked;
+                });
+                
+                updateDeleteButtonState();
+            });
+        });
+        
+        // 교시별 전체 선택 버튼 이벤트
+        const toggleCheckButtons = document.querySelectorAll('.toggle-check');
+        toggleCheckButtons.forEach(button => {
+            button.addEventListener('click', function() {
+                const period = this.dataset.period;
+                const periodCheckboxes = document.querySelectorAll(`.record-checkbox[data-period="${period}"]`);
+                const periodSelectAllCheckbox = document.querySelector(`.period-select-all[data-period="${period}"]`);
+                
+                // 현재 상태 확인 (하나라도 체크 안되어 있으면 전체 선택)
+                const someUnchecked = [...periodCheckboxes].some(cb => !cb.checked);
+                
+                // 모든 체크박스 상태 변경
+                periodCheckboxes.forEach(cb => {
+                    cb.checked = someUnchecked;
+                });
+                
+                // 전체 선택 체크박스도 업데이트
+                if (periodSelectAllCheckbox) {
+                    periodSelectAllCheckbox.checked = someUnchecked;
+                }
+                
+                updateDeleteButtonState();
+            });
+        });
+        
+        // 복사 기능
+        function copyToClipboard(text) {
+            // 텍스트 영역 생성 및 텍스트 설정
+            const textarea = document.createElement('textarea');
+            textarea.value = text;
+            document.body.appendChild(textarea);
+            
+            // 선택 및 복사
+            textarea.select();
+            document.execCommand('copy');
+            
+            // 텍스트 영역 제거
+            document.body.removeChild(textarea);
+            
+            // 사용자에게 알림
+            alert('클립보드에 복사되었습니다.');
+        }
+        
+        // 교시별 복사 버튼 이벤트
+        const copyPeriodButtons = document.querySelectorAll('.copy-period');
+        copyPeriodButtons.forEach(button => {
+            button.addEventListener('click', function() {
+                const period = this.dataset.period;
+                const dateStr = document.getElementById('date').value;
+                const formattedDate = new Date(dateStr).toLocaleDateString('ko-KR', {
+                    month: 'numeric',
+                    day: 'numeric'
+                });
+                
+                // 텍스트 생성 (n월n일n교시 도서실에 있는 학생 명단입니다~!)
+                let text = `${formattedDate}${period} 도서실에 있는 학생 명단입니다~!\n\n`;
+                
+                // 해당 교시 학생 목록 추가
+                const periodRows = document.querySelectorAll(`.record-checkbox[data-period="${period}"]`);
+                periodRows.forEach(checkbox => {
+                    const row = checkbox.closest('tr');
+                    const name = row.cells[2].textContent.trim();
+                    const seat = row.cells[3].textContent.trim();
+                    text += `${name} (${seat})\n`;
+                });
+                
+                copyToClipboard(text);
+            });
+        });
+        
+        // 전체 복사 버튼 이벤트
+        const copyAllBtn = document.getElementById('copyAllBtn');
+        if (copyAllBtn) {
+            copyAllBtn.addEventListener('click', function() {
+                const dateStr = document.getElementById('date').value;
+                const formattedDate = new Date(dateStr).toLocaleDateString('ko-KR', {
+                    month: 'numeric',
+                    day: 'numeric'
+                });
+                
+                let text = `${formattedDate} 도서실 출석 명단입니다~!\n\n`;
+                
+                // 각 교시별로 학생 목록 추가
+                document.querySelectorAll('[data-period]').forEach(periodDiv => {
+                    if (periodDiv.tagName === 'DIV' && periodDiv.classList.contains('card')) {
+                        const period = periodDiv.dataset.period;
+                        const studentCount = periodDiv.querySelectorAll('.record-checkbox').length;
+                        
+                        if (studentCount > 0) {
+                            text += `====== ${period} (${studentCount}명) ======\n`;
+                            
+                            const periodRows = document.querySelectorAll(`.record-checkbox[data-period="${period}"]`);
+                            periodRows.forEach(checkbox => {
+                                const row = checkbox.closest('tr');
+                                const name = row.cells[2].textContent.trim();
+                                const seat = row.cells[3].textContent.trim();
+                                text += `${name} (${seat})\n`;
+                            });
+                            
+                            text += '\n';
+                        }
+                    }
+                });
+                
+                copyToClipboard(text);
+            });
+        }
+    });
+</script>
 {% endblock %}
