@@ -386,24 +386,24 @@
                                 <div class="student-list" id="student-list-{{ period|replace(' ', '-')|replace('교시', '')|replace('월', '-')|replace('일', '') }}">
                                 {% for student in period_groups[period]['학생_목록'] %}
                                     <div class="student-card" 
-                                         data-name="{{ student['이름'] }}" 
-                                         data-id="{{ student['학번'] }}" 
-                                         data-seat="{{ student['공강좌석번호'] }}"
-                                         data-date="{{ student['출석일'] }}"
-                                         data-period="{{ student['교시'] }}">
+                                         data-name="{{ student.name }}" 
+                                         data-id="{{ student.student_id }}" 
+                                         data-seat="{{ student.seat }}"
+                                         data-date="{{ student.date_only }}"
+                                         data-period="{{ student.period }}">
                                         <div class="student-info">
-                                            <span class="student-name">{{ student['이름'] }}</span>
-                                            <span class="student-id">{{ student['학번'] }}</span>
+                                            <span class="student-name">{{ student.name }}</span>
+                                            <span class="student-id">{{ student.student_id }}</span>
                                             <!-- 날짜 표시 제거됨 -->
                                         </div>
                                         <div class="d-flex align-items-center">
                                             <div class="student-seat me-2">
-                                                <i class="fas fa-chair me-1"></i>{{ student['공강좌석번호'] }}
+                                                <i class="fas fa-chair me-1"></i>{{ student.seat }}
                                             </div>
                                             <button class="btn btn-sm btn-outline-danger me-2 delete-btn" 
-                                                   data-id="{{ student['학번'] }}"
-                                                   data-date="{{ student['출석일'] if '출석일' in student else '' }}"
-                                                   data-period="{{ student['교시'] if '교시' in student else '' }}"
+                                                   data-id="{{ student.student_id }}"
+                                                   data-date="{{ student.date_only }}"
+                                                   data-period="{{ student.period }}"
                                                    title="삭제">
                                                 <i class="fas fa-trash-alt"></i>
                                             </button>
