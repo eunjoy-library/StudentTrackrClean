@@ -307,9 +307,9 @@ def attendance():
     else:
         period_text = f"{current_period}교시"
     
-    # 간소화된 버전의 템플릿 사용
+    # 가장 단순한 버전의 폼 사용
     if True:
-        return render_template('attendance_simple.html', 
+        return render_template('simple_form.html', 
                               now=now, 
                               period_text=period_text)
     

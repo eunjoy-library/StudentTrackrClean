@@ -1,0 +1,38 @@
+{% extends "layout.html" %}
+
+{% block title %}도서실 출석 시스템{% endblock %}
+
+{% block content %}
+<div class="container mt-5">
+    <div class="row justify-content-center">
+        <div class="col-md-6">
+            <div class="card shadow-lg">
+                <div class="card-header bg-primary text-white text-center">
+                    <h2>도서실 출석체크</h2>
+                </div>
+                <div class="card-body">
+                    <div class="text-center mb-4">
+                        <h4>{{ now.strftime('%Y년 %m월 %d일') }}</h4>
+                        <h5>현재 교시: {{ period_text }}</h5>
+                    </div>
+                    
+                    <form action="/attendance" method="post">
+                        <div class="form-group mb-3">
+                            <label for="student_id" class="form-label">학번</label>
+                            <input type="text" class="form-control form-control-lg" id="student_id" name="student_id" 
+                                   placeholder="학번을 입력하세요" required>
+                        </div>
+                        <input type="hidden" name="name" value="홍길동">
+                        <div class="d-grid gap-2">
+                            <button type="submit" class="btn btn-primary btn-lg">출석하기</button>
+                        </div>
+                    </form>
+                </div>
+                <div class="card-footer text-muted text-center">
+                    출석체크는 일주일에 한 번만 가능합니다
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
