@@ -270,6 +270,31 @@ def check_weekly_attendance_limit(student_id):
 
 # ================== [ROUTES] ==================
 
+@app.route('/check_attendance_status')
+def check_attendance_status():
+    """학생의 출석 상태를 확인하는 API (주간 출석 제한용)"""
+    student_id = request.args.get('student_id')
+    if not student_id:
+        return jsonify({'error': '학번이 필요합니다.', 'already_attended': False})
+    
+    try:
+        # 주간 출석 상태 확인
+        exceeded, count, recent_dates = check_weekly_attendance_limit(student_id)
+        
+        # 최근 출석일 포맷팅
+        last_attendance_date = ""
+        if recent_dates:
+            last_attendance_date = recent_dates[0]  # 가장 최근 출석일
+        
+        return jsonify({
+            'already_attended': exceeded,
+            'attendance_count': count,
+            'last_attendance_date': last_attendance_date
+        })
+    except Exception as e:
+        logging.error(f"출석 상태 확인 중 오류: {e}")
+        return jsonify({'error': str(e), 'already_attended': False})
+
 @app.route('/')
 def index():
     """Redirect to attendance page"""

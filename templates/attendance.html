@@ -78,7 +78,7 @@
             <div class="card-footer">
                 <div class="small text-muted">
                     <i class="fas fa-info-circle me-1"></i>
-                    출석체크는 일주일(일~토)에 1번만 가능합니다.
+                    출석체크는 일주일에 1번만 가능합니다.
                 </div>
             </div>
         </div>
@@ -457,9 +457,6 @@ document.addEventListener('DOMContentLoaded', function() {
                     }
                 }
                 
-                // 항상 출석 가능하도록 설정
-                studentAlreadyAttended = false;
-                
                 // 기본 내용 (학번 정보 제거, 이름과 좌석번호만 표시)
                 const baseContent = `
                     <div style="font-size: 20px; font-weight: bold; color: #000; text-align: center;">
@@ -467,15 +464,47 @@ document.addEventListener('DOMContentLoaded', function() {
                         <div>공강실 좌석번호: ${seatInfo}</div>
                     </div>`;
                 
-                // 버튼 상태 설정
-                let modalContent = baseContent;
-                let btnDisabled = false;
-                let btnClass = 'btn-primary';
+                // 서버에 학생이 이번주에 이미 출석했는지 확인
+                fetch(`/check_attendance_status?student_id=${studentId}`, {
+                    cache: 'no-store'
+                })
+                .then(response => response.json())
+                .then(data => {
+                    console.log('출석 상태 확인 결과:', data); // 디버깅용
                     
-                // 모든 학생이 출석 가능하도록 설정
-                modalContent = baseContent;
-                btnDisabled = false;
-                btnClass = 'btn-primary';
+                    // 이미 출석한 학생인지 여부 설정
+                    studentAlreadyAttended = data.already_attended || false;
+                    const attendanceDate = data.last_attendance_date || '';
+                    
+                    // 내용과 버튼 상태 업데이트
+                    updateModalContent(studentAlreadyAttended, attendanceDate, baseContent);
+                })
+                .catch(err => {
+                    console.error('출석 상태 확인 중 오류:', err);
+                    // 오류 발생 시 그냥 진행
+                    updateModalContent(false, '', baseContent);
+                });
+                
+                // 모달 내용과 버튼 상태 업데이트 함수
+                function updateModalContent(alreadyAttended, attendanceDate, baseContent) {
+                    let modalContent = baseContent;
+                    let btnDisabled = false;
+                    let btnClass = 'btn-primary';
+                    
+                    // 이미 출석한 학생이면 버튼 비활성화
+                    if (alreadyAttended) {
+                        modalContent = `
+                            <div style="color: #dc3545; font-weight: bold; margin-bottom: 15px; text-align: center; font-size: 18px;">
+                                이번주에 이미 출석하셨습니다.<br>
+                                4층 공강실로 올라가주세요~!
+                                ${attendanceDate ? `<div style="font-size: 16px; margin-top: 5px;">${attendanceDate}</div>` : ''}
+                            </div>
+                            ${baseContent}
+                        `;
+                        btnDisabled = true;
+                        btnClass = 'btn-secondary';
+                        playErrorSound();
+                    }
                         const isAdmin = {{ 'true' if session.get('admin') else 'false' }};
                         const isAdminAddPage = window.location.pathname.includes('/admin_add_attendance');
                         
