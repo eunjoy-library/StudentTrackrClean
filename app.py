@@ -201,12 +201,58 @@ def load_attendance():
 
 # 출석 상태 캐싱을 위한 딕셔너리와 캐시 만료 시간 (초)
 attendance_status_cache = {}
-CACHE_EXPIRY = 30  # 30초 캐시
+CACHE_EXPIRY = 60  # 60초 캐시 (성능 향상을 위해 증가)
+student_data_cache = {}  # 학생 정보 캐시
+STUDENT_CACHE_EXPIRY = 300  # 학생 정보는 5분 동안 캐시
+
+# 이번 주 날짜 범위 정보 캐싱 (매번 계산하지 않도록)
+current_week_info = {
+    'last_updated': 0,
+    'sunday_str': '',
+    'saturday_str': ''
+}
+WEEK_INFO_EXPIRY = 3600  # 주 정보는 1시간마다 갱신
+
+def get_current_week_range():
+    """현재 주의 시작(일요일)과 끝(토요일) 계산 - 캐싱 적용"""
+    global current_week_info
+    
+    now = time.time()
+    if now - current_week_info['last_updated'] < WEEK_INFO_EXPIRY and current_week_info['sunday_str']:
+        return current_week_info['sunday_str'], current_week_info['saturday_str']
+    
+    # 현재 날짜 기준으로 이번 주의 월요일 찾기
+    now_date = datetime.now(KST)
+    weekday = now_date.weekday()  # 0=월요일, 1=화요일, ..., 6=일요일
+    days_since_monday = weekday
+    monday = now_date - timedelta(days=days_since_monday)
+    monday = monday.replace(hour=0, minute=0, second=0, microsecond=0)
+    
+    # 이번 주 토요일 끝 시간 (일요일부터 토요일까지)
+    sunday = monday - timedelta(days=1)  # 일요일은 월요일 하루 전
+    sunday = sunday.replace(hour=0, minute=0, second=0, microsecond=0)
+    
+    saturday = monday + timedelta(days=5)  # 토요일은 월요일부터 5일 후
+    saturday = saturday.replace(hour=23, minute=59, second=59, microsecond=999999)
+    
+    # 텍스트 형식으로 변환
+    sunday_str = sunday.strftime('%Y-%m-%d')
+    saturday_str = saturday.strftime('%Y-%m-%d')
+    
+    # 결과 캐싱
+    current_week_info = {
+        'last_updated': now,
+        'sunday_str': sunday_str,
+        'saturday_str': saturday_str
+    }
+    
+    return sunday_str, saturday_str
 
 def check_weekly_attendance_limit(student_id):
     """
     학생이 이번 주(일~토)에 1회 이상 출석했는지 확인
     캐싱 기능 추가: 같은 학생 ID에 대해 반복 쿼리 최소화
+    메모리 캐싱으로 Firebase 쿼리 최소화
     
     Returns:
         (exceeded, count, recent_dates): 
@@ -229,28 +275,12 @@ def check_weekly_attendance_limit(student_id):
             logging.error("Firebase DB 연결이 설정되지 않았습니다.")
             return False, 0, []
         
-        # 현재 날짜 기준으로 이번 주의 월요일 찾기
-        now = datetime.now(KST)
-        weekday = now.weekday()  # 0=월요일, 1=화요일, ..., 6=일요일
-        days_since_monday = weekday
-        monday = now - timedelta(days=days_since_monday)
-        monday = monday.replace(hour=0, minute=0, second=0, microsecond=0)
-        
-        # 이번 주 토요일 끝 시간 (일요일부터 토요일까지)
-        sunday = monday - timedelta(days=1)  # 일요일은 월요일 하루 전
-        sunday = sunday.replace(hour=0, minute=0, second=0, microsecond=0)
-        
-        saturday = monday + timedelta(days=5)  # 토요일은 월요일부터 5일 후
-        saturday = saturday.replace(hour=23, minute=59, second=59, microsecond=999999)
-        
-        # Firebase에서 학생의 이번 주 출석 기록 조회
-        sunday_str = sunday.strftime('%Y-%m-%d')
-        saturday_str = saturday.strftime('%Y-%m-%d')
-        
+        # 현재 주 범위 얻기 (캐싱됨)
+        sunday_str, saturday_str = get_current_week_range()
         logging.debug(f"학생 {student_id}의 이번 주({sunday_str} ~ {saturday_str}) 출석 기록 확인 중")
         
         try:
-            # 일반 쿼리 실행 (인덱스 없이도 작동)
+            # 일반 쿼리 실행 (인덱스 없이도 작동) - 학생 ID로 제한
             records = db.collection('attendances').where('student_id', '==', student_id).get()
             
             # 이번 주 출석 횟수 카운트
@@ -266,14 +296,14 @@ def check_weekly_attendance_limit(student_id):
                     recent_dates.append(date_only)
                     logging.debug(f"학생 {student_id}의 출석일: {date_only}")
             
-            # 중복 날짜 제거 (같은 날 여러 번 출석한 경우)
+            # 결과 정리 및 캐싱
+            recent_dates = sorted(recent_dates, reverse=True)  # 최신 날짜 먼저
             unique_dates = sorted(list(set(recent_dates)))
             
             # 주간 출석 제한 (일주일에 1번만 허용)
-            # 1회까지 허용하고, 이미 1회 출석한 경우 2번째 출석을 제한
             exceeded = len(unique_dates) >= 1  # 이미 1회 출석했으면 제한
             
-            # 결과 캐싱
+            # 결과 캐싱 (자주 조회하는 학생은 캐시에서 빠르게 반환)
             attendance_status_cache[cache_key] = {
                 'exceeded': exceeded,
                 'count': count,
