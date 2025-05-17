@@ -4,7 +4,7 @@ import os
 import csv
 import json
 import logging
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, time
 from collections import Counter
 
 # 외부 라이브러리
@@ -48,6 +48,46 @@ app.secret_key = app.config.get('SECRET_KEY', 'your_fallback_secret_here')
 
 # ================== [시간대 설정] ==================
 KST = pytz.timezone('Asia/Seoul')
+
+# ================== [교시 계산] ==================
+def get_current_period():
+    """
+    Determine the current class period based on current time (Korean time)
+    Returns period number (1-10), -1 for time outside scheduled periods, or 0 for 4th period
+    
+    -1 = 시간 외 (모든 시간대에 출석 허용)
+    0  = 4교시 (출석 불가)
+    1~10 = 해당 교시
+    """
+    now = datetime.now(KST)
+    weekday = now.weekday()  # 0=월요일, 1=화요일, ..., 6=일요일
+    current_time = now.time()
+    
+    # 주말은 시간 외로 처리
+    if weekday >= 5:  # 토요일(5) 또는 일요일(6)
+        return -1
+    
+    # 시간대별 교시 정의
+    time_table = [
+        (time(7, 50), time(9, 15), 1),    # 1교시: 07:50-09:15
+        (time(9, 15), time(10, 40), 2),   # 2교시: 09:15-10:40
+        (time(10, 40), time(12, 5), 3),   # 3교시: 10:40-12:05
+        (time(12, 5), time(12, 30), 0),   # 4교시: 12:05-12:30 (출석 불가)
+        (time(12, 30), time(14, 25), 5),  # 5교시: 12:30-14:25
+        (time(14, 25), time(15, 50), 6),  # 6교시: 14:25-15:50
+        (time(15, 50), time(17, 15), 7),  # 7교시: 15:50-17:15
+        (time(17, 15), time(18, 40), 8),  # 8교시: 17:15-18:40
+        (time(18, 40), time(20, 5), 9),   # 9교시: 18:40-20:05
+        (time(20, 5), time(21, 30), 10),  # 10교시: 20:05-21:30
+    ]
+    
+    # 현재 시간에 맞는 교시 찾기
+    for start_time, end_time, period in time_table:
+        if start_time <= current_time < end_time:
+            return period
+    
+    # 시간표에 없는 시간은 시간 외로 처리
+    return -1
 
 # ================== [학생 데이터 캐싱] ==================
 _student_data_cache = None
