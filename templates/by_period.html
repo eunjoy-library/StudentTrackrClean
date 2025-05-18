@@ -211,39 +211,18 @@
                 // 텍스트 생성 (n월 n일 n교시 도서실에 있는 학생입니다~!)
                 let text = `${formattedDate} ${period} 도서실에 있는 학생입니다~!\n\n`;
                 
-                // 최대 길이 계산하여 열 너비 맞추기
-                let maxIdLength = 8;  // "학번" 한글 최소 너비
-                let maxNameLength = 8;  // "이름" 한글 최소 너비
-                let maxSeatLength = 8;  // "좌석번호" 한글 최소 너비
+                // 간단한 표 형식 생성
+                text += "학번\t이름\t좌석번호\n";
+                text += "------------------------------\n";
                 
-                const allRows = [];
+                // 학생 데이터 추가
                 const periodRows = document.querySelectorAll(`.record-checkbox[data-period="${period}"]`);
-                
-                // 먼저 모든 데이터 수집 및 최대 길이 계산
                 periodRows.forEach(checkbox => {
                     const row = checkbox.closest('tr');
                     const studentId = row.cells[1].textContent.trim();
                     const name = row.cells[2].textContent.trim();
                     const seat = row.cells[3].textContent.trim();
-                    
-                    maxIdLength = Math.max(maxIdLength, studentId.length);
-                    maxNameLength = Math.max(maxNameLength, name.length);
-                    maxSeatLength = Math.max(maxSeatLength, seat.length);
-                    
-                    allRows.push({id: studentId, name: name, seat: seat});
-                });
-                
-                // 표 헤더 생성
-                const headerLine = `학번${' '.repeat(maxIdLength - 4)}이름${' '.repeat(maxNameLength - 4)}좌석번호\n`;
-                const separator = `${'='.repeat(maxIdLength + maxNameLength + maxSeatLength + 6)}\n`;
-                
-                text += headerLine + separator;
-                
-                // 데이터 행 추가
-                allRows.forEach(row => {
-                    const idPadded = row.id + ' '.repeat(maxIdLength - row.id.length + 2);
-                    const namePadded = row.name + ' '.repeat(maxNameLength - row.name.length + 2);
-                    text += `${idPadded}${namePadded}${row.seat}\n`;
+                    text += `${studentId}\t${name}\t${seat}\n`;
                 });
                 
                 copyToClipboard(text);
