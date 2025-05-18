@@ -213,6 +213,10 @@
                 // 텍스트 생성 (n월 n일 n교시 도서실에 있는 학생입니다~!)
                 let text = `${formattedDate} ${period} 도서실에 있는 학생입니다~!\n\n`;
                 
+                // 헤더 생성
+                text += `학번\t이름\t좌석번호\n`;
+                text += `------------------------------\n`;
+                
                 // 해당 교시 학생 목록 추가
                 const periodRows = document.querySelectorAll(`.record-checkbox[data-period="${period}"]`);
                 periodRows.forEach(checkbox => {
@@ -220,7 +224,7 @@
                     const studentId = row.cells[1].textContent.trim();
                     const name = row.cells[2].textContent.trim();
                     const seat = row.cells[3].textContent.trim();
-                    text += `${studentId}, ${name}, ${seat}\n`;
+                    text += `${studentId}\t${name}\t${seat}\n`;
                 });
                 
                 copyToClipboard(text);
@@ -246,7 +250,11 @@
                         const studentCount = periodDiv.querySelectorAll('.record-checkbox').length;
                         
                         if (studentCount > 0) {
-                            text += `====== ${period} (${studentCount}명) ======\n`;
+                            text += `====== ${period} (${studentCount}명) ======\n\n`;
+                            
+                            // 헤더 추가
+                            text += `학번\t이름\t좌석번호\n`;
+                            text += `------------------------------\n`;
                             
                             const periodRows = document.querySelectorAll(`.record-checkbox[data-period="${period}"]`);
                             periodRows.forEach(checkbox => {
@@ -254,7 +262,7 @@
                                 const studentId = row.cells[1].textContent.trim();
                                 const name = row.cells[2].textContent.trim();
                                 const seat = row.cells[3].textContent.trim();
-                                text += `${studentId}, ${name}, ${seat}\n`;
+                                text += `${studentId}\t${name}\t${seat}\n`;
                             });
                             
                             text += '\n';
