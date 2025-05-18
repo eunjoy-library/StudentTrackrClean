@@ -211,21 +211,23 @@
                 // 텍스트 생성 (n월 n일 n교시 도서실에 있는 학생입니다~!)
                 let text = `${formattedDate} ${period} 도서실에 있는 학생입니다~!\n\n`;
                 
-                // 테이블 형식으로 만들기 위한 학생 정보 수집
-                let studentData = [];
+                // HTML 표 형식으로 시작
+                text += `<table border="1" cellpadding="5">\n`;
+                text += `<tr><th>학번</th><th>이름</th><th>좌석번호</th></tr>\n`;
+                
+                // 학생 정보를 테이블 형식으로 추가
                 const periodRows = document.querySelectorAll(`.record-checkbox[data-period="${period}"]`);
                 periodRows.forEach(checkbox => {
                     const row = checkbox.closest('tr');
                     const studentId = row.cells[1].textContent.trim();
                     const name = row.cells[2].textContent.trim();
                     const seat = row.cells[3].textContent.trim();
-                    studentData.push({id: studentId, name: name, seat: seat});
+                    // HTML 표 내의 행으로 추가
+                    text += `<tr><td>${studentId}</td><td>${name}</td><td>${seat}</td></tr>\n`;
                 });
                 
-                // 간단히 이름만 표시
-                studentData.forEach(student => {
-                    text += `${student.name}\n`;
-                });
+                // HTML 표 닫기
+                text += `</table>`;
                 
                 copyToClipboard(text);
             });
