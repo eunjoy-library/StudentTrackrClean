@@ -405,7 +405,7 @@ document.addEventListener('DOMContentLoaded', function() {
             let text = `${formattedDate} ${period} 도서실에 있는 학생입니다~!\n\n`;
             
             // 헤더 추가 - 고정 너비 칸으로 조정
-            text += `이름          학번          좌석번호\n`;
+            text += `이름${' '.repeat(11)}학번${' '.repeat(11)}좌석번호\n`;
             
             // 학생 정보 표시
             const periodRows = document.querySelectorAll(`.record-checkbox[data-period="${period}"]`);
@@ -415,14 +415,8 @@ document.addEventListener('DOMContentLoaded', function() {
                 const name = row.cells[2].textContent.trim();
                 const seat = row.cells[3].textContent.trim();
                 
-                // 각 항목이 고정 너비 칸에 들어가도록 공백으로 채우기
-                let paddedName = name;
-                while (paddedName.length < 12) paddedName += ' ';
-                
-                let paddedId = studentId;
-                while (paddedId.length < 14) paddedId += ' ';
-                
-                text += `${paddedName}${paddedId}${seat}\n`;
+                // padEnd 메소드를 사용하여 항목 간 간격 넓히기
+                text += `${name.padEnd(15)}${studentId.padEnd(15)}${seat}\n`;
             });
             
             copyToClipboard(text);
