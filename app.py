@@ -136,8 +136,37 @@ def load_student_data():
 def save_attendance(student_id, name, seat, period_text):
     """
     Save attendance record to Firebase (with Korean time)
+    중복 출석 방지 잠금 메커니즘 포함
     """
+    global attendance_locks, attendance_status_cache
+    
+    # 학생 ID 기반 잠금 확인 (다른 요청에서 처리 중인지 확인)
+    lock_key = f"lock_{student_id}"
+    current_time = time.time()
+    
+    # 이미 처리 중인 경우 (10초 이내 요청)
+    if lock_key in attendance_locks:
+        last_lock_time = attendance_locks[lock_key]
+        if current_time - last_lock_time < 10:  # 10초 이내 중복 요청
+            logging.warning(f"학생 {student_id}의 출석이 이미 처리 중입니다 (10초 이내 중복 요청)")
+            return False
+    
+    # 최종 출석 상태 확인 (캐시 무시하고 직접 확인)
     try:
+        # 캐시 키 삭제하여 강제 새로고침
+        cache_key = f"weekly_limit_{student_id}"
+        if cache_key in attendance_status_cache:
+            del attendance_status_cache[cache_key]
+            
+        # 직접 DB에서 확인
+        exceeded, count, _ = check_weekly_attendance_limit(student_id)
+        if exceeded:
+            logging.warning(f"학생 {student_id}의 출석이 이미 있습니다 (중복 출석 방지)")
+            return False
+            
+        # 잠금 설정
+        attendance_locks[lock_key] = current_time
+        
         if not db:
             flash("Firebase 설정이 완료되지 않았습니다.", "danger")
             return False
@@ -159,8 +188,24 @@ def save_attendance(student_id, name, seat, period_text):
             'timestamp': firestore.SERVER_TIMESTAMP
         })
         
+        # 캐시 무효화 (학생 정보 갱신)
+        if cache_key in attendance_status_cache:
+            del attendance_status_cache[cache_key]
+            
+        # 10초 후 잠금 해제 (스케줄링)
+        def release_lock():
+            if lock_key in attendance_locks:
+                del attendance_locks[lock_key]
+                
+        # 잠금 해제 (바로 해제)
+        del attendance_locks[lock_key]
+            
         return True
     except Exception as e:
+        # 에러 발생 시 잠금 해제
+        if lock_key in attendance_locks:
+            del attendance_locks[lock_key]
+            
         logging.error(f"출석 저장 중 오류: {e}")
         return False
 
@@ -201,9 +246,12 @@ def load_attendance():
 
 # 출석 상태 캐싱을 위한 딕셔너리와 캐시 만료 시간 (초)
 attendance_status_cache = {}
-CACHE_EXPIRY = 30  # 30초 캐시 (빠른 갱신을 위해 감소)
+CACHE_EXPIRY = 5  # 5초로 대폭 감소 (중복 출석 방지 강화)
 student_data_cache = {}  # 학생 정보 캐시
 STUDENT_CACHE_EXPIRY = 600  # 학생 정보는 10분 동안 캐시 (성능 향상)
+
+# 중복 출석 방지를 위한 잠금 메커니즘 (동시 요청 처리용)
+attendance_locks = {}
 
 # 이번 주 날짜 범위 정보 캐싱 (매번 계산하지 않도록)
 current_week_info = {
