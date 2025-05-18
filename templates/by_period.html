@@ -205,17 +205,11 @@
             button.addEventListener('click', function() {
                 const period = this.dataset.period;
                 const dateStr = document.getElementById('date').value;
-                const formattedDate = new Date(dateStr).toLocaleDateString('ko-KR', {
-                    month: 'numeric',
-                    day: 'numeric'
-                });
+                const date = new Date(dateStr);
+                const formattedDate = `${date.getMonth() + 1}월 ${date.getDate()}일`;
                 
                 // 텍스트 생성 (n월 n일 n교시 도서실에 있는 학생입니다~!)
-                let text = `${formattedDate} ${period} 도서실에 있는 학생입니다~!\n\n`;
-                
-                // 헤더 생성
-                text += `학번\t이름\t좌석번호\n`;
-                text += `------------------------------\n`;
+                let text = `${formattedDate} ${period} 도서실에 있는 학생입니다~!`;
                 
                 // 해당 교시 학생 목록 추가
                 const periodRows = document.querySelectorAll(`.record-checkbox[data-period="${period}"]`);
@@ -224,7 +218,7 @@
                     const studentId = row.cells[1].textContent.trim();
                     const name = row.cells[2].textContent.trim();
                     const seat = row.cells[3].textContent.trim();
-                    text += `${studentId}\t${name}\t${seat}\n`;
+                    text += `\n${studentId}, ${name}, ${seat}`;
                 });
                 
                 copyToClipboard(text);
@@ -236,12 +230,10 @@
         if (copyAllBtn) {
             copyAllBtn.addEventListener('click', function() {
                 const dateStr = document.getElementById('date').value;
-                const formattedDate = new Date(dateStr).toLocaleDateString('ko-KR', {
-                    month: 'numeric',
-                    day: 'numeric'
-                });
+                const date = new Date(dateStr);
+                const formattedDate = `${date.getMonth() + 1}월 ${date.getDate()}일`;
                 
-                let text = `${formattedDate} 도서실 출석 명단입니다~!\n\n`;
+                let text = `${formattedDate} 도서실 출석 명단입니다~!`;
                 
                 // 각 교시별로 학생 목록 추가
                 document.querySelectorAll('[data-period]').forEach(periodDiv => {
@@ -250,11 +242,7 @@
                         const studentCount = periodDiv.querySelectorAll('.record-checkbox').length;
                         
                         if (studentCount > 0) {
-                            text += `====== ${period} (${studentCount}명) ======\n\n`;
-                            
-                            // 헤더 추가
-                            text += `학번\t이름\t좌석번호\n`;
-                            text += `------------------------------\n`;
+                            text += `\n\n${formattedDate} ${period} 도서실에 있는 학생입니다~!`;
                             
                             const periodRows = document.querySelectorAll(`.record-checkbox[data-period="${period}"]`);
                             periodRows.forEach(checkbox => {
@@ -262,7 +250,7 @@
                                 const studentId = row.cells[1].textContent.trim();
                                 const name = row.cells[2].textContent.trim();
                                 const seat = row.cells[3].textContent.trim();
-                                text += `${studentId}\t${name}\t${seat}\n`;
+                                text += `\n${studentId}, ${name}, ${seat}`;
                             });
                             
                             text += '\n';
