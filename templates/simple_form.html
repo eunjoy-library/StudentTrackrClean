@@ -517,12 +517,15 @@ document.addEventListener('DOMContentLoaded', function() {
                 // 마스킹된 이름
                 var maskedName = maskName(studentName);
                 
-                // 출석 상태 확인
-                fetch('/api/check_attendance?student_id=' + studentId)
+                // 출석 상태 확인 (캐시 방지를 위한 타임스탬프 추가)
+                fetch('/api/check_attendance?student_id=' + studentId + '&t=' + new Date().getTime())
                     .then(function(response) { return response.json(); })
                     .then(function(attendData) {
                         var hasAttendance = attendData.has_attendance || false;
                         var attendDate = attendData.attendance_date || '';
+                        
+                        // 전역 변수에 출석 상태 저장 (중요)
+                        studentAlreadyAttended = hasAttendance;
                         
                         var content = '';
                         

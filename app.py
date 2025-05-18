@@ -372,49 +372,54 @@ def check_weekly_attendance_limit(student_id):
 
 # ================== [ROUTES] ==================
 
-@app.route('/api/check_attendance')
+@app.route('/api/check_attendance', methods=['GET', 'POST'])
 def api_check_attendance():
     """
     학생 ID로 해당 주에 출석 기록이 있는지 직접 확인하는 API
-    - 정확한 기록 확인을 위해 DB에서 직접 조회
-    - 캐싱을 통한 속도 개선 및 중복 출석 방지
+    - 정확한 기록 확인을 위해 캐시 없이 DB에서 직접 조회
+    - 중복 출석 방지를 위한 실시간 검증
     """
     student_id = request.args.get('student_id')
     
-    # POST 파라미터에서도 확인 (학생 ID 추출 문제 수정)
+    # POST 파라미터에서도 확인
     if not student_id and request.method == 'POST':
         student_id = request.form.get('student_id')
+    
+    # 타임스탬프 확인 (캐시 방지)
+    timestamp = request.args.get('t')
     
     if not student_id:
         return jsonify({'error': '학번이 필요합니다.', 'has_attendance': False})
     
     try:
-        # 캐시에서 확인 먼저 시도 (속도 개선)
-        cache_key = f"weekly_limit_{student_id}"
-        if cache_key in attendance_status_cache:
-            cache_entry = attendance_status_cache[cache_key]
-            if time.time() - cache_entry['timestamp'] < CACHE_EXPIRY:
-                # 캐시된 데이터 반환 (빠른 응답)
-                has_attendance = cache_entry['exceeded']
-                attendance_date = cache_entry['recent_dates'][0] if cache_entry['recent_dates'] else ""
-                logging.debug(f"학생 {student_id} 출석 상태 캐시 사용 (API)")
-                return jsonify({
-                    'has_attendance': has_attendance,
-                    'attendance_date': attendance_date,
-                    'cached': True
-                })
+        # 현재 주의 날짜 범위 가져오기 (캐시 사용 안함)
+        now_date = datetime.now(KST)
+        weekday = now_date.weekday()  # 0=월요일, 1=화요일, ..., 6=일요일
+        days_since_monday = weekday
+        monday = now_date - timedelta(days=days_since_monday)
+        monday = monday.replace(hour=0, minute=0, second=0, microsecond=0)
         
-        # 현재 주의 날짜 범위 가져오기
-        sunday_str, saturday_str = get_current_week_range()
+        # 주 범위 설정 (일요일부터 토요일까지)
+        sunday = monday - timedelta(days=1)  # 일요일은 월요일 하루 전
+        sunday = sunday.replace(hour=0, minute=0, second=0, microsecond=0)
         
-        # Firebase에서 해당 학생 ID와 이번 주 기간에 해당하는 기록 직접 조회
-        # 쿼리 최적화: 필요한 필드만 선택하여 데이터 전송량 감소
+        saturday = monday + timedelta(days=5)  # 토요일은 월요일부터 5일 후
+        saturday = saturday.replace(hour=23, minute=59, second=59, microsecond=999999)
         
-        try:
-            # 학생 ID로 필터링하여 쿼리 실행
-            records = db.collection('attendances').where('student_id', '==', student_id).get()
+        # 텍스트 형식으로 변환
+        sunday_str = sunday.strftime('%Y-%m-%d')
+        saturday_str = saturday.strftime('%Y-%m-%d')
+        
+        # Firebase 직접 쿼리
+        if not db:
+            logging.error("Firebase DB 연결이 설정되지 않았습니다.")
+            return jsonify({'error': 'Firebase 연결 오류', 'has_attendance': False})
             
-            # 이번 주에 해당하는 기록만 필터링
+        try:
+            # 학생 ID로 필터링하여 쿼리 실행 - 최근 데이터만 가져오기
+            records = db.collection('attendances').where('student_id', '==', student_id).order_by('timestamp', direction='DESCENDING').limit(10).get()
+            
+            # 이번 주에 해당하는 기록만 필터링 (직접 확인)
             has_attendance = False
             attendance_date = ""
             recent_dates = []
@@ -428,21 +433,17 @@ def api_check_attendance():
                     has_attendance = True
                     attendance_date = date_only
                     recent_dates.append(date_only)
-                    # 캐시 업데이트를 위해 모든 날짜 수집 (break 제거)
             
-            # 결과 캐싱 (자주 조회하는 학생은 캐시에서 빠르게 반환)
+            # 결과 정리 (캐시 사용 안함)
             recent_dates = sorted(recent_dates, reverse=True)  # 최신 날짜 먼저
-            attendance_status_cache[cache_key] = {
-                'exceeded': has_attendance,
-                'count': len(recent_dates),
-                'recent_dates': recent_dates,
-                'timestamp': time.time()
-            }
+            
+            logging.info(f"학생 {student_id}의 이번 주 출석 상태: {has_attendance}, 출석일: {recent_dates}")
             
             return jsonify({
                 'has_attendance': has_attendance,
-                'attendance_date': attendance_date,
-                'cached': False
+                'attendance_date': attendance_date if recent_dates else "",
+                'cached': False,
+                'timestamp': str(datetime.now(KST))
             })
             
         except Exception as db_error:
