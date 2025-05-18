@@ -406,21 +406,22 @@ def api_check_attendance():
         return jsonify({'error': '학번이 필요합니다.', 'has_attendance': False})
     
     try:
-        # 현재 주의 날짜 범위 가져오기 (캐시 사용 안함)
-        now_date = datetime.now(KST)
-        weekday = now_date.weekday()  # 0=월요일, 1=화요일, ..., 6=일요일
-        days_since_monday = weekday
-        monday = now_date - timedelta(days=days_since_monday)
-        monday = monday.replace(hour=0, minute=0, second=0, microsecond=0)
+        # 현재 주의 범위 계산 (일요일부터 토요일까지)
+        now = datetime.now(KST)
         
-        # 주 범위 설정 (일요일부터 토요일까지)
-        sunday = monday - timedelta(days=1)  # 일요일은 월요일 하루 전
+        # 이번 주 일요일(주 시작) 계산
+        days_to_sunday = now.weekday() + 1  # 월=0, 일=6이므로 역으로 계산
+        if days_to_sunday == 7:  # 일요일인 경우
+            days_to_sunday = 0
+            
+        sunday = now - timedelta(days=days_to_sunday)
         sunday = sunday.replace(hour=0, minute=0, second=0, microsecond=0)
         
-        saturday = monday + timedelta(days=5)  # 토요일은 월요일부터 5일 후
+        # 토요일(주 마지막) 계산
+        days_to_saturday = (5 - now.weekday()) % 7  # 토요일까지 남은 일수
+        saturday = now + timedelta(days=days_to_saturday)
         saturday = saturday.replace(hour=23, minute=59, second=59, microsecond=999999)
         
-        # 텍스트 형식으로 변환
         sunday_str = sunday.strftime('%Y-%m-%d')
         saturday_str = saturday.strftime('%Y-%m-%d')
         
@@ -442,7 +443,7 @@ def api_check_attendance():
                 data = record.to_dict()
                 date_only = data.get('date_only', '')
                 
-                # 이번 주 날짜 범위에 있는지 확인
+                # 이번 주 날짜 범위에 있는지 확인 
                 if sunday_str <= date_only <= saturday_str:
                     has_attendance = True
                     attendance_date = date_only
@@ -451,11 +452,27 @@ def api_check_attendance():
             # 결과 정리 (캐시 사용 안함)
             recent_dates = sorted(recent_dates, reverse=True)  # 최신 날짜 먼저
             
+            # 한국어 요일 추가
+            formatted_date = ""
+            if attendance_date:
+                try:
+                    # yyyy-mm-dd 형식의 날짜 문자열에서 datetime 객체로 변환
+                    date_obj = datetime.strptime(attendance_date, '%Y-%m-%d')
+                    # 한국어 요일
+                    weekdays = ['월', '화', '수', '목', '금', '토', '일']
+                    weekday_kr = weekdays[date_obj.weekday()]
+                    # 날짜 형식: 5월 18일 (토)
+                    formatted_date = f"{date_obj.month}월 {date_obj.day}일 ({weekday_kr})"
+                except Exception as e:
+                    logging.error(f"날짜 변환 중 오류: {e}")
+                    formatted_date = attendance_date
+            
             logging.info(f"학생 {student_id}의 이번 주 출석 상태: {has_attendance}, 출석일: {recent_dates}")
             
             return jsonify({
                 'has_attendance': has_attendance,
-                'attendance_date': attendance_date if recent_dates else "",
+                'attendance_date': attendance_date,
+                'formatted_date': formatted_date,
                 'cached': False,
                 'timestamp': str(datetime.now(KST))
             })

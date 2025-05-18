@@ -521,6 +521,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 fetch('/api/check_attendance?student_id=' + studentId + '&t=' + new Date().getTime())
                     .then(function(response) { return response.json(); })
                     .then(function(attendData) {
+                        console.log("학생 출석 상태 확인:", attendData);
                         var hasAttendance = attendData.has_attendance || false;
                         var attendDate = attendData.attendance_date || '';
                         
@@ -530,13 +531,15 @@ document.addEventListener('DOMContentLoaded', function() {
                         var content = '';
                         
                         if (hasAttendance) {
-                            // 이미 출석한 학생
+                            // 이미 출석한 학생 - 경고 메시지와 함께 비활성화
+                            var formattedDate = attendData.formatted_date || attendDate;
+                            
                             content = '<div style="color: #ff6b6b; font-weight: bold; margin-bottom: 15px; text-align: center; font-size: 18px;">' +
                                     '이번주에 이미 출석하셨습니다.<br>' +
                                     '4층 공강실로 올라가주세요~!';
                             
-                            if (attendDate) {
-                                content += '<div style="font-size: 16px; margin-top: 5px; color: #ffef99;">출석일: ' + attendDate + '</div>';
+                            if (formattedDate) {
+                                content += '<div style="font-size: 16px; margin-top: 5px; color: #ffef99;">출석일: ' + formattedDate + '</div>';
                             }
                             
                             content += '</div>' +
