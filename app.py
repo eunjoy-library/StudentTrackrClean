@@ -469,14 +469,12 @@ def attendance():
         # 주간 출석 제한 확인 (1회만 허용)
         # 출석 API로 직접 확인 (자바스크립트에서 이미 확인했지만 더블체크)
         try:
-            # API로 확인 (캐시 이용)
-            student_id_param = request.form.get('student_id', '').strip()
-            check_response = api_check_attendance()  # 학생 ID 파라미터 전달 안됨 문제 수정
-            check_data = json.loads(check_response.data)
+            # 직접 함수 호출로 변경 (API 호출 방식 문제 수정)
+            exceeded, count, recent_dates = check_weekly_attendance_limit(student_id)
             
-            if check_data.get('has_attendance'):
-                # 이미 출석한 학생
-                attendance_date = check_data.get('attendance_date', '')
+            if exceeded:
+                # 이미 출석한 학생 (주 1회 초과)
+                attendance_date = recent_dates[0] if recent_dates else ""
                 flash(f'이번 주에 이미 출석했습니다. 출석일: {attendance_date}', 'danger')
                 return redirect(url_for('attendance'))
         except Exception as e:
@@ -518,12 +516,12 @@ def attendance():
         # 마지막으로 한번 더 중복 출석 확인
         # 다른 탭이나 브라우저에서 동시에 요청이 들어올 경우 대비
         try:
-            check_response = api_check_attendance()
-            check_data = json.loads(check_response.data)
+            # 다시 한번 더 확인
+            exceeded, count, recent_dates = check_weekly_attendance_limit(student_id)
             
-            if check_data.get('has_attendance'):
+            if exceeded:
                 # 이미 출석한 학생
-                attendance_date = check_data.get('attendance_date', '')
+                attendance_date = recent_dates[0] if recent_dates else ""
                 flash(f'이번 주에 이미 출석했습니다. 출석일: {attendance_date}', 'danger')
                 return redirect(url_for('attendance'))
                 
