@@ -135,41 +135,43 @@ def load_student_data():
 
 def save_attendance(student_id, name, seat, period_text):
     """
-    Save attendance record to Firebase (with Korean time)
-    중복 출석 방지 잠금 메커니즘 포함
+    출석 기록을 Firebase에 저장(한국 시간 기준)
+    중복 출석을 방지하는 이중 확인 프로세스 포함
     """
-    global attendance_locks, attendance_status_cache
-    
-    # 학생 ID 기반 잠금 확인 (다른 요청에서 처리 중인지 확인)
-    lock_key = f"lock_{student_id}"
-    current_time = time.time()
-    
-    # 이미 처리 중인 경우 (10초 이내 요청)
-    if lock_key in attendance_locks:
-        last_lock_time = attendance_locks[lock_key]
-        if current_time - last_lock_time < 10:  # 10초 이내 중복 요청
-            logging.warning(f"학생 {student_id}의 출석이 이미 처리 중입니다 (10초 이내 중복 요청)")
-            return False
-    
-    # 최종 출석 상태 확인 (캐시 무시하고 직접 확인)
+    # 해당 학생이 이번 주에 이미 출석했는지 직접 확인 (최종 검증)
     try:
-        # 캐시 키 삭제하여 강제 새로고침
-        cache_key = f"weekly_limit_{student_id}"
-        if cache_key in attendance_status_cache:
-            del attendance_status_cache[cache_key]
-            
-        # 직접 DB에서 확인
-        exceeded, count, _ = check_weekly_attendance_limit(student_id)
-        if exceeded:
-            logging.warning(f"학생 {student_id}의 출석이 이미 있습니다 (중복 출석 방지)")
-            return False
-            
-        # 잠금 설정
-        attendance_locks[lock_key] = current_time
+        # 이번 주 날짜 범위 계산
+        now_date = datetime.now(KST)
+        weekday = now_date.weekday()
+        days_since_monday = weekday
+        monday = now_date - timedelta(days=days_since_monday)
         
+        # 일요일부터 토요일까지
+        sunday = monday - timedelta(days=1)
+        sunday = sunday.replace(hour=0, minute=0, second=0, microsecond=0)
+        saturday = monday + timedelta(days=5)
+        saturday = saturday.replace(hour=23, minute=59, second=59, microsecond=999999)
+        
+        sunday_str = sunday.strftime('%Y-%m-%d')
+        saturday_str = saturday.strftime('%Y-%m-%d')
+        
+        # Firebase 연결 확인
         if not db:
             flash("Firebase 설정이 완료되지 않았습니다.", "danger")
             return False
+            
+        # 이미 이번 주에 출석한 기록이 있는지 확인 (직접 쿼리)
+        attendance_records = db.collection('attendances').where('student_id', '==', student_id).get()
+        
+        # 이번 주에 출석 여부 확인
+        for record in attendance_records:
+            data = record.to_dict()
+            date_only = data.get('date_only', '')
+            
+            # 이번 주 범위 내 출석 확인
+            if sunday_str <= date_only <= saturday_str:
+                logging.warning(f"학생 {student_id}는 이미 이번 주에 출석했습니다. 날짜: {date_only}")
+                return False
         
         # 현재 한국 시간
         now_kst = datetime.now(KST)
@@ -188,24 +190,16 @@ def save_attendance(student_id, name, seat, period_text):
             'timestamp': firestore.SERVER_TIMESTAMP
         })
         
-        # 캐시 무효화 (학생 정보 갱신)
+        # 모든 캐시 무효화 (학생 정보 갱신을 위해)
+        global attendance_status_cache
+        cache_key = f"weekly_limit_{student_id}"
         if cache_key in attendance_status_cache:
             del attendance_status_cache[cache_key]
-            
-        # 10초 후 잠금 해제 (스케줄링)
-        def release_lock():
-            if lock_key in attendance_locks:
-                del attendance_locks[lock_key]
-                
-        # 잠금 해제 (바로 해제)
-        del attendance_locks[lock_key]
-            
+        
+        logging.info(f"학생 {student_id}({name})의 출석이 성공적으로 등록되었습니다. 날짜: {date_only}")
         return True
+        
     except Exception as e:
-        # 에러 발생 시 잠금 해제
-        if lock_key in attendance_locks:
-            del attendance_locks[lock_key]
-            
         logging.error(f"출석 저장 중 오류: {e}")
         return False
 
