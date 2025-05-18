@@ -404,8 +404,9 @@ document.addEventListener('DOMContentLoaded', function() {
             // 텍스트 생성
             let text = `${formattedDate} ${period} 도서실에 있는 학생입니다~!\n\n`;
             
-            // 헤더 추가 - 고정 너비 칸으로 조정
-            text += `이름${' '.repeat(11)}학번${' '.repeat(11)}좌석번호\n`;
+            // 헤더 추가 - 메모장에서도 간격이 보이도록 수정
+            text += `이름              학번              좌석번호\n`;
+            text += `----------------------------------------\n`;
             
             // 학생 정보 표시
             const periodRows = document.querySelectorAll(`.record-checkbox[data-period="${period}"]`);
@@ -415,8 +416,8 @@ document.addEventListener('DOMContentLoaded', function() {
                 const name = row.cells[2].textContent.trim();
                 const seat = row.cells[3].textContent.trim();
                 
-                // padEnd 메소드를 사용하여 항목 간 간격 넓히기
-                text += `${name.padEnd(15)}${studentId.padEnd(15)}${seat}\n`;
+                // 고정 너비 공백 사용 (메모장에서도 잘 보이도록)
+                text += `${name}              ${studentId}              ${seat}\n`;
             });
             
             copyToClipboard(text);
