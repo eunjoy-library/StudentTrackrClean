@@ -76,7 +76,8 @@ def get_current_period():
     if now.weekday() > 4:  # 토요일(5), 일요일(6)
         return -1
     
-    # 교시 시간대 정의
+    # 교시 시간대 정의 (datetime 모듈에서 직접 time 사용)
+    from datetime import time
     periods = [
         (time(7, 50), time(9, 15), 1),   # 1교시
         (time(9, 15), time(10, 40), 2),  # 2교시

@@ -402,15 +402,16 @@ document.addEventListener('DOMContentLoaded', function() {
             const formattedDate = formatDate(dateStr);
             
             // 텍스트 생성
-            let text = `${formattedDate} ${period} 도서실에 있는 학생 명단입니다~!\n\n`;
+            let text = `${formattedDate} ${period} 도서실에 있는 학생입니다~!\n\n`;
             
-            // 해당 교시 학생 목록 추가
+            // 학생 정보 표시
             const periodRows = document.querySelectorAll(`.record-checkbox[data-period="${period}"]`);
             periodRows.forEach(checkbox => {
                 const row = checkbox.closest('tr');
+                const studentId = row.cells[1].textContent.trim();
                 const name = row.cells[2].textContent.trim();
                 const seat = row.cells[3].textContent.trim();
-                text += `${name} (${seat})\n`;
+                text += `${studentId}, ${name}, ${seat}\n`;
             });
             
             copyToClipboard(text);
