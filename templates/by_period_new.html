@@ -405,7 +405,7 @@ document.addEventListener('DOMContentLoaded', function() {
             let text = `${formattedDate} ${period} 도서실에 있는 학생입니다~!\n\n`;
             
             // 헤더 추가
-            text += `학번  이름  좌석번호\n`;
+            text += `이름\t학번\t좌석번호\n`;
             
             // 학생 정보 표시
             const periodRows = document.querySelectorAll(`.record-checkbox[data-period="${period}"]`);
@@ -414,7 +414,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 const studentId = row.cells[1].textContent.trim();
                 const name = row.cells[2].textContent.trim();
                 const seat = row.cells[3].textContent.trim();
-                text += `${studentId}  ${name}  ${seat}\n`;
+                text += `${name}\t${studentId}\t${seat}\n`;
             });
             
             copyToClipboard(text);
