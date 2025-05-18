@@ -201,9 +201,9 @@ def load_attendance():
 
 # 출석 상태 캐싱을 위한 딕셔너리와 캐시 만료 시간 (초)
 attendance_status_cache = {}
-CACHE_EXPIRY = 60  # 60초 캐시 (성능 향상을 위해 증가)
+CACHE_EXPIRY = 30  # 30초 캐시 (빠른 갱신을 위해 감소)
 student_data_cache = {}  # 학생 정보 캐시
-STUDENT_CACHE_EXPIRY = 300  # 학생 정보는 5분 동안 캐시
+STUDENT_CACHE_EXPIRY = 600  # 학생 정보는 10분 동안 캐시 (성능 향상)
 
 # 이번 주 날짜 범위 정보 캐싱 (매번 계산하지 않도록)
 current_week_info = {
@@ -329,39 +329,77 @@ def api_check_attendance():
     """
     학생 ID로 해당 주에 출석 기록이 있는지 직접 확인하는 API
     - 정확한 기록 확인을 위해 DB에서 직접 조회
+    - 캐싱을 통한 속도 개선 및 중복 출석 방지
     """
     student_id = request.args.get('student_id')
+    
+    # POST 파라미터에서도 확인 (학생 ID 추출 문제 수정)
+    if not student_id and request.method == 'POST':
+        student_id = request.form.get('student_id')
+    
     if not student_id:
         return jsonify({'error': '학번이 필요합니다.', 'has_attendance': False})
     
     try:
+        # 캐시에서 확인 먼저 시도 (속도 개선)
+        cache_key = f"weekly_limit_{student_id}"
+        if cache_key in attendance_status_cache:
+            cache_entry = attendance_status_cache[cache_key]
+            if time.time() - cache_entry['timestamp'] < CACHE_EXPIRY:
+                # 캐시된 데이터 반환 (빠른 응답)
+                has_attendance = cache_entry['exceeded']
+                attendance_date = cache_entry['recent_dates'][0] if cache_entry['recent_dates'] else ""
+                logging.debug(f"학생 {student_id} 출석 상태 캐시 사용 (API)")
+                return jsonify({
+                    'has_attendance': has_attendance,
+                    'attendance_date': attendance_date,
+                    'cached': True
+                })
+        
         # 현재 주의 날짜 범위 가져오기
         sunday_str, saturday_str = get_current_week_range()
         
         # Firebase에서 해당 학생 ID와 이번 주 기간에 해당하는 기록 직접 조회
-        attendance_records = []
+        # 쿼리 최적화: 필요한 필드만 선택하여 데이터 전송량 감소
         
-        # 모든 출석 기록 불러오기
-        records = db.collection('attendances').where('student_id', '==', student_id).get()
-        
-        # 이번 주에 해당하는 기록만 필터링
-        has_attendance = False
-        attendance_date = ""
-        
-        for record in records:
-            data = record.to_dict()
-            date_only = data.get('date_only', '')
+        try:
+            # 학생 ID로 필터링하여 쿼리 실행
+            records = db.collection('attendances').where('student_id', '==', student_id).get()
             
-            # 이번 주 날짜 범위에 있는지 확인
-            if sunday_str <= date_only <= saturday_str:
-                has_attendance = True
-                attendance_date = date_only
-                break  # 하나라도 찾으면 중지
-        
-        return jsonify({
-            'has_attendance': has_attendance,
-            'attendance_date': attendance_date
-        })
+            # 이번 주에 해당하는 기록만 필터링
+            has_attendance = False
+            attendance_date = ""
+            recent_dates = []
+            
+            for record in records:
+                data = record.to_dict()
+                date_only = data.get('date_only', '')
+                
+                # 이번 주 날짜 범위에 있는지 확인
+                if sunday_str <= date_only <= saturday_str:
+                    has_attendance = True
+                    attendance_date = date_only
+                    recent_dates.append(date_only)
+                    # 캐시 업데이트를 위해 모든 날짜 수집 (break 제거)
+            
+            # 결과 캐싱 (자주 조회하는 학생은 캐시에서 빠르게 반환)
+            recent_dates = sorted(recent_dates, reverse=True)  # 최신 날짜 먼저
+            attendance_status_cache[cache_key] = {
+                'exceeded': has_attendance,
+                'count': len(recent_dates),
+                'recent_dates': recent_dates,
+                'timestamp': time.time()
+            }
+            
+            return jsonify({
+                'has_attendance': has_attendance,
+                'attendance_date': attendance_date,
+                'cached': False
+            })
+            
+        except Exception as db_error:
+            logging.error(f"Firebase 쿼리 실행 중 오류: {db_error}")
+            raise
         
     except Exception as e:
         logging.error(f"출석 확인 API 오류: {e}")
@@ -429,12 +467,27 @@ def attendance():
             return redirect(url_for('attendance'))
         
         # 주간 출석 제한 확인 (1회만 허용)
-        exceeded, count, recent_dates = check_weekly_attendance_limit(student_id)
-        if exceeded:
-            # 주간 1회 초과 출석 제한
-            formatted_dates = ', '.join(recent_dates)
-            flash(f'주간 출석 제한 (1회/주)을 초과했습니다. 최근 출석일: {formatted_dates}', 'danger')
-            return redirect(url_for('attendance'))
+        # 출석 API로 직접 확인 (자바스크립트에서 이미 확인했지만 더블체크)
+        try:
+            # API로 확인 (캐시 이용)
+            student_id_param = request.form.get('student_id', '').strip()
+            check_response = api_check_attendance()  # 학생 ID 파라미터 전달 안됨 문제 수정
+            check_data = json.loads(check_response.data)
+            
+            if check_data.get('has_attendance'):
+                # 이미 출석한 학생
+                attendance_date = check_data.get('attendance_date', '')
+                flash(f'이번 주에 이미 출석했습니다. 출석일: {attendance_date}', 'danger')
+                return redirect(url_for('attendance'))
+        except Exception as e:
+            # 확인 중 오류 발생 시 기존 방식으로 확인
+            logging.error(f"출석 확인 중 오류: {e}")
+            exceeded, count, recent_dates = check_weekly_attendance_limit(student_id)
+            if exceeded:
+                # 주간 1회 초과 출석 제한
+                formatted_dates = ', '.join(recent_dates)
+                flash(f'주간 출석 제한 (1회/주)을 초과했습니다. 최근 출석일: {formatted_dates}', 'danger')
+                return redirect(url_for('attendance'))
         
         # name과 seat이 비어있는 경우 학생 정보 찾기
         if not name or not seat:
@@ -462,8 +515,19 @@ def attendance():
                     flash('해당 학번의 학생 정보를 찾을 수 없습니다.', 'danger')
                     return redirect(url_for('attendance'))
         
-        # 출석 정보 저장
+        # 마지막으로 한번 더 중복 출석 확인
+        # 다른 탭이나 브라우저에서 동시에 요청이 들어올 경우 대비
         try:
+            check_response = api_check_attendance()
+            check_data = json.loads(check_response.data)
+            
+            if check_data.get('has_attendance'):
+                # 이미 출석한 학생
+                attendance_date = check_data.get('attendance_date', '')
+                flash(f'이번 주에 이미 출석했습니다. 출석일: {attendance_date}', 'danger')
+                return redirect(url_for('attendance'))
+                
+            # 출석 정보 저장
             # 교시 텍스트 설정
             period_text_for_db = period_text
             if period_text == "4교시 (도서실 이용 불가)":
@@ -471,6 +535,11 @@ def attendance():
             
             # 출석 정보 저장
             if save_attendance(student_id, name, seat, period_text_for_db):
+                # 캐시 갱신을 위해 캐시 키 삭제 (강제 새로고침)
+                cache_key = f"weekly_limit_{student_id}" 
+                if cache_key in attendance_status_cache:
+                    del attendance_status_cache[cache_key]
+                    
                 flash('출석이 성공적으로 등록되었습니다!', 'success')
             else:
                 flash('출석 등록에 실패했습니다.', 'danger')

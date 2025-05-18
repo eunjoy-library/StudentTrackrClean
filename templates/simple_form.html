@@ -503,16 +503,16 @@ document.addEventListener('DOMContentLoaded', function() {
                         
                         if (hasAttendance) {
                             // 이미 출석한 학생
-                            content = '<div style="color: #dc3545; font-weight: bold; margin-bottom: 15px; text-align: center; font-size: 18px;">' +
+                            content = '<div style="color: #ff6b6b; font-weight: bold; margin-bottom: 15px; text-align: center; font-size: 18px;">' +
                                     '이번주에 이미 출석하셨습니다.<br>' +
                                     '4층 공강실로 올라가주세요~!';
                             
                             if (attendDate) {
-                                content += '<div style="font-size: 16px; margin-top: 5px;">출석일: ' + attendDate + '</div>';
+                                content += '<div style="font-size: 16px; margin-top: 5px; color: #ffef99;">출석일: ' + attendDate + '</div>';
                             }
                             
                             content += '</div>' +
-                                     '<div style="font-size: 20px; font-weight: bold; color: #000; text-align: center;">' +
+                                     '<div style="font-size: 20px; font-weight: bold; color: #fff; text-align: center;">' +
                                      '<div style="margin-bottom: 15px;">이름: ' + maskedName + ' 님</div>' +
                                      '<div>공강실 좌석번호: ' + seatNumber + '</div>' +
                                      '</div>';
@@ -522,7 +522,7 @@ document.addEventListener('DOMContentLoaded', function() {
                             modalConfirmBtn.className = 'btn modal-button btn-secondary';
                         } else {
                             // 처음 출석하는 학생
-                            content = '<div style="font-size: 20px; font-weight: bold; color: #000; text-align: center;">' +
+                            content = '<div style="font-size: 20px; font-weight: bold; color: #fff; text-align: center;">' +
                                     '<div style="margin-bottom: 15px;">이름: ' + maskedName + ' 님</div>' +
                                     '<div>공강실 좌석번호: ' + seatNumber + '</div>' +
                                     '</div>';
