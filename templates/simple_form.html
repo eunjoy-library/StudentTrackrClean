@@ -495,6 +495,9 @@ document.addEventListener('DOMContentLoaded', function() {
             .catch(function(error) {
                 console.error('최종 출석 확인 오류:', error);
                 
+                // 오류 발생 즉시 소리 재생
+                playErrorSound();
+                
                 // 에러 시 사용자에게 확인 후 진행
                 if (confirm('출석 상태 확인 중 오류가 발생했습니다. 계속 진행하시겠습니까?')) {
                     playSuccessSound();
