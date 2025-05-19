@@ -946,75 +946,7 @@ def admin_add_attendance_confirm():
         flash(f'오류가 발생했습니다: {str(e)}', 'danger')
         return redirect(url_for('admin_add_attendance'))
 
-@app.route('/heatmap')
-def heatmap():
-    """출석 히트맵 표시 (관리자 전용)"""
-    if not session.get('admin'):
-        flash('관리자 로그인이 필요합니다.', 'warning')
-        return redirect(url_for('admin_login'))
-    
-    # 모든 출석 기록 로드
-    all_records = load_attendance()
-    
-    # 히트맵 데이터 준비
-    # 1. 날짜별 데이터 집계
-    date_counts = {}
-    periods_by_date = {}
-    
-    for record in all_records:
-        # 날짜만 추출 (시간 제외)
-        try:
-            date_only = record.get('date_only', '')
-            if not date_only and 'date' in record:
-                date_str = record['date']
-                if isinstance(date_str, str) and ' ' in date_str:
-                    date_only = date_str.split(' ')[0]
-                    
-            # 날짜별 카운트 증가
-            if date_only:
-                if date_only not in date_counts:
-                    date_counts[date_only] = 0
-                    periods_by_date[date_only] = set()
-                
-                date_counts[date_only] += 1
-                
-                # 교시 정보 수집
-                period = record.get('period', '')
-                if period:
-                    periods_by_date[date_only].add(period)
-        except Exception as e:
-            continue
-    
-    # 2. 데이터 정렬 (최근 30일만)
-    today = datetime.now(KST).date()
-    start_date = today - timedelta(days=29)  # 30일 전
-    
-    dates = []
-    for i in range(30):
-        date_obj = start_date + timedelta(days=i)
-        date_str = date_obj.strftime('%Y-%m-%d')
-        count = date_counts.get(date_str, 0)
-        periods = list(periods_by_date.get(date_str, set()))
-        
-        # 요일 계산
-        weekday = date_obj.weekday()  # 0=월요일, 6=일요일
-        weekday_name = ['월', '화', '수', '목', '금', '토', '일'][weekday]
-        
-        dates.append({
-            'date': date_str,
-            'count': count,
-            'weekday': weekday,
-            'weekday_name': weekday_name,
-            'periods': periods,
-            'is_today': date_obj == today
-        })
-    
-    # 3. 최대값 계산 (색상 강도용)
-    max_count = max([d['count'] for d in dates]) if dates else 0
-    
-    return render_template('heatmap.html', 
-                          dates=dates, 
-                          max_count=max_count)
+
 
 @app.route('/delete_records', methods=['POST'])
 def delete_records():
