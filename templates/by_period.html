@@ -11,18 +11,18 @@
         <div class="card-body">
             <!-- 상단 버튼 그룹 -->
             <div class="row mb-4">
-                <div class="col-md-6">
-                    <div class="btn-group mb-3">
-                        <a href="{{ url_for('list_attendance') }}" class="btn btn-secondary">
-                            <i class="fas fa-list me-1"></i>전체 출석 목록
-                        </a>
-                        <a href="{{ url_for('admin_add_attendance') }}" class="btn btn-primary">
-                            <i class="fas fa-user-plus me-1"></i>추가 출석하기
-                        </a>
-                        <a href="{{ url_for('attendance') }}" class="btn btn-success">
+                <div class="col-md-8">
+                    <div class="mb-3">
+                        <a href="{{ url_for('attendance') }}" class="btn btn-sm btn-success">
                             <i class="fas fa-home me-1"></i>출석 페이지
                         </a>
-                        <a href="{{ url_for('logout') }}" class="btn btn-danger">
+                        <a href="{{ url_for('admin_add_attendance') }}" class="btn btn-sm btn-primary">
+                            <i class="fas fa-user-plus me-1"></i>추가 출석하기
+                        </a>
+                        <a href="{{ url_for('list_attendance') }}" class="btn btn-sm btn-secondary">
+                            <i class="fas fa-list me-1"></i>전체 출석 목록
+                        </a>
+                        <a href="{{ url_for('logout') }}" class="btn btn-sm btn-danger">
                             <i class="fas fa-sign-out-alt me-1"></i>로그아웃
                         </a>
                     </div>
