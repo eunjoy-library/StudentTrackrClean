@@ -767,9 +767,9 @@ def by_period():
             grouped_records[period] = []
         grouped_records[period].append(record)
     
-    # 교시 순서대로 정렬 (1교시, 2교시 등)
+    # 교시 순서대로 정렬 (최근 교시가 상단에 오도록 역순 정렬)
     sorted_groups = {}
-    period_order = ["1교시", "2교시", "3교시", "4교시", "5교시", "6교시", "7교시", "8교시", "9교시", "10교시", "시간 외", "기타"]
+    period_order = ["10교시", "9교시", "8교시", "7교시", "6교시", "5교시", "4교시", "3교시", "2교시", "1교시", "시간 외", "기타"]
     
     for period in period_order:
         if period in grouped_records:
