@@ -134,11 +134,12 @@ def load_student_data():
         logging.error(f"학생 데이터 로딩 중 오류: {e}")
         return {}
 
-def save_attendance(student_id, name, seat, period_text):
+def save_attendance(student_id, name, seat, period_text, admin_override=False):
     """
     출석 기록을 데이터베이스에 저장 (한국 시간 기준)
     - DB에서 직접 중복 출석 여부 확인
     - 안전한 트랜잭션 방식으로 처리
+    - admin_override: 관리자 권한으로 중복 출석 허용 여부 (True이면 중복 체크 건너뜀)
     """
     # 전역 변수에 이미 출석 처리 여부 저장
     attendance_status = False
@@ -148,49 +149,51 @@ def save_attendance(student_id, name, seat, period_text):
         if not db:
             flash("Firebase 설정이 완료되지 않았습니다.", "danger")
             return False
-            
-        # 현재 주 범위 계산 (일~토)
-        now = datetime.now(KST)
         
-        # 이번 주 일요일(주 시작) 계산
-        days_to_sunday = now.weekday() + 1  # 월=0, 일=6이므로 역으로 계산
-        if days_to_sunday == 7:  # 일요일인 경우
-            days_to_sunday = 0
+        # 관리자 모드이고 중복 확인 무시 설정인 경우, 중복 체크 건너뜀
+        if not admin_override:
+            # 현재 주 범위 계산 (일~토)
+            now = datetime.now(KST)
             
-        sunday = now - timedelta(days=days_to_sunday)
-        sunday = sunday.replace(hour=0, minute=0, second=0, microsecond=0)
-        
-        # 토요일(주 마지막) 계산
-        days_to_saturday = (5 - now.weekday()) % 7  # 토요일까지 남은 일수
-        saturday = now + timedelta(days=days_to_saturday)
-        saturday = saturday.replace(hour=23, minute=59, second=59, microsecond=999999)
-        
-        sunday_str = sunday.strftime('%Y-%m-%d')
-        saturday_str = saturday.strftime('%Y-%m-%d')
-            
-        # 이번 주 출석 기록을 직접 확인 (캐시 없이)
-        attendance_query = db.collection('attendances').where('student_id', '==', student_id)
-        attendance_docs = attendance_query.get()
-            
-        # 학생이 이번 주에 이미 출석했는지 직접 확인
-        already_attended = False
-        attendance_date = ""
-            
-        for doc in attendance_docs:
-            doc_data = doc.to_dict()
-            doc_date = doc_data.get('date_only', '')
+            # 이번 주 일요일(주 시작) 계산
+            days_to_sunday = now.weekday() + 1  # 월=0, 일=6이므로 역으로 계산
+            if days_to_sunday == 7:  # 일요일인 경우
+                days_to_sunday = 0
                 
-            # 이번 주 날짜 범위 내에 있는 출석인지 확인
-            if sunday_str <= doc_date <= saturday_str:
-                already_attended = True
-                attendance_date = doc_date
-                logging.warning(f"학생 {student_id}는 이미 이번 주에 출석했습니다. 날짜: {doc_date}")
-                break
+            sunday = now - timedelta(days=days_to_sunday)
+            sunday = sunday.replace(hour=0, minute=0, second=0, microsecond=0)
+            
+            # 토요일(주 마지막) 계산
+            days_to_saturday = (5 - now.weekday()) % 7  # 토요일까지 남은 일수
+            saturday = now + timedelta(days=days_to_saturday)
+            saturday = saturday.replace(hour=23, minute=59, second=59, microsecond=999999)
+            
+            sunday_str = sunday.strftime('%Y-%m-%d')
+            saturday_str = saturday.strftime('%Y-%m-%d')
                 
-        # 이미 출석한 경우 처리 중단
-        if already_attended:
-            flash(f'이미 이번 주에 출석 기록이 있습니다. (출석일: {attendance_date})', 'warning')
-            return False
+            # 이번 주 출석 기록을 직접 확인 (캐시 없이)
+            attendance_query = db.collection('attendances').where('student_id', '==', student_id)
+            attendance_docs = attendance_query.get()
+                
+            # 학생이 이번 주에 이미 출석했는지 직접 확인
+            already_attended = False
+            attendance_date = ""
+                
+            for doc in attendance_docs:
+                doc_data = doc.to_dict()
+                doc_date = doc_data.get('date_only', '')
+                    
+                # 이번 주 날짜 범위 내에 있는 출석인지 확인
+                if sunday_str <= doc_date <= saturday_str:
+                    already_attended = True
+                    attendance_date = doc_date
+                    logging.warning(f"학생 {student_id}는 이미 이번 주에 출석했습니다. 날짜: {doc_date}")
+                    break
+                    
+            # 이미 출석한 경우 처리 중단
+            if already_attended:
+                flash(f'이미 이번 주에 출석 기록이 있습니다. (출석일: {attendance_date})', 'warning')
+                return False
             
         # 현재 시간으로 출석 기록 생성
         now_kst = datetime.now(KST)
@@ -936,8 +939,11 @@ def admin_add_attendance_confirm():
         elif current_period > 0:
             period_text = f"{current_period}교시"
         
-        # 출석 기록 저장
-        save_attendance(student_id, name, seat, period_text)
+        # 중복 출석 체크 플래그 설정 (override = True면 중복 체크 무시)
+        admin_override = override
+        
+        # 출석 기록 저장 (admin_override 파라미터 전달)
+        save_attendance(student_id, name, seat, period_text, admin_override=admin_override)
         
         flash(f"✅ 관리자 권한으로 추가 출석이 완료되었습니다. 학번: {student_id}, 이름: {name}", "success")
         return redirect(url_for('by_period'))
