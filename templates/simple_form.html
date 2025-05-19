@@ -497,9 +497,11 @@ document.addEventListener('DOMContentLoaded', function() {
                 
                 // 에러 시 사용자에게 확인 후 진행
                 if (confirm('출석 상태 확인 중 오류가 발생했습니다. 계속 진행하시겠습니까?')) {
+                    playSuccessSound();
                     closeModal();
                     form.submit();
                 } else {
+                    playErrorSound();
                     closeModal();
                 }
             });
