@@ -459,7 +459,12 @@ document.addEventListener('DOMContentLoaded', function() {
     }
     
     // 모달 버튼 이벤트
-    modalCancelBtn.addEventListener('click', closeModal);
+    modalCancelBtn.addEventListener('click', function() {
+        // 취소 버튼 클릭시 에러 사운드 재생
+        const errorAudio = new Audio(errorAudioBase64);
+        errorAudio.play();
+        closeModal();
+    });
     
     // 모달 확인 버튼 - 중복 출석 방지를 위한 추가 검증 
     modalConfirmBtn.addEventListener('click', function() {
@@ -483,6 +488,9 @@ document.addEventListener('DOMContentLoaded', function() {
                 }
                 
                 // 출석이 없는 경우에만 제출
+                // 성공 사운드 재생
+                const successAudio = new Audio(successAudioBase64);
+                successAudio.play();
                 closeModal();
                 form.submit();
             })
