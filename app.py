@@ -841,6 +841,111 @@ def logout():
     flash('로그아웃되었습니다.', 'info')
     return redirect(url_for('attendance'))
 
+@app.route('/admin_add_attendance', methods=['GET', 'POST'])
+def admin_add_attendance():
+    """관리자용 추가 출석 페이지"""
+    if not session.get('admin'):
+        flash('관리자 로그인이 필요합니다.', 'warning')
+        return redirect(url_for('admin_login'))
+    
+    student_info = None
+    attended = False
+    last_attendance_date = None
+    override = False
+    
+    if request.method == 'POST':
+        student_id = request.form.get('student_id')
+        override_check = request.form.get('override_check') == 'on'
+        
+        # 학생 데이터 로드
+        student_data = load_student_data()
+        if student_id in student_data:
+            name, seat = student_data[student_id]
+            
+            # 출석 체크를 위한 확인 로직
+            # 이미 출석했는지 확인 (결과를 무시하고 attended 플래그만 추출)
+            # 관리자 권한으로 추가 시 출석 제한을 무시하기 위해 admin_override=True 전달
+            all_records = load_attendance()
+            student_records = [r for r in all_records if r.get('student_id') == student_id]
+            
+            # 이번 주 출석 여부 확인
+            sunday_str, saturday_str = get_current_week_range()
+            sunday = datetime.strptime(sunday_str, '%Y-%m-%d')
+            saturday = datetime.strptime(saturday_str, '%Y-%m-%d')
+            
+            # 이번주 출석 기록 필터링
+            week_records = []
+            for record in student_records:
+                try:
+                    record_date = datetime.strptime(record.get('date'), '%Y-%m-%d %H:%M:%S')
+                    if sunday <= record_date <= saturday:
+                        week_records.append(record)
+                except:
+                    pass
+            
+            attended = len(week_records) > 0
+            if attended and week_records:
+                # 가장 최근 출석일 찾기
+                last_record = max(week_records, key=lambda r: datetime.strptime(r.get('date'), '%Y-%m-%d %H:%M:%S'))
+                last_attendance_date = last_record.get('date').split(' ')[0]
+                
+            # 경고 여부 체크 (실제 구현은 여기에 추가)
+            is_warned = False
+            warning_info = None
+            
+            student_info = {
+                'id': student_id,
+                'name': name,
+                'seat': seat,
+                'is_warned': is_warned,
+                'warning_info': warning_info
+            }
+            
+            override = override_check
+            
+    return render_template('admin_add_attendance.html',
+                          student_info=student_info,
+                          attended=attended,
+                          last_attendance_date=last_attendance_date,
+                          override=override)
+
+@app.route('/admin_add_attendance/confirm', methods=['POST'])
+def admin_add_attendance_confirm():
+    """관리자용 추가 출석 확인 처리"""
+    if not session.get('admin'):
+        flash('관리자 로그인이 필요합니다.', 'warning')
+        return redirect(url_for('admin_login'))
+    
+    # 폼 데이터 가져오기
+    student_id = request.form.get('student_id')
+    name = request.form.get('name')
+    seat = request.form.get('seat')
+    override = request.form.get('override') == '1'
+    
+    if not student_id or not name or not seat:
+        flash('필수 정보가 누락되었습니다.', 'danger')
+        return redirect(url_for('admin_add_attendance'))
+    
+    try:
+        # 관리자 권한으로 출석 추가
+        current_period = get_current_period()
+        period_text = "시간 외"
+        
+        if current_period == 0:
+            period_text = "4교시"
+        elif current_period > 0:
+            period_text = f"{current_period}교시"
+        
+        # 출석 기록 저장
+        save_attendance(student_id, name, seat, period_text)
+        
+        flash(f"✅ 관리자 권한으로 추가 출석이 완료되었습니다. 학번: {student_id}, 이름: {name}", "success")
+        return redirect(url_for('by_period'))
+        
+    except Exception as e:
+        flash(f'오류가 발생했습니다: {str(e)}', 'danger')
+        return redirect(url_for('admin_add_attendance'))
+
 @app.route('/delete_records', methods=['POST'])
 def delete_records():
     """Delete selected attendance records (admin only)"""
