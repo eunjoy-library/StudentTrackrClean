@@ -15,45 +15,45 @@ function initAudioContext() {
     return audioContext;
 }
 
-// 성공 소리 재생 (낮은 띵동 소리)
+// 성공 소리 재생 (더 낮은 띵동 소리)
 function playSuccessSound() {
     const context = initAudioContext();
     if (!context) return;
     
     try {
-        // 첫 번째 음 (낮은 띵)
+        // 첫 번째 음 (더 낮은 띵)
         const oscillator1 = context.createOscillator();
         const gainNode1 = context.createGain();
         
         oscillator1.type = 'sine';
-        oscillator1.frequency.setValueAtTime(600, context.currentTime); // 더 낮은 주파수로 변경
+        oscillator1.frequency.setValueAtTime(400, context.currentTime); // 훨씬 더 낮은 주파수로 변경
         
         gainNode1.gain.setValueAtTime(0, context.currentTime);
-        gainNode1.gain.linearRampToValueAtTime(0.3, context.currentTime + 0.05);
-        gainNode1.gain.linearRampToValueAtTime(0, context.currentTime + 0.3);
+        gainNode1.gain.linearRampToValueAtTime(0.4, context.currentTime + 0.05);
+        gainNode1.gain.linearRampToValueAtTime(0, context.currentTime + 0.4);
         
         oscillator1.connect(gainNode1);
         gainNode1.connect(context.destination);
         
         oscillator1.start();
-        oscillator1.stop(context.currentTime + 0.3);
+        oscillator1.stop(context.currentTime + 0.4);
         
         // 두 번째 음 (동)
         const oscillator2 = context.createOscillator();
         const gainNode2 = context.createGain();
         
         oscillator2.type = 'sine';
-        oscillator2.frequency.setValueAtTime(750, context.currentTime + 0.3); // 첫 번째보다 약간 높은 주파수
+        oscillator2.frequency.setValueAtTime(500, context.currentTime + 0.4); // 첫 번째보다 약간 높은 주파수
         
-        gainNode2.gain.setValueAtTime(0, context.currentTime + 0.3);
-        gainNode2.gain.linearRampToValueAtTime(0.3, context.currentTime + 0.35);
-        gainNode2.gain.linearRampToValueAtTime(0, context.currentTime + 0.6);
+        gainNode2.gain.setValueAtTime(0, context.currentTime + 0.4);
+        gainNode2.gain.linearRampToValueAtTime(0.4, context.currentTime + 0.45);
+        gainNode2.gain.linearRampToValueAtTime(0, context.currentTime + 0.8);
         
         oscillator2.connect(gainNode2);
         gainNode2.connect(context.destination);
         
-        oscillator2.start(context.currentTime + 0.3);
-        oscillator2.stop(context.currentTime + 0.6);
+        oscillator2.start(context.currentTime + 0.4);
+        oscillator2.stop(context.currentTime + 0.8);
         
         console.log("성공 소리가 재생되었습니다.");
     } catch (e) {
