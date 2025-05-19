@@ -393,6 +393,7 @@ def api_check_attendance():
     학생 ID로 해당 주에 출석 기록이 있는지 직접 확인하는 API
     - 정확한 기록 확인을 위해 캐시 없이 DB에서 직접 조회
     - 중복 출석 방지를 위한 실시간 검증
+    - 경고받은 학생 출석 제한 기능 추가
     """
     student_id = request.args.get('student_id')
     
@@ -405,6 +406,27 @@ def api_check_attendance():
     
     if not student_id:
         return jsonify({'error': '학번이 필요합니다.', 'has_attendance': False})
+    
+    # 경고받은 학생인지 확인 (추가)
+    try:
+        # 'warnings' 컬렉션에서 해당 학생 ID에 대한 활성화된 경고 확인
+        if db:
+            warnings_query = db.collection('warnings').where('student_id', '==', student_id).where('active', '==', True)
+            warning_docs = warnings_query.get()
+            
+            # 활성화된 경고가 있는지 확인
+            for doc in warning_docs:
+                warning_data = doc.to_dict()
+                # 경고 상태인 경우 출석 제한
+                return jsonify({
+                    'warning': True,
+                    'has_attendance': False,
+                    'message': '경고 상태로 인해 출석이 제한되었습니다. 관리자에게 문의하세요.',
+                    'warning_reason': warning_data.get('reason', '경고 상태')
+                })
+    except Exception as e:
+        logging.error(f"경고 확인 오류: {e}")
+        # 경고 확인 실패 시에도 계속 진행하여 출석은 확인
     
     try:
         # 현재 주의 범위 계산 (일요일부터 토요일까지)
