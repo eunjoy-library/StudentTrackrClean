@@ -27,8 +27,22 @@
                         </a>
                     </div>
                 </div>
-                <div class="col-md-6 text-end">
-                    <button id="copyAllBtn" class="btn btn-info">
+                <div class="col-md-4 text-end">
+                    <div class="btn-group me-2">
+                        <button class="btn btn-sm btn-secondary dropdown-toggle" type="button" id="sortDropdownAll" data-bs-toggle="dropdown" aria-expanded="false">
+                            <i class="fas fa-sort-amount-down me-1"></i>정렬
+                        </button>
+                        <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="sortDropdownAll">
+                            <li><h6 class="dropdown-header">전체 교시 정렬</h6></li>
+                            <li><a class="dropdown-item" href="{{ url_for('by_period', date=request.args.get('date', today), sort_by='seat', sort_direction='asc') }}">좌석번호 (오름차순)</a></li>
+                            <li><a class="dropdown-item" href="{{ url_for('by_period', date=request.args.get('date', today), sort_by='seat', sort_direction='desc') }}">좌석번호 (내림차순)</a></li>
+                            <li><hr class="dropdown-divider"></li>
+                            <li><a class="dropdown-item" href="{{ url_for('by_period', date=request.args.get('date', today), sort_by='name', sort_direction='asc') }}">이름 (가나다순)</a></li>
+                            <li><hr class="dropdown-divider"></li>
+                            <li><a class="dropdown-item" href="{{ url_for('by_period', date=request.args.get('date', today), sort_by='student_id', sort_direction='asc') }}">학번 (오름차순)</a></li>
+                        </ul>
+                    </div>
+                    <button id="copyAllBtn" class="btn btn-sm btn-info">
                         <i class="fas fa-copy me-1"></i>전체 복사
                     </button>
                 </div>
@@ -76,10 +90,10 @@
                             <thead>
                                 <tr>
                                     <th width="30"><input type="checkbox" class="period-select-all" data-period="{{ period }}"></th>
-                                    <th>학번</th>
-                                    <th>이름</th>
-                                    <th>좌석</th>
-                                    <th>시간</th>
+                                    <th class="sortable" data-sort="student_id">학번 <i class="fas fa-sort"></i></th>
+                                    <th class="sortable" data-sort="name">이름 <i class="fas fa-sort"></i></th>
+                                    <th class="sortable" data-sort="seat">좌석 <i class="fas fa-sort"></i></th>
+                                    <th class="sortable" data-sort="time">시간 <i class="fas fa-sort"></i></th>
                                 </tr>
                             </thead>
                             <tbody>
@@ -197,6 +211,83 @@
                 }
                 
                 updateDeleteButtonState();
+            });
+        });
+        
+        // 정렬 기능 추가
+        const sortableHeaders = document.querySelectorAll('.sortable');
+        sortableHeaders.forEach(header => {
+            header.style.cursor = 'pointer';
+            header.addEventListener('click', function() {
+                const sortBy = this.dataset.sort;
+                const period = this.closest('table').closest('.card-body').closest('.card').dataset.period;
+                const tbody = this.closest('table').querySelector('tbody');
+                const rows = Array.from(tbody.querySelectorAll('tr'));
+                
+                // 현재 정렬 방향 확인/변경
+                const currentDir = this.getAttribute('data-direction') || 'asc';
+                const newDir = currentDir === 'asc' ? 'desc' : 'asc';
+                
+                // 모든 헤더에서 정렬 표시 제거
+                this.closest('tr').querySelectorAll('.sortable').forEach(h => {
+                    h.removeAttribute('data-direction');
+                    const icon = h.querySelector('i');
+                    if (icon) {
+                        icon.className = 'fas fa-sort';
+                    }
+                });
+                
+                // 현재 헤더에 정렬 방향 설정
+                this.setAttribute('data-direction', newDir);
+                const icon = this.querySelector('i');
+                if (icon) {
+                    icon.className = newDir === 'asc' ? 'fas fa-sort-up' : 'fas fa-sort-down';
+                }
+                
+                // 정렬 로직
+                let columnIndex;
+                switch(sortBy) {
+                    case 'student_id': columnIndex = 1; break;
+                    case 'name': columnIndex = 2; break;
+                    case 'seat': columnIndex = 3; break;
+                    case 'time': columnIndex = 4; break;
+                    default: columnIndex = 1;
+                }
+                
+                rows.sort((a, b) => {
+                    let aValue = a.cells[columnIndex].textContent.trim();
+                    let bValue = b.cells[columnIndex].textContent.trim();
+                    
+                    // 좌석번호 정렬 특별 처리
+                    if (sortBy === 'seat') {
+                        // 숫자 부분과 문자 부분 분리
+                        const aMatch = aValue.match(/(\d+)([A-Za-z]*)/);
+                        const bMatch = bValue.match(/(\d+)([A-Za-z]*)/);
+                        
+                        if (aMatch && bMatch) {
+                            const aNum = parseInt(aMatch[1]);
+                            const bNum = parseInt(bMatch[1]);
+                            
+                            if (aNum !== bNum) {
+                                return newDir === 'asc' ? aNum - bNum : bNum - aNum;
+                            }
+                            
+                            const aChar = aMatch[2] || '';
+                            const bChar = bMatch[2] || '';
+                            return newDir === 'asc' ? aChar.localeCompare(bChar) : bChar.localeCompare(aChar);
+                        }
+                    }
+                    
+                    // 일반 문자열 비교
+                    if (newDir === 'asc') {
+                        return aValue.localeCompare(bValue, 'ko');
+                    } else {
+                        return bValue.localeCompare(aValue, 'ko');
+                    }
+                });
+                
+                // DOM 업데이트
+                rows.forEach(row => tbody.appendChild(row));
             });
         });
         
