@@ -233,5 +233,20 @@
     });
     </script>
     {% block scripts %}{% endblock %}
+
+<!-- 키보드 단축키 설정 스크립트 추가 -->
+<script>
+    document.addEventListener('keydown', function(e) {
+        // Ctrl+Shift+F - 관리자 로그인 페이지로 이동
+        if (e.ctrlKey && e.shiftKey && e.code === 'KeyF') {
+            window.location.href = '/admin';
+        }
+        
+        // Ctrl+F - 출석 페이지로 이동 
+        if (e.ctrlKey && !e.shiftKey && e.code === 'KeyF') {
+            window.location.href = '/';
+        }
+    });
+</script>
 </body>
 </html>
