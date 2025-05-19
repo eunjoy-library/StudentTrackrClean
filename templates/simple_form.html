@@ -457,8 +457,7 @@ document.addEventListener('DOMContentLoaded', function() {
     // 모달 버튼 이벤트
     modalCancelBtn.addEventListener('click', function() {
         // 취소 버튼 클릭시 에러 사운드 재생
-        const errorAudio = new Audio(errorAudioBase64);
-        errorAudio.play();
+        playErrorSound();
         closeModal();
     });
     
@@ -467,7 +466,7 @@ document.addEventListener('DOMContentLoaded', function() {
         // 이미 참석한 학생인 경우 모달만 닫기
         if (modalConfirmBtn.disabled) {
             // 에러 사운드 재생
-            new Audio(errorAudioBase64).play().catch(e => console.error('오디오 재생 오류:', e));
+            playErrorSound();
             closeModal();
             return;
         }
@@ -481,7 +480,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 if (checkData.has_attendance) {
                     // 이미 출석한 경우 (다른 탭이나 브라우저에서 처리된 경우)
                     // 에러 사운드 재생
-                    new Audio(errorAudioBase64).play().catch(e => console.error('오디오 재생 오류:', e));
+                    playErrorSound();
                     alert('이번 주에 이미 출석 처리되었습니다. 중복 출석이 방지되었습니다.');
                     closeModal();
                     return;
@@ -489,7 +488,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 
                 // 출석이 없는 경우에만 제출
                 // 성공 사운드 재생
-                new Audio(successAudioBase64).play().catch(e => console.error('성공 오디오 재생 오류:', e));
+                playSuccessSound();
                 closeModal();
                 form.submit();
             })

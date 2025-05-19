@@ -1,13 +1,17 @@
-// 출석 시스템 오디오 효과 - Base64 데이터
-const successAudioBase64 = "data:audio/mp3;base64,SUQzAwAAAAAAJlRQRTEAAAAcAAAAU291bmRKYXkuY29tIFNvdW5kIEVmZmVjdHMA//uQxAAAEvGLIVT0AAuBtax/MoABEfAYDAYDAAQQIAgQIAKqqqqqPz8+ViQy/+/+5/9ggQIECBAgAECBAgAA5+fm/7+/v/jQYjEYjEAAAAGWZkkWXf/llllllllll42y//OOf/vC+yz/nnnnnW3/////7MLgAA1EAipIFaBCIEAAACCSxJNP/5L/10QAGlxTb/3tf+Dnve9V/6QAABAKP/uSxAAAEm2jKVRkAARYti5vjAAA6rX////p+fKCJMTM/2rM7vu+5GXWB0Wj/opERwTJ4AAAAA0AAAAAAAAAAAZlMpmTAAAAAADPWJOnmkkLUmR5FUiAL8CJKY6QUeogE0tNTfcDi4eFBEQ0j0ENglpC0O4zExdPnKeLTzZGI+MoAABWQU7xjcmMeIGMCZooDYJJlkN8vdaYhUSAQBkYsqBQOXmwbMOFQZGNwVBkJCBgCDQm4wKE0zMQw3ZNUzIkBTFw+jEIKBI1gHo=";
+// 오디오 파일 경로 지정
+const successAudioPath = "/static/success.mp3";
+const errorAudioPath = "/static/error.mp3";
 
-const errorAudioBase64 = "data:audio/mp3;base64,SUQzAwAAAAAAJlRQRTEAAAAcAAAAU291bmRKYXkuY29tIFNvdW5kIEVmZmVjdHMA//uQxAAAEmGLIVT0AAuIMy3CexAAI/AYDQUCAYDAAAAgQIAcDn5BAQB2Mv///6qqqqqqn4nNsWJd//5d///jlX///oNQLcMDQIITOTTTT5xtxxtxxtprTv///O/////jO//////5T////+AxMGgQQqqqqqqqQGJgtURWboRCMxG8ZNbnf/ooABkOiRlb/D/50ev/h+f8CAABAKP/uSxAAAGImTJXiEAAnI02XvENwCMv///xnNRGo5M6OXZdV73OyS1TJUzKn/0ywgw4oAAARgAAAAAAAAAkICDQAFIAAAFV1dWPD/KmI4FJ2G4Q1ACjKNIdUm0JKYv4JZFtBNQxJE4JDBI4NCNRKN/Yt1D8mpXdV/NigAAKxIVNEmSEYlMNkpFNWDiMqG0dJUlIUAQIqGYGQCZX9CFKo7qPKt5mVJF8VnqRGkzYLnMv/1e3V11K9xEMm6a/9XtVvb9vaoVXCB0g==";
-
-// 오디오 객체를 초기화하고 Base64 데이터 설정
-function initializeAudios() {
-    successAudio.src = successAudioBase64;
-    errorAudio.src = errorAudioBase64;
+// 오디오 객체 준비 함수
+function playSuccessSound() {
+    const audio = new Audio(successAudioPath);
+    audio.play().catch(e => console.error('성공 오디오 재생 오류:', e));
 }
 
-// DOM이 로드된 후 오디오 초기화
-document.addEventListener('DOMContentLoaded', initializeAudios);
+function playErrorSound() {
+    const audio = new Audio(errorAudioPath);
+    audio.play().catch(e => console.error('오류 오디오 재생 오류:', e));
+}
+
+// 실행되는지 테스트 콘솔 로그
+console.log("오디오 처리 모듈이 로드되었습니다.");
