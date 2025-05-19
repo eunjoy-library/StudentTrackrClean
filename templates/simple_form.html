@@ -596,6 +596,7 @@ document.addEventListener('DOMContentLoaded', function() {
             })
             .catch(function(error) {
                 console.error('학생 정보 조회 오류:', error);
+                playErrorSound(); // 오류 발생 시 소리 추가
                 alert('학생 정보를 조회하는 중 오류가 발생했습니다.');
             });
     });
