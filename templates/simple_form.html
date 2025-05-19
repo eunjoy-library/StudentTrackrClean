@@ -591,6 +591,12 @@ document.addEventListener('DOMContentLoaded', function() {
                         // 모달 표시
                         studentInfoText.innerHTML = content;
                         customModal.style.display = 'block';
+                        
+                        // 이미 출석한 학생이 아닌 경우에만 (중복 사운드 방지)
+                        if (!hasAttendance) {
+                            // 모달 표시 시 준비 효과음
+                            playSuccessSound();
+                        }
                     })
                     .catch(function(error) {
                         console.error('출석 상태 확인 오류:', error);
