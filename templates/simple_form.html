@@ -470,6 +470,8 @@ document.addEventListener('DOMContentLoaded', function() {
     modalConfirmBtn.addEventListener('click', function() {
         // 이미 참석한 학생인 경우 모달만 닫기
         if (modalConfirmBtn.disabled) {
+            // 에러 사운드 재생
+            new Audio(errorAudioBase64).play().catch(e => console.error('오디오 재생 오류:', e));
             closeModal();
             return;
         }
@@ -489,8 +491,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 
                 // 출석이 없는 경우에만 제출
                 // 성공 사운드 재생
-                const successAudio = new Audio(successAudioBase64);
-                successAudio.play();
+                new Audio(successAudioBase64).play().catch(e => console.error('성공 오디오 재생 오류:', e));
                 closeModal();
                 form.submit();
             })
