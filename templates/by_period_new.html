@@ -283,7 +283,18 @@
     <div class="card-footer">
       <div class="row">
         <div class="col-md-6">
-          <!-- 버튼들이 상단으로 이동되었습니다 -->
+          <a href="{{ url_for('list_attendance') }}" class="btn btn-info">
+            <i class="fas fa-list me-1"></i>전체 목록으로
+          </a>
+          <a href="{{ url_for('admin_add_attendance') }}" class="btn btn-primary">
+            <i class="fas fa-user-plus me-1"></i>추가 출석하기
+          </a>
+          <a href="{{ url_for('attendance') }}" class="btn btn-success">
+            <i class="fas fa-home me-1"></i>출석 페이지로 가기
+          </a>
+          <a href="{{ url_for('logout') }}" class="btn btn-danger">
+            <i class="fas fa-sign-out-alt me-1"></i>로그아웃
+          </a>
         </div>
       </div>
     </div>
