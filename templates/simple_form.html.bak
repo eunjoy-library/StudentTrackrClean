@@ -2,13 +2,6 @@
 
 {% block title %}학생 출석{% endblock %}
 
-{% block head_extra %}
-<!-- 오디오 기능은 layout.html에서 정의되어 있습니다 -->
-{% endblock %}/////cZddiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmP//////////8IAFUAAAAAAACAAAX/////ZEaK8TExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTAxP/////////+bAFEA//+5LE44AY/hD8x72AAx/CH5j3sAAAAAAACAAAAf/////4hLiZETExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExP//////////WwAPwAAAAAAADAAAP/////jWFKJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJ//////////SgADsAAAAAAAIAAAf/////YZqpiYmJiYmJiYmJiYmJicmJiYmJiYmJiZJJiYmJiYmJiYmJiYmJiYmJ//////////QgADMAAAAAAAEAAAL//uSxOOAGPYQ/Me9gAMfwh+Y97AAP/////uaqYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYv//////////RgACwAAAAAAAQAAB//////iKEYSNSYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYv//////////aoAAkAAAAAAAIAAAj/////1nxJiYxFhMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTDExMTExMTL/////////+zwACQAAAAAAABAAAD//////hbhKmHi4m//+5LE5gAY/hD8x72AAx/CH5j3sABJiYrExQTE5MTExOTExMTExMTExMTExMVExMTExMTEw///////////cAATgAAAAAAAQAAA//////nGKixcTE5MTExMTExMXExMTExOTExMTlROTExMTExMVExMTExWTExMTExcTE//////////9KAAHIAAAAAAAQAAAf/////YxMYxUTE5MTExQTEwdJiYnJiYnJiYnJiYnJiYmJiYqJiYqFxOTExUTkxMTlZ//////////6kAAwAAAAAAACAAAAb/////3KYSumJicmJiYmJiciJiYmJiYmJiYmJiYmJiYl//uSxOKAGPoQ/Me9gAMfwh+Y97AAiYmJiYmJiYmJiYmJu//////////oAAPAAAAAAAABAAAL/////7okpmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJicm//////////joAAPAAAAAAAAIAAA//////rFRMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExc//////////TQADkAAAAAAACAAAP/////6hExeEqXExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTE//+5LE5gAY/hD8x72AAx/CH5j3sABhOJieqqJi//////////KgACwAAAAAAABAAAD/////QyipJmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYv//////////jgABIAAAAAAAEAAAP/////8UTsyWJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYS//////////jwABIAAAAAAAIAAAH/////+V2eExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExP/////////+5LEzgAY/hD9R72AAx/CH1j3sAAnAACQAAAAAAAQAAAf/////hclRPTMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExP//////////pAAAgAAAAAAAWAAAP/////8KlJMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMX//////////AgAAQAAAAAAAMAAAP/////+IUYxMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExP/////////+jAABAAAAAAAAAAAH//uSxNIAGP4Q/Me9gAMfwh+Y97AAf/////EhxOTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExL/////////+YAAEAAAAAAAEAAAf/////ihCYmJiYqJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJj//////////AgABAAAAAAAAYAAA//////xbiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJ//////////RAABAAAAAAAAcAAA//+5LEzwAY/hD6x72AAx/CH1j3sAAH/////hEIJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiY//////////AABAAAAAAABAAAA//////BrJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJ/////////84ACAAAAAAAAcAAA//////SrSSnfg0zB5OYo6ZKLNbUeYaGlsixdPJfKLHFPyGRXLLTy8zHpVdVIv/////VABAAAAAAAAcAAAL//////2f/9n/28f///////uSxKEAGP4Q+se9gAMfwh9Y97AAn//9f////+xVqFgAAAAAAARAAAAC/////+qQxKxcRaXoOCZ4y/J4hMWXXIsWIzK1mZ/RDpC0YTiTJbdWSlXV8v/////////VAAgAAAAAAAFAAAT/////1V/+//6/////8v9f9X////////oWCAAAAAAAACAAAD/////8zUfWFyQypJpF8uqiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJ//////////IAKAAAAAAAAcAAAP/////8Rf/////9P//////+5LElQAY/hD6x72AAx/CH1j3sAD//////////oWAAEAAAAAABwAAAv/////YZlZnIm4e5OiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJu//////////kAABAAAAAAAAEAAAD//////Qj/////9f//////+hYAAQAAAAAAACAAAD/////9qbC1CYSROKiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJj//////////YAAEAAAAAAAAgAAA//////////+hYAH//uSxJaAGP4Q+se9gAMfwh9Y97AAAQAAAAAAAAcAAAP/////zJzU2RMKQySpiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJ//////////VAAAgAAAAAAAEAAAL//////6//////6FgAAEAAAAAAAAIAAAv/////XpqbKg6HzIuJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYm//////////wAACgAAAAAAAQAAA//////0//////oQAAAkAAAAAAAAcAAA//+5LEg4AY/hD6x72AAx7CH1j3oAD/////97mpsqLJkPmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYv//////////ogAAQAAAAAAAKAAAA///////////QgAAAgAAAAAAAQAAA//////e5mRQqLJmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJ//////////SAAAYAAAAAAAQAAAf////9f//////0IAAAAQAAAAAAAIAAAf/////1mZkxZMh0mJiYmJiYmJiYmJiYmJiYmJ//uSxIGAGPoQ+se9gAMfQh9Y97AAiYmJiYmJiYmJiYmJiYmJiYn//////////AAACQAAAAAAAcAAAH////9f//////0IAAAIAAAAAAACAAAP/////3uZkULDodMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTF//////////+wAABIAAAAAAAIAAAH//////X/////+hAAABgAAAAAAAQAAAf/////e5mRSsOh0xMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTF//////////+5LEcgAY/hD6x72AAx/CH1j3sAARgAACQAAAAAAAQAAAb/////VmZlKw6HTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExP//////////2AAABIAAAAAAAMAAAb/////6/////+hBAAAAYAAAAAAAMAAAP/////3uZlKw6MTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExc//////////igAACQAAAAAAAYAAAP////9f//////0IAAAAQAAAAAAAQAAAf/////D2ZlKw6MTE//uSxGsAGPoQ+se9gAMfwh9Y97AAxMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExP//////////aAAACAAAAAAAAoAAA///////X/////QgABIAAAAAAAAQAAAf/////w9mZSsOrExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExL//////////QAAAQAAAAAAAKAAAf/////r/////+hAAAAgAAAAAAABgAAB/////8ixmQtQ6MTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTE//+5LEdQAY/hD6x72AAx/CH1j3sAATE5MTExMTExMTExP//////////aAAACAAAAAAAAQAAAf/////r/////+hAAABAAAAAAAAKAAAP/////4ixmZOsOrExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExc//////////ToAAEAAAAAAAAkAAAH///////9v/0AAAAIAAAAAAACAAAP/////5GGZk6w6sTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTFx//////////jAAAAQAAAAAAASAA//uSxHQAGPoQ+se9gAMfwh9Y97AAAP///////2//QgAAAgAAAAAAAGAAAf/////kY6mTrDqxMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTFx/////////+QAAABAAAAAAAAkAAAP//////1/+hAAAAQAAAAAAABgAAB//////JR1MnWHViYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmLj/////////8gAAABAAAAAAAAYAAAf//////1/+hAAAAQAAAAAAAHAAAH//+5LEcoAY+hD6x72AAx9CH1j3sAA////yUOZk6w6MTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExcf//////////AAAAEAAAAAAAAgAAAf/////9f/oQAAAgAAAAAAAcAAAP/////5KOpk6w2sTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMXH//////////4AAAAQAAAAAABAAAAD//////X/6EAAAIAAAAAAACAAAP/////5QOpk6w2sTExMTExMTExMTExMTExMTExMTEx//uSxHEAGPoQ+se9gAMfwh9Y97AATExMTExMTExMTExMTExMTExMTExMTExMTFx//////////kAAAAQAAAAAAAOAAAH//////X/6EAAAgAAAAAAAMAAAL/////5QOpk602sTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMXH//////////YAAAAQAAAAAAAEAAAf/////+v/0IAAQAAAAAAABAAAC//////SDVLHSJ8qlERExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMX//+5LEb4AY/hD6x72AAx9CH1j3sAA////////+QAAABAAAAAAAAgAAAH//////X/6EAAAIAAAAAAAAMEAAP/////9oOUOkT5VUVExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExP//////////eAAAABAAAAAAAAQAAAH//////b/9CAAAEAAAAAAAAwAAA//////ug5Q6RPlVRUTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTE//////////4gAAAQAAAAAAAOAAAL//////9//oQABAA//uSxHKAGPoQ+se9gAMfwh9Y97AAAAAAAAUAAAX//////aDlDpE+VVFRMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTE//////////yAAAABAAAAAAAAgAAAD///////0IAAAQAAAAAAAAIAAA//////6g5Q6RPlVRUTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTE///////////QAAAQAAAAAAARAAAAv//////b/9BAAAEAAAAAAAAgAAA//////3DpE+VfKqiomJiYmJiYmJiYmJiYmJiYmJ//+5LEc4AY+hD6x72AAx9CH1j3sAAmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmP//////////AAAABAAAAAAAAgAAAD//////b/9CAAAEAAAAAAAAoAAAD//////mRPlXyUVFRMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExP//////////gAAAAQAAAAAAACAAAAP//////1/+hAAABAAAAAAAAKAAAP/////92RXKvkoqJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYm//uSxHGAGPoQ+se9gAMfwh9Y97AAP//////////AAAABAAAAAAAAQAAAf//////X/6EAAAIAAAAAAAAYAAAH/////dkVyr5KKiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJj//////////sAAAABAAAAAAAAgAAAD//////X/6EAAAIAAAAAAAAUAAAL/////yipPLxK4KOZJlMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMT//////////4AAAAQAAAAAAADgAAAv//////9//oQABAA//+5LEcQAY+hD6x72AAx9CH1j3sAAAAAAAAAkAAAD//////HGdHFJIsYKDFQcFLFXMYnJiYnJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJz//////////kAAAAQAAAAAAAOAAAL//////9/+hAAABAAAAAAAAEAAAv/////8FQSqSRYrKD5MqpmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiY//////////6AAAABAAAAAAABAAAD//////X/6EAAAIAAAAAAAAIAAAP/////7/qklVJTKyxMrpmJiYmJiYmJiYmJiYmJ//uSxG8AGPoQ+se9gAMfwh9Y97AAmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmP//////////YAAAAQAAAAAAAQAAAf//////X/6EAAAIAAAAAAAAIAAAP/////v+pJVSUyssTK6ZiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJj//////////cAAAABAAAAAAAAIAAAL//////3/6EAAAIAAAAAAAABAAAH/////+/6klVJTKyxMrpmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmP//+5LEboAY+hD6x72AAx9CH1j3sAA////////9kAAAAEAAAAAAAACAAAAP////9/+hAAABAAAAAAAACAAAAf/////7/qSVUlMrLEyumYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiY//////////YAAAAQAAAAAAAEAAAAf/////+v/0IAAQAAAAAAAAIAAB//////v+pJVSUyssLDEWZiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJj//////////UAAAAQAAAAAAAAIAAA//uSxG0AGPoQ+se9gAMfwh9Y97AAD//////b/9CAAAEAAAAAAAAIAAB//////qSVUlMrLCwxFmYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiY//////////VAAAAQAAAAAAAAIAAA//////3/6EAAAIAAAAAAAACAAAP/////6klVJTKSwsMRZmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmP//////////YAAAAQAAAAAAAAAAAfv//////b/9CAAEAAAAAAAAAIAAP/////6knVJTKSwsL//uSxG2AGPoQ+se9gAMfwh9Y97AAYiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJj//////////8AAAAEAAAAAAAABAAAAv/////9f/oQAAAgAAAAAAAAgAAA//////f9SSqkplZYWGIszExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMf//////////4AAAAEAAAAAAAAMAAAD//////X/6EAAAIAAAAAAAAIAAAP/////3/UkqpKZWWFhiLMxMTExMTExMTExMTExMTE//+5LEbQAY+hD6x72AAx9CH1j3sABMTExMTExMTExMTExMTExMTExMTExMTExMTH//////////gAAAAQAAAAAAADAAAAP////9/+hAAABAAAAAAAACAAAAf/////f9SSqkplZYWGIszExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMf//////////hAAAABAAAAAAABwAAAA/////9/+hAAABAAAAAAAABAAAAv/////d/1JKqCmVlhYYizMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTE//uSxGwAGPoQ+se9gAMdQh9Y97AAx//////////+AAAABAAAAAAACgAAAD/////3/6EAAAIAAAAAAAAEAAAH/////3XpKqSktMPKEJMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExP//////////6AAAABAAAAAAACgAAAD//////f/oQAAAgAAAAAAAEAAAf/////XpKqSktMPKEJMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExP//////////+AAAABAAAAAAACQAAAf//////9v/0IA//+5LEawAY+hD6x72AAx9CH1j3sAAgAAAAAAAQAAAf/////V6TSUlJaYeUITExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMT//////////AAAAQAAAAAAAQAAAf//////X/6EAAAIAAAAAAAACAAAL/////7fpKqSktMPKEJMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExP//////////4AAAAEAAAAAAAAgAAAH//////X/6EAAAAQAAAAAAAEAAAf/////t+k0lJSWmHlCExMTExMTExMTE//uSxGmAGPoQ+se9gAMfQh9Y97AATExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExP//////////iAAAABAAAAAAABgAAAH//////X/6EAAAAIAAAAAAABIAAH/////7fpNJSUlph5QhMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExP//////////iAAAABAAAAAAABgAAAH//////3/6EAAAAQAAAAAAAEgAAP/////t+k0lJSWmHlCExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTE//+5LEaAAY+hD6x72AAx9CH1j3sAATExMTExMT//////////gAAAAQAAAAAAAQAAAH//////X/6EAAAAQAAAAAAAEgAAD/////7PpNJSUlph5QhMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExP//////////iAAAABAAAAAAADAAAAH//////X/6EAAAAQAAAAAAAEgAAA/////+z6TSUlJaYeUITExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMT//////////CAAAACAAAAAAAAcAAAf//uSxGkAGPoQ+se9gAMfwh9Y97AAP/////X/6EAAAAQAAAAAAAEgAAB/////+z6TSUlJaYeUITExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMT//////////wAAAAQAAAAAABwAAAD//////X/6EAAAAQAAAAAAAJgAAL/////s+k0lJSWmHlDJmYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJi//////////sAAAAIAAAAAAACAAAAL//////9v/0I//+5LEc4AY8hD6x72AAx9CH1j3sAAAAAAQAAAAAAAOAAAL/////s+kmkpKS0w8oZMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMX//////////YAAAAQAAAAAAAQAAAf//////b/9CAAAAQAAAAAAASAAAAf/////s+kmkpKS0w8oZMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMX//////////cAAAABAAAAAAABAAAAv//////9//QgAAAQAAAAAAAkAAAH//+5LEaQAY+hD6x72AAx9CH1j3sAD/////sz6SaSkpLTDyhkxMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExf//////////MAAAAQAAAAAAAQAAAf//////X/6EAAAAQAAAAAAASAAAAf/////TPpJpKSktMPKGTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTF//////////MAAAAQAAAAAAAUAAAL//////3/9CAAAAQAAAAAAASAAAAf/////0z6SaSkpLTDyhkxMTExMTExMTExM//uSxGgAGPYQ+se9gAMfQh9Y97AATExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMX//////////UAAAABAAAAAAAGAAAD//////X/0IAAARAAAAAAAJAAAB//////yZ9JNJSUlph5QyYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYv//////////hAAAABAAAAAAAAIAAAL//////3/9CAAAAQAAAAAAAkAAAL/////8mfSTSUlJaYeUMmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJ//+5LEZwAY+hD6x72AAx9CH1j3sAAmJiYmJiYmJiYm//////////+EAAAAEAAAAAAAAIAAAv//////f/0IAAARAAAAAAAJAAAB//////yZ9JNJSUlph5QyYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYv//////////dAAAABAAAAAAABAAAAL//////3/9CAAAAQAAAAAAAkAAAT//////Jn0k0lJSWmHlDJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJi//uSxGYAGPYQ+se9gAMfQh9Y97AAP//////////KAAAAQAAAAAAAEgAAA//////3/9CAAAAQAAAAAAAkAAAH//////Mn0k1JaWmHlDJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJi//////////9UAAAAQAAAAAAACAAAf/////+//QgAAABAAAAAAAJAAAB//////yZ9JNSWlph5QyYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYv//////////GAAAAEAAAAAAAAwAAAv//////9//QgA//+5LEZgAY+hD6x72AAx9CH1j3sAAAABAAAAAAAJAAAB//////Jn0UlJaWmHlDJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJj//////////1AAAABAAAAAAABgAAAL//////9//QgAAABAAAAAAAJAAAB//////Jn0UlJaWmHlDJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJj//////////1AAAAEAAAAAAACgAAAD//////X/6EAAAAQAAAAAAAwAAAf/////MmZJqS0tMPKGT//uSxGMAGPYQ+se9gAMfwh9Y97AAExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTE//////////+QAAAAQAAAAAAAIAAAf//////X/6EAAAAQAAAAAAA4AAAX//////Mmk0lJaYeUMmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmP//////////AgAAAQAAAAAAAgAAAP//////f/0IAAARAAAAAAACAAAF//////zJpNJSWlph5QyYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiY//+5LEY4AY7hD7B72AAx9CH1j3sAA//////////wIAAAQAAAAAAACAAAD//////9/+hAAAAEAAAAAAAMAAAAf/////MmZNJYWmHlDJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJj//////////AgAAAQAAAAAAAcAAAAf//////X/6EAAAAQAAAAAAAMAAAR/////8yJk0lhaYeUMmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmP//////////QAAAAQAAAAAAAcAAAA//uSxGGAGPoQ+we9gAMbwh9g97AAf//////X/6EAAAAQAAAAAAAMAAAR/////8yJk0lhaYeUMmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmP//////////QAAAAQAAAAAAALAAAAf//////b/9CAAAAEAAAAAAAMAAAAf/////MiZNJYWmHlDJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJj//////////AAAAAQAAAAAAALAAAAf//////X/6EAAAAQAAAAAAAMAAAT/////8yJk0lh//+5LEYgAY+hD6x72AAx9CH1j3sAAaYeUMmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmP//////////AAAAAQAAAAAAAMAAAAf//////X/6EAAAAQAAAAAAAMAAAT/////8yJk0lhaYeUMmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmP//////////GAAAAQAAAAAAAYAAAAf//////X/6EAAAAQAAAAAAAMAAAT/////cyJk0lhaYeUMmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmP//////uSxFwAGPYQ+we9gAMfQh9g97AA////9kAAAAQAAAAAAAIAAAf/////+//QgAAAEAAAAAAAMAAAAf/////3MiZNJYWmHlDJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJj//////////IAAAAEAAAAAAAQAAAAf//////1/+hAAAAEAAAAAAAGAAAAf/////cyJk0lhaYeUMmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmP//////////8AAAABAAAAAAAEAAAAf/////+//QgAAAEAAAAAAAGAAAAL//+5LEXAAYzhD6x72AAx9CH1j3sAA////9TImTSWFph5QyYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiY//////////8AAAAQAAAAAAAQAAAAf/////+v/0IAAARAAAAAAAIAAAH//////VMiZNJYWmHlDJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJj//////////CAAAAQAAAAAAABAAAAf//////3/9CAAAAQAAAAAAAYAAAAv/////1TImTSWFph5QyYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJ//uSxFoAGPYQ+se9gAMfQh9Y97AAmJiYmJiYmJiYmJiYmJiYmP//////////wAAAAEAAAAAAABAAAAf//////3/9CAAAAQAAAAAAAYAAAAv/////1TImTSWFph5QyYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiY//////////8AAAAQAAAAAAAHAAAAf//////9f/oQAAAEAAAAAAABAAAAL/////9UyJk0lhaYeUMmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmL//////uSxFkAGPoQ+se9gAMfwh9Y97AA////8AAAAQAAAAAAAYAAAAf//////3/9CAAAAQAAAAAAAHAAAAf/////1TImTSWFph5QyYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiY//////////QAAAAQAAAAAAAEgAAAf//////X/6EAAAAQAAAAAAAHAAAL/////9UyJk0lhaYeUMmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmP//////////VAAAAEAAAAAAAAgAAAH//+5LMUYAWXoQ+se9gAMfQh9Y97AAP//////9f/oQAABAAAAAAAASAAAD/////9UyJk0lhaYeUMmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmP//////////CAAAAQAAAAAAAFAAAAAf/////3/9CAAAAMAAAAAAABIAAAP/////1TImTSWFph5QyYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiY//////////UAAAAQAAAAAAAEgAAAP//////X/6EAAAQCAAAAAAAJAAAP/////VMiZNJYWmHlDJiYm//uSxFQAGPoQ+se9gAMfQh9Y97AAJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJj//////////QAAAAQAAAAAAAEgAAAP//////b/9CAAACAAAAAAAAkAAAH/////9UyJk0lhaYeUMmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmP//////////QAAAAQAAAAAAABIAAAf//////X/6EAAAEAAAAAAAJAAAB//////VMiZNJYWmHlDJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJ//+5LMUwAWPYQ+se9gAMfQh9Y97AAmJiYmJiYmP//////////MAAAAQAAAAAAAEgAAAP//////3/9CAAAEIAAAAAAACQAAB//////VMiZNJYWmHlDJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJj//////////OAAAAQAAAAAAACAAAf//////X/6EAAAEAAAAAAAANAAAT/////1TImTSWFph5QyYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiY//////////SAAAAQAAAAAAACAAAAf////uSxFQAGPoQ+se9gAMfQh9Y97AA///9//QgAAAQAAAAAAA0AAAT/////1TImTSWFph5QyYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiY//////////QAAAAQAAAAAAAQAAAAf//////b/9CAAABAAAAAAACAAAAf/////1TImTSWFph5QyYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiY//////////QAAAAQAAAAAAAIAAAAf//////X/6EAAAEAAAAAAAIAAAB//////VMiZNJYWmHlDJiYmJiYmJiYm//uSxFOAGOoQ+se9gAMfQh9Y97AAJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiY//////////UAAAAQAAAAAAABAAAAf//////b/9CAAAAQAAAAAAAgAAAf/////1TImTSWFph5QyYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiY//////////UAAAAQAAAAAAAFAAAAAf//////X/6EAAABAAAAAAAGAAAf//////VMiZNJYWmHlDJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJj//+5LEUoAY+hD6x72AAx/CH1j3sAA////////9AAAAAQAAAAAAAGAAAf//////b/9CAAABAAAAAAAHAAAAf/////1TImTSWFph5QyYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiY//////////0AAAAQAAAAAAAHAAAAAf//////X/6EAAABAAAAAAABAAAAf/////1TImTSWFph5QyYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiY//////////4AAAAQAAAAAAAHAAAAAv//////X/6EAAAEAAAAAAAIAAAB//uSxFIAGPoQ+se9gAMfQh9Y97AAP/////9UyJk0lhaYeUMmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmP//////////cAAAAIAAAAAAADAAAL//////9v/0IAAARAAAAAAACAAAB//////VMiZNJYWmHlDJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJj//////////KAAAAEAAAAAAABgAAAH//////X/6EAAAAQAAAAAAAAIAAA//////1TImTSWFph5QyYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYm//+5LEUwAY+hD6x72AAx/CH1j3sACYmJiYmJiYmJiYmJiYmJiYm//////////2AAAACAAAAAAAAwAAAL//////9//QgAAAQAAAAAAAMAAAL/////1TImTSWFph5QyYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiY//////////KAAAAEAAAAAAABQAAA///////f/0IAAARAAAAAAABAAAB//////VMiZNJYWmHlDJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJj//////////OAAAAEAAAAAAAAcAAAD/////uSxFEAGPoQ+se9gAMfQh9Y97AA////9//QgAAAQAAAAAAAIAAAL/////1TImTSWFph5QyYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiY//////////mAAAAQAAAAAAAJAAAAf//////X/6EAAAAQAAAAAAAMAAAL/////1TImTSWFph5QyYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiY//////////mAAAAQAAAAAAAJAAAAf//////X/6EAAAAQAAAAAAAMAAAL/////1TImTSWFph5QyYmJiYmJiYmJiYm//uSxFAAGPoQ+se9gAMfQh9Y97AAJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJmP//////////gAAAAQAAAAAAAFAAAD//////3/9CAAAAQAAAAAAAQAAAv/////1TImTSWFph5QyYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiZj//////////IAAAAQAAAAAAAKAAAAf//////X/6EAAAAQAAAAAAABIAAA//////VMiZNJYWmHlDJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJm//+5LEUAAGPoQ+se9gAMfQh9Y97AA/////////9IAAAAIAAAAAAADAAAAf/////9f/oQAABAAAAAAAAEAAAAP/////1TImTSWFph5QyYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiZj//////////IAAAACAAAAAAAAwAAAP//////f/0IAAARAAAAAAABAAAB//////VMiZNJYWmHlDJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJm//////////8AAAAEAAAAAAAkAAAB//////3/9CAAAAEMAAAAAAARAAAT//uSxFIAGPYQ+se9gAMfQh9Y97AAP/////VMiZNJYWmHlDJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmZm//////////AAAAAQAAAAAAAYAAAAf//////9v/0IAAARAAAAAAABAAAB//////VTIZLY1MxKBkxMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExc//////////sgAAAQAAAAAAASAAAI//////f/0IAAARAAAAAAABAAAB//////1TIZOZKTExkITExMTExMTExMTExMTExMTExMTE//+5LMUYAVYoQ+se9gAMfQh9Y97AATExMTExMTExMTExMTExMTExMTExMTExMTExP//////////hAAAAQAAAAAAAIAAAAH//////3/9CAAAAMAAAAAAAAFAAAB//////1UyGTmSkxMZCExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTEz//////////kAAAAQAAAAAAAIAAAAH//////3/9CAAABAAAAAAACAAAAf/////VTIZOZKTGLB0xMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExM//////////+QAAABAAAAAAAJAAAT//uSxFAAGLYQ9ge9gAAzXCY4z7AAAP////f/0IAAAIAAAAAAAAsAAAL/////1TIZOZKTGLBkxMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMz//////////+AAAABAIAAAANgW1RMQUOq8fYTdgZDJHD9JT+/43dj9YL5XGOAZlkXhNZrStJxN8ZfL1j8xTJx2NNSa8yoZe+j8lMb9r+Z4o6BQDQKAaB1mZmZmamZmZmZmZmTmH/////TZWV0ZFaGN0YvRfV///////////////////////////R/VFGBf/////////Af//+5LMT4ASZ4U9Oe9gAP/QhQAR7AAZ/////////////////////9AA=";
-    const errorAudioBase64 = "data:audio/mp3;base64,//uQxAAAEmGLIVT0AAuIMy3CexAAI/AYDQUCAYDAAAAgQIAcDn5BAQB2Mv///6qqqqqqn4nNsWJd//5d///jlX///oNQLcMDQIITOTTTT5xtxxtxxtprTv///O/////jO//////5T////+AxMGgQQqqqqqqqQGJgtURWboRCMxG8ZNbnf/ooABkOiRlb/D/50ev/h+f8CAABAKP/uSxAAAGImTJXiEAAnI02XvENwCMv///xnNRGo5M6OXZdV73OyS1TJUzKn/0ywgw4oAAARgAAAAAAAAAkICDQAFIAAAFV1dWPD/KmI4FJ2G4Q1ACjKNIdUm0JKYv4JZFtBNQxJE4JDBI4NCNRKN/Yt1D8mpXdV/NigAAKxIVNEmSEYlMNkpFNWDiMqG0dJUlIUAQIqGYGQCZX9CFKo7qPKt5mVJF8VnqRGkzYLnMv/1e3V11K9xEMm6a/9XtVvb9vaoVXCB0v/7ksQCACJ0axNuPQACj9HkLc0F6BYAAAAAAAAAYrSDVIKpwLkMFNCyUCJk4OyME45A+SWWXtMqGmLbOj0QQiJA4DhJIWGEmSAEhTGhqNvGgWI3QZL1Xqr//+nWpUdmF12t6v//9O////qNq/+o4v9XaVzwgdAAAAAAAf9SJiSaO1EwSSOMSkMUjC2qOI5JGlFGlVKiMXfGCmKBmMMFAYlEh0ahNNnUaTQYxNH1Iuo8mdqv/VX///63/1VVf/rAAAAAAAAE09M6nEszE5GaH2G2SQ//7ksQCACR8awtueQACiA1g7cwgADKLZWLbKg+eYvE1lXsE1T7KVSC5C4lODZD2kfUj7I9JVqv+tTf//6///S/0v///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////1AAAAAAwQW6pGxpmRKH5FILSjcDpJsHhAA//uQxA8AQrBpAIHgAQBPDN/wAAKhb4nFOsXiR4MSSRbWgGHSFHrBYQlFZ/Ui6kWrV1VVRGBgNOprFWQWr////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////7ksQcA8MOAACBwABgYcAMAeAAAA///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////uSxCaAw6YAAAHQAAA0gAAAMQA==";
-</script>
-{% endblock %}
-
 {% block head %}
 <style>
     body {
@@ -19,39 +12,39 @@
     
     .main-container {
         min-height: 100vh;
-        padding: 1.5rem 0;
+        padding: 2rem 0;
         background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
     }
     
     .card {
         background-color: #1e1e30;
         border: none;
-        border-radius: 10px;
-        box-shadow: 0 8px 20px rgba(0, 0, 0, 0.5);
+        border-radius: 12px;
+        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
         overflow: hidden;
     }
     
     .card-header {
         background: linear-gradient(135deg, #800080 0%, #8e44ad 100%);
         border: none;
-        padding: 1.2rem;
+        padding: 1.5rem;
     }
     
     .card-body {
-        padding: 1.2rem;
+        padding: 1.5rem;
     }
     
     .time-display {
         background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
         border-radius: 10px;
-        padding: 0.8rem;
+        padding: 1rem;
         box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
-        margin-bottom: 1.2rem;
+        margin-bottom: 1.5rem;
         position: relative;
     }
     
     .date-display {
-        font-size: 1.4rem;
+        font-size: 1.5rem;
         font-weight: 700;
         color: #fff;
         text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
@@ -61,8 +54,8 @@
     .period-card {
         background-color: #252547;
         border-radius: 10px;
-        padding: 1.2rem;
-        margin-bottom: 1.2rem;
+        padding: 1.5rem;
+        margin-bottom: 1.5rem;
         box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
         transition: all 0.3s ease;
     }
@@ -83,7 +76,7 @@
     
     .period-time {
         font-size: 1rem;
-        color: #ffffff;
+        color: #000000;
     }
     
     .form-control {
@@ -91,9 +84,8 @@
         border: 2px solid #3a3a55;
         color: #fff;
         border-radius: 8px;
-        padding: 1.2rem;
+        padding: 1rem;
         transition: all 0.3s ease;
-        font-size: 1.1rem;
     }
     
     .form-control:focus {
@@ -335,106 +327,201 @@
 <script>
 document.addEventListener('DOMContentLoaded', function() {
     // 기본 DOM 요소
-    var studentIdInput = document.getElementById('student_id');
-    var nameInput = document.getElementById('name');
-    var seatInput = document.getElementById('seat');
-    var submitBtn = document.getElementById('submitBtn');
-    var submitBtnText = document.getElementById('submitBtnText');
-    var form = document.getElementById('attendanceForm');
-    var customModal = document.getElementById('customModal');
-    var studentInfoText = document.getElementById('studentInfoText');
-    var modalConfirmBtn = document.getElementById('modalConfirmBtn');
-    var modalCancelBtn = document.getElementById('modalCancelBtn');
+    const studentIdInput = document.getElementById('student_id');
+    const nameInput = document.getElementById('name');
+    const seatInput = document.getElementById('seat');
+    const submitBtn = document.getElementById('submitBtn');
+    const submitBtnText = document.getElementById('submitBtnText');
+    const form = document.getElementById('attendanceForm');
+    const customModal = document.getElementById('customModal');
+    const studentInfoText = document.getElementById('studentInfoText');
+    const modalConfirmBtn = document.getElementById('modalConfirmBtn');
+    const modalCancelBtn = document.getElementById('modalCancelBtn');
     
-    // 시간 표시 요소
-    var currentMonthDay = document.getElementById('currentMonthDay');
-    var currentPeriod = document.getElementById('currentPeriod');
-    var periodTimeRange = document.getElementById('periodTimeRange');
+    // 오디오 컨텍스트 생성
+    let audioContext = null;
     
-    // 현재 시간 및 교시 업데이트
-    function updateDateTime() {
-        var now = new Date();
-        var month = now.getMonth() + 1;
-        var day = now.getDate();
-        var weekdays = ['일', '월', '화', '수', '목', '금', '토'];
-        var weekday = weekdays[now.getDay()];
+    // 현재 시간 표시 요소
+    const currentMonthDay = document.getElementById('currentMonthDay');
+    const currentPeriod = document.getElementById('currentPeriod');
+    const periodTimeRange = document.getElementById('periodTimeRange');
+    
+    // 학생이 이미 출석했는지 여부
+    let studentAlreadyAttended = false;
+    
+    // 시간 및 교시 표시 업데이트 함수
+    function updateTimeAndPeriod() {
+        if (!currentMonthDay || !currentPeriod || !periodTimeRange) return;
         
-        // 날짜 표시
-        currentMonthDay.textContent = month + '월 ' + day + '일 (' + weekday + ')';
+        const now = new Date();
+        const month = now.getMonth() + 1;
+        const day = now.getDate();
+        const hour = now.getHours();
+        const minute = now.getMinutes();
+        
+        // 요일 정보
+        const weekdays = ['일', '월', '화', '수', '목', '금', '토'];
+        const weekdayName = weekdays[now.getDay()];
+        
+        // 현재 날짜를 표시: 5월 14일 (화)
+        currentMonthDay.textContent = `${month}월 ${day}일 (${weekdayName})`;
+        
+        // 시간대별 교시 정보
+        let periodText = '';
+        let timeRangeText = '';
         
         // 교시 계산
-        var hour = now.getHours();
-        var minute = now.getMinutes();
-        var totalMinutes = hour * 60 + minute;
-        
-        var period = '';
-        var timeRange = '';
-        
+        const hourMin = hour * 60 + minute; // 현재 시간을 분 단위로 변환
+
         // 교시 정의
-        if (totalMinutes >= 7*60+50 && totalMinutes < 9*60+15) {
-            period = '1교시';
-            timeRange = '7:50 ~ 9:15';
-        } else if (totalMinutes >= 9*60+15 && totalMinutes < 10*60+40) {
-            period = '2교시';
-            timeRange = '9:15 ~ 10:40';
-        } else if (totalMinutes >= 10*60+40 && totalMinutes < 12*60+5) {
-            period = '3교시';
-            timeRange = '10:40 ~ 12:05';
-        } else if (totalMinutes >= 12*60+5 && totalMinutes < 12*60+30) {
-            period = '4교시';
-            timeRange = '12:05 ~ 12:30';
-        } else if (totalMinutes >= 12*60+30 && totalMinutes < 14*60+25) {
-            period = '5교시';
-            timeRange = '12:30 ~ 14:25';
-        } else if (totalMinutes >= 14*60+25 && totalMinutes < 15*60+50) {
-            period = '6교시';
-            timeRange = '14:25 ~ 15:50';
+        if (hourMin >= 7*60+50 && hourMin < 9*60+15) {
+            periodText = '1교시';
+            timeRangeText = '7:50 ~ 9:15';
+        } else if (hourMin >= 9*60+15 && hourMin < 10*60+40) {
+            periodText = '2교시';
+            timeRangeText = '9:15 ~ 10:40';
+        } else if (hourMin >= 10*60+40 && hourMin < 12*60+5) {
+            periodText = '3교시';
+            timeRangeText = '10:40 ~ 12:05';
+        } else if (hourMin >= 12*60+5 && hourMin < 12*60+30) {
+            periodText = '4교시';
+            timeRangeText = '12:05 ~ 12:30';
+        } else if (hourMin >= 12*60+30 && hourMin < 14*60+25) {
+            periodText = '5교시';
+            timeRangeText = '12:30 ~ 14:25';
+        } else if (hourMin >= 14*60+25 && hourMin < 15*60+50) {
+            periodText = '6교시';
+            timeRangeText = '14:25 ~ 15:50';
         } else {
-            period = '시간 외';
-            timeRange = '모든 시간 이용 가능';
+            periodText = '시간 외';
+            timeRangeText = '모든 시간 이용 가능';
         }
         
-        // 주말인 경우
+        // 주말인 경우 시간 외로 표시 (주말도 이용 가능)
         if (now.getDay() === 0 || now.getDay() === 6) {
-            period = '시간 외';
-            timeRange = '모든 시간 이용 가능';
+            periodText = '시간 외';
+            timeRangeText = '모든 시간 이용 가능';
         }
         
         // 교시 정보 업데이트
-        currentPeriod.textContent = period;
-        periodTimeRange.textContent = timeRange;
+        currentPeriod.textContent = periodText;
+        periodTimeRange.textContent = timeRangeText;
         
         // 버튼 텍스트 업데이트
-        if (period === '4교시') {
-            submitBtnText.textContent = '4교시는 도서실 이용 시간이 아닙니다';
-            submitBtn.disabled = true;
-            submitBtn.classList.remove('btn-primary');
-            submitBtn.classList.add('btn-secondary');
-        } else {
-            submitBtnText.textContent = period + ' 출석하기';
-            if (studentIdInput && studentIdInput.value.trim().length >= 5) {
-                submitBtn.disabled = false;
+        if (submitBtnText) {
+            if (periodText === '4교시') {
+                submitBtnText.textContent = '4교시는 도서실 이용 시간이 아닙니다';
+                submitBtn.disabled = true;
+                submitBtn.classList.remove('btn-primary');
+                submitBtn.classList.add('btn-secondary');
+            } else if (periodText === '시간 외') {
+                submitBtnText.textContent = '지금은 도서실 이용 시간이 아닙니다';
+                submitBtn.disabled = true;
+                submitBtn.classList.remove('btn-primary');
+                submitBtn.classList.add('btn-secondary');
+            } else {
+                submitBtnText.textContent = periodText + ' 출석하기';
+                // 학번이 입력된 경우만 활성화
+                if (studentIdInput && studentIdInput.value.trim().length >= 5) {
+                    submitBtn.disabled = false;
+                }
                 submitBtn.classList.remove('btn-secondary');
                 submitBtn.classList.add('btn-primary');
             }
         }
     }
     
-    // 초기 시간 설정 및 1분마다 업데이트
-    updateDateTime();
-    setInterval(updateDateTime, 60000);
+    // 페이지 로드 시 시간 표시 업데이트
+    updateTimeAndPeriod();
+    
+    // 1분마다 시간 표시 업데이트
+    setInterval(updateTimeAndPeriod, 60000);
     
     // 학번 입력 이벤트
-    studentIdInput.addEventListener('input', function() {
-        var is4thPeriod = currentPeriod.textContent === '4교시';
-        if (!is4thPeriod && this.value.trim().length >= 5) {
-            submitBtn.disabled = false;
-            submitBtn.classList.remove('btn-secondary');
-            submitBtn.classList.add('btn-primary');
-        } else {
-            submitBtn.disabled = true;
+    if (studentIdInput) {
+        studentIdInput.addEventListener('input', function() {
+            const currentPeriodText = currentPeriod ? currentPeriod.textContent : '';
+            const is4thPeriod = currentPeriodText === '4교시';
+            
+            // 4교시가 아니고 학번이 5자리 이상인 경우 버튼 활성화 (모든 시간대 허용)
+            if (!is4thPeriod && this.value.trim().length >= 5) {
+                submitBtn.disabled = false;
+                submitBtn.innerHTML = '<i class="fas fa-search me-2"></i>출석 정보 확인';
+            } else if (is4thPeriod) {
+                // 4교시인 경우에만 버튼 비활성화 유지
+                submitBtn.disabled = true;
+                submitBtn.innerHTML = '<i class="fas fa-times-circle me-2"></i><span id="submitBtnText">4교시는 도서실 이용 시간이 아닙니다</span>';
+            } else {
+                // 학번이 짧은 경우
+                submitBtn.disabled = true;
+                submitBtn.innerHTML = '<i class="fas fa-search me-2"></i>출석 정보 확인';
+            }
+        });
+    }
+    
+    // 모달 닫기 함수
+    function closeModal() {
+        if (customModal) {
+            customModal.style.display = 'none';
         }
-    });
+    }
+    
+    // 모달 취소 버튼 클릭 이벤트
+    if (modalCancelBtn) {
+        modalCancelBtn.addEventListener('click', closeModal);
+    }
+    
+    // 모달 확인 버튼 이벤트
+    if (modalConfirmBtn) {
+        modalConfirmBtn.addEventListener('click', function() {
+            // 이미 출석한 학생이면 모달만 닫기
+            if (studentAlreadyAttended) {
+                closeModal();
+                return;
+            }
+            
+            // 모달 닫기
+            closeModal();
+            
+            // 성공 소리 재생
+            playSuccessSound();
+            
+            // 폼 제출
+            if (form) {
+                form.submit();
+            }
+        });
+    }
+    
+    // 성공 소리 재생 함수
+    function playSuccessSound() {
+        try {
+            // AudioContext 생성
+            if (!audioContext) {
+                audioContext = new (window.AudioContext || window.webkitAudioContext)();
+            }
+
+            // 소리 생성
+            const oscillator = audioContext.createOscillator();
+            const gainNode = audioContext.createGain();
+            
+            oscillator.type = 'sine';
+            oscillator.frequency.setValueAtTime(1046.50, audioContext.currentTime); // 높은 도
+            oscillator.frequency.setValueAtTime(1318.51, audioContext.currentTime + 0.1); // 높은 미
+            oscillator.frequency.setValueAtTime(1567.98, audioContext.currentTime + 0.2); // 높은 솔
+            
+            gainNode.gain.setValueAtTime(0.3, audioContext.currentTime);
+            gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.3);
+            
+            oscillator.connect(gainNode);
+            gainNode.connect(audioContext.destination);
+            
+            oscillator.start();
+            oscillator.stop(audioContext.currentTime + 0.3);
+        } catch (e) {
+            console.error("오디오 재생 실패:", e);
+        }
+    }
     
     // 이름 마스킹 함수
     function maskName(name) {
@@ -447,159 +534,150 @@ document.addEventListener('DOMContentLoaded', function() {
         } else if (name.length === 4) {
             return name.charAt(0) + '**' + name.charAt(3);
         } else {
-            return name.charAt(0) + '*'.repeat(name.length - 2) + name.charAt(name.length - 1);
+            const firstChar = name.charAt(0);
+            const lastChar = name.charAt(name.length - 1);
+            const maskedMiddle = '*'.repeat(name.length - 2);
+            return firstChar + maskedMiddle + lastChar;
         }
     }
     
-    // 모달 닫기 함수
-    function closeModal() {
-        customModal.style.display = 'none';
-    }
-    
-    // 모달 버튼 이벤트
-    modalCancelBtn.addEventListener('click', function() {
-        // 취소 버튼 클릭시 에러 사운드 재생
-        const errorAudio = new Audio(errorAudioBase64);
-        errorAudio.play();
-        closeModal();
-    });
-    
-    // 모달 확인 버튼 - 중복 출석 방지를 위한 추가 검증 
-    modalConfirmBtn.addEventListener('click', function() {
-        // 이미 참석한 학생인 경우 모달만 닫기
-        if (modalConfirmBtn.disabled) {
-            // 에러 사운드 재생
-            new Audio(errorAudioBase64).play().catch(e => console.error('오디오 재생 오류:', e));
-            closeModal();
-            return;
-        }
-        
-        var studentId = studentIdInput.value.trim();
-        
-        // 출석 전 한번 더 API 호출로 확인 (중복 출석 방지)
-        fetch('/api/check_attendance?student_id=' + studentId + '&t=' + new Date().getTime())
-            .then(function(response) { return response.json(); })
-            .then(function(checkData) {
-                if (checkData.has_attendance) {
-                    // 이미 출석한 경우 (다른 탭이나 브라우저에서 처리된 경우)
-                    // 에러 사운드 재생
-                    new Audio(errorAudioBase64).play().catch(e => console.error('오디오 재생 오류:', e));
-                    alert('이번 주에 이미 출석 처리되었습니다. 중복 출석이 방지되었습니다.');
-                    closeModal();
-                    return;
-                }
-                
-                // 출석이 없는 경우에만 제출
-                // 성공 사운드 재생
-                // 성공 오디오 재생 (layout.html에서 정의됨)
-                try {
-                    new Audio(successAudioBase64).play().catch(e => console.error('성공 오디오 재생 오류:', e));
-                } catch(e) {
-                    console.error('오디오 재생 실패:', e);
-                }
-                closeModal();
-                form.submit();
-            })
-            .catch(function(error) {
-                console.error('최종 출석 확인 오류:', error);
-                
-                // 에러 시 사용자에게 확인 후 진행
-                if (confirm('출석 상태 확인 중 오류가 발생했습니다. 계속 진행하시겠습니까?')) {
-                    closeModal();
-                    form.submit();
-                } else {
-                    closeModal();
-                }
-            });
-    });
-    
-    // 폼 제출 이벤트
-    form.addEventListener('submit', function(e) {
-        e.preventDefault();
-        
-        var studentId = studentIdInput.value.trim();
-        if (!studentId) {
-            alert('학번을 입력해주세요.');
-            return;
-        }
-        
-        // 학생 정보 조회
-        fetch('/lookup_name?student_id=' + studentId)
-            .then(function(response) { return response.json(); })
-            .then(function(data) {
-                if (data.error) {
-                    alert(data.error);
-                    return;
-                }
-                
-                var studentName = data.name;
-                var seatNumber = data.seat;
-                
-                nameInput.value = studentName;
-                seatInput.value = seatNumber;
-                
-                // 마스킹된 이름
-                var maskedName = maskName(studentName);
-                
-                // 출석 상태 확인 (캐시 방지를 위한 타임스탬프 추가)
-                fetch('/api/check_attendance?student_id=' + studentId + '&t=' + new Date().getTime())
-                    .then(function(response) { return response.json(); })
-                    .then(function(attendData) {
-                        console.log("학생 출석 상태 확인:", attendData);
-                        var hasAttendance = attendData.has_attendance || false;
-                        var attendDate = attendData.attendance_date || '';
+    // 폼 제출 이벤트 핸들러
+    if (form) {
+        form.addEventListener('submit', function(e) {
+            e.preventDefault();
+            
+            const studentId = studentIdInput.value.trim();
+            if (!studentId) {
+                alert('학번을 입력해주세요.');
+                return;
+            }
+            
+            // 학생 정보 조회 API 호출
+            fetch(`/lookup_name?student_id=${studentId}`)
+                .then(response => response.json())
+                .then(data => {
+                    if (data.error) {
+                        alert(data.error);
+                        return;
+                    }
+                    
+                    // 학생 데이터 가져오기
+                    const studentName = data.name;
+                    const seatNumber = data.seat;
+                    
+                    // Hidden input 필드에 값 설정
+                    nameInput.value = studentName;
+                    seatInput.value = seatNumber;
+                    
+                    // 이름 마스킹 처리
+                    const maskedName = maskName(studentName);
+                    
+                    // 학생의 출석 여부 확인
+                    fetch(`/check_attendance_status?student_id=${studentId}`, { 
+                        cache: 'no-store' 
+                    })
+                    .then(response => response.json())
+                    .then(statusData => {
+                        console.log('출석 상태:', statusData);
                         
-                        // 전역 변수에 출석 상태 저장 (중요)
-                        studentAlreadyAttended = hasAttendance;
+                        // 이미 출석한 학생인지 여부 설정
+                        studentAlreadyAttended = statusData.already_attended || false;
+                        const attendanceDate = statusData.last_attendance_date || '';
                         
-                        var content = '';
+                        let modalContent = '';
                         
-                        if (hasAttendance) {
-                            // 이미 출석한 학생 - 경고 메시지와 함께 비활성화
-                            var formattedDate = attendData.formatted_date || attendDate;
-                            
-                            content = '<div style="color: #ff6b6b; font-weight: bold; margin-bottom: 15px; text-align: center; font-size: 18px;">' +
-                                    '이번주에 이미 출석하셨습니다.<br>' +
-                                    '4층 공강실로 올라가주세요~!';
-                            
-                            if (formattedDate) {
-                                content += '<div style="font-size: 16px; margin-top: 5px; color: #ffef99;">출석일: ' + formattedDate + '</div>';
-                            }
-                            
-                            content += '</div>' +
-                                     '<div style="font-size: 20px; font-weight: bold; color: #fff; text-align: center;">' +
-                                     '<div style="margin-bottom: 15px;">이름: ' + maskedName + ' 님</div>' +
-                                     '<div>공강실 좌석번호: ' + seatNumber + '</div>' +
-                                     '</div>';
+                        // 이미 출석한 학생이면
+                        if (studentAlreadyAttended) {
+                            modalContent = `
+                                <div style="color: #dc3545; font-weight: bold; margin-bottom: 15px; text-align: center; font-size: 18px;">
+                                    이번주에 이미 출석하셨습니다.<br>
+                                    4층 공강실로 올라가주세요~!
+                                    ${attendanceDate ? `<div style="font-size: 16px; margin-top: 5px;">출석일: ${attendanceDate}</div>` : ''}
+                                </div>
+                                <div style="font-size: 20px; font-weight: bold; color: #000; text-align: center;">
+                                    <div style="margin-bottom: 15px;">이름: ${maskedName} 님</div>
+                                    <div>공강실 좌석번호: ${seatNumber}</div>
+                                </div>
+                            `;
                             
                             // 버튼 비활성화
-                            modalConfirmBtn.disabled = true;
-                            modalConfirmBtn.className = 'btn modal-button btn-secondary';
+                            if (modalConfirmBtn) {
+                                modalConfirmBtn.disabled = true;
+                                modalConfirmBtn.classList.add('btn-secondary');
+                                modalConfirmBtn.classList.remove('btn-primary');
+                            }
                         } else {
-                            // 처음 출석하는 학생
-                            content = '<div style="font-size: 20px; font-weight: bold; color: #fff; text-align: center;">' +
-                                    '<div style="margin-bottom: 15px;">이름: ' + maskedName + ' 님</div>' +
-                                    '<div>공강실 좌석번호: ' + seatNumber + '</div>' +
-                                    '</div>';
+                            modalContent = `
+                                <div style="font-size: 20px; font-weight: bold; color: #000; text-align: center;">
+                                    <div style="margin-bottom: 15px;">이름: ${maskedName} 님</div>
+                                    <div>공강실 좌석번호: ${seatNumber}</div>
+                                </div>
+                            `;
                             
                             // 버튼 활성화
-                            modalConfirmBtn.disabled = false;
-                            modalConfirmBtn.className = 'btn modal-button modal-confirm';
+                            if (modalConfirmBtn) {
+                                modalConfirmBtn.disabled = false;
+                                modalConfirmBtn.classList.remove('btn-secondary');
+                                modalConfirmBtn.classList.add('btn-primary');
+                            }
                         }
                         
+                        // 모달에 표시할 정보 설정
+                        if (studentInfoText) {
+                            studentInfoText.innerHTML = modalContent;
+                        }
+                    
                         // 모달 표시
-                        studentInfoText.innerHTML = content;
                         customModal.style.display = 'block';
+                        
+                        // 소리 효과 재생
+                        if (studentAlreadyAttended) {
+                            // 이미 출석했으면 경고음
+                            playErrorSound();
+                        }
                     })
-                    .catch(function(error) {
-                        console.error('출석 상태 확인 오류:', error);
-                        alert('출석 상태를 확인하는 중 오류가 발생했습니다.');
-                    });
-            })
-            .catch(function(error) {
-                console.error('학생 정보 조회 오류:', error);
-                alert('학생 정보를 조회하는 중 오류가 발생했습니다.');
-            });
+                .catch(error => {
+                    console.error('Error:', error);
+                    alert('학생 정보 조회 중 오류가 발생했습니다.');
+                });
+        });
+    }
+    
+    // 관리자 페이지 접근을 위한 숨겨진 트리거 (하단에 점 3번 클릭)
+    let adminClickCount = 0;
+    let adminClickTimer;
+    
+    // 화면 하단에 숨겨진 점 추가 - 더 안 보이게 만들기
+    const adminTrigger = document.createElement('div');
+    adminTrigger.style.position = 'fixed';
+    adminTrigger.style.bottom = '5px';
+    adminTrigger.style.right = '5px';
+    adminTrigger.style.width = '10px';
+    adminTrigger.style.height = '10px';
+    adminTrigger.style.borderRadius = '50%';
+    adminTrigger.style.backgroundColor = 'rgba(0, 0, 0, 0.05)'; // 거의 보이지 않게
+    adminTrigger.style.cursor = 'default'; // 커서 변경 안 되게
+    adminTrigger.style.zIndex = '999';
+    document.body.appendChild(adminTrigger);
+    
+    adminTrigger.addEventListener('click', function() {
+        adminClickCount++;
+        
+        clearTimeout(adminClickTimer);
+        adminClickTimer = setTimeout(function() {
+            adminClickCount = 0;
+        }, 1000);
+        
+        if (adminClickCount >= 3) {
+            window.location.href = '/admin';
+        }
+    });
+    
+    // 키보드 단축키 (Ctrl+Shift+A)
+    document.addEventListener('keydown', function(e) {
+        if (e.ctrlKey && e.shiftKey && e.key === 'A') {
+            window.location.href = '/admin';
+        }
     });
 });
 </script>
