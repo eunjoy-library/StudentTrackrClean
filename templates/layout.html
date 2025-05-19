@@ -18,20 +18,11 @@
     <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700;900&display=swap" rel="stylesheet">
     
     <!-- 출석 시스템 소리 효과 -->
+    <script src="{{ url_for('static', filename='audio_data.js') }}"></script>
     <script>
-    // Base64로 인코딩된 성공/실패 오디오 데이터는 개별 스크립트로 이동했습니다
+    // 오디오 객체 초기화
     const successAudio = new Audio();
     const errorAudio = new Audio();
-
-    // 오디오 경로 설정 (Base64 데이터를 별도 JS 파일로 분리하여 화면에 표시되지 않게 함)
-    document.addEventListener('DOMContentLoaded', function() {
-        // 오디오 초기화 함수
-        const initializeAudios = function() {
-            successAudio.src = '/static/success_audio.mp3';
-            errorAudio.src = '/static/error_audio.mp3';
-        };
-        initializeAudios();
-    });
 </script>
     
     {% block head_extra %}{% endblock %}
