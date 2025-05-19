@@ -587,6 +587,7 @@ document.addEventListener('DOMContentLoaded', function() {
                     })
                     .catch(function(error) {
                         console.error('출석 상태 확인 오류:', error);
+                        playErrorSound(); // 오류 발생 시 소리 추가
                         alert('출석 상태를 확인하는 중 오류가 발생했습니다.');
                     });
             })
