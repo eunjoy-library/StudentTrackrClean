@@ -484,6 +484,8 @@ document.addEventListener('DOMContentLoaded', function() {
             .then(function(checkData) {
                 if (checkData.has_attendance) {
                     // 이미 출석한 경우 (다른 탭이나 브라우저에서 처리된 경우)
+                    // 에러 사운드 재생
+                    new Audio(errorAudioBase64).play().catch(e => console.error('오디오 재생 오류:', e));
                     alert('이번 주에 이미 출석 처리되었습니다. 중복 출석이 방지되었습니다.');
                     closeModal();
                     return;
