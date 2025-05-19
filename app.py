@@ -813,7 +813,7 @@ def by_period():
     except:
         formatted_date = selected_date
     
-    return render_template('by_period_new.html', 
+    return render_template('by_period.html', 
                           grouped_records=sorted_groups, 
                           today=today,
                           selected_date=formatted_date,
