@@ -61,22 +61,25 @@ function playSuccessSound() {
     }
 }
 
-// 오류 소리 재생 (낮은 똑딱 소리)
+// 오류 소리 재생 (삐- 경고음)
 function playErrorSound() {
     const context = initAudioContext();
     if (!context) return;
     
     try {
+        // 삐- 소리 효과 생성
         const oscillator = context.createOscillator();
         const gainNode = context.createGain();
         
-        oscillator.type = 'square';
-        oscillator.frequency.setValueAtTime(150, context.currentTime); // 낮은 주파수
-        oscillator.frequency.exponentialRampToValueAtTime(40, context.currentTime + 0.4); 
+        // 더 높은 주파수의 정현파를 사용하여 경고음 생성
+        oscillator.type = 'sawtooth'; // 톱니파를 사용하여 더 날카로운 경고음
+        oscillator.frequency.setValueAtTime(700, context.currentTime); // 높은 주파수 삐- 소리
         
+        // 음량 조절
         gainNode.gain.setValueAtTime(0, context.currentTime);
-        gainNode.gain.linearRampToValueAtTime(0.3, context.currentTime + 0.05);
-        gainNode.gain.linearRampToValueAtTime(0, context.currentTime + 0.4);
+        gainNode.gain.linearRampToValueAtTime(0.2, context.currentTime + 0.05); // 음량 최대치
+        gainNode.gain.linearRampToValueAtTime(0.2, context.currentTime + 0.3); // 유지
+        gainNode.gain.linearRampToValueAtTime(0, context.currentTime + 0.4); // 페이드 아웃
         
         oscillator.connect(gainNode);
         gainNode.connect(context.destination);

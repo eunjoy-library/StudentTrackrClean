@@ -553,6 +553,10 @@ document.addEventListener('DOMContentLoaded', function() {
                         
                         if (hasAttendance) {
                             // 이미 출석한 학생 - 경고 메시지와 함께 비활성화
+                            
+                            // 즉시 경고음 재생
+                            playErrorSound();
+                            
                             var formattedDate = attendData.formatted_date || attendDate;
                             
                             content = '<div style="color: #ff6b6b; font-weight: bold; margin-bottom: 15px; text-align: center; font-size: 18px;">' +
