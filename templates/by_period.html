@@ -317,18 +317,18 @@
                 // 텍스트 생성 (n월 n일 n교시 도서실에 있는 학생입니다~!)
                 let text = `${formattedDate} ${period} 도서실에 있는 학생입니다~!\n\n`;
                 
-                // 간단한 표 형식 생성
-                text += "학번\t이름\t좌석번호\n";
-                text += "------------------------------\n";
+                // 고정폭 표 형식 생성 (등간격으로 정렬되도록)
+                text += "학번          이름        좌석번호\n";
+                text += "---------------------------------------\n";
                 
-                // 학생 데이터 추가
+                // 학생 데이터 추가 (이름 길이에 상관없이 정렬이 맞도록 수정)
                 const periodRows = document.querySelectorAll(`.record-checkbox[data-period="${period}"]`);
                 periodRows.forEach(checkbox => {
                     const row = checkbox.closest('tr');
-                    const studentId = row.cells[1].textContent.trim();
-                    const name = row.cells[2].textContent.trim();
+                    const studentId = row.cells[1].textContent.trim().padEnd(12, ' '); // 고정 너비 12자리
+                    const name = row.cells[2].textContent.trim().padEnd(10, ' '); // 고정 너비 10자리
                     const seat = row.cells[3].textContent.trim();
-                    text += `${studentId}\t${name}\t${seat}\n`;
+                    text += `${studentId}${name}${seat}\n`;
                 });
                 
                 copyToClipboard(text);
@@ -354,39 +354,20 @@
                         if (studentCount > 0) {
                             text += `${formattedDate} ${period} 도서실에 있는 학생입니다~!\n\n`;
                             
-                            // 최대 길이 계산
-                            let maxIdLength = 8;
-                            let maxNameLength = 8;
-                            let maxSeatLength = 8;
-                            
-                            const allRows = [];
+                            // 일정한 열 너비로 단순화 (이름 길이와 상관없이 항상 일정한 간격 유지)
                             const periodRows = document.querySelectorAll(`.record-checkbox[data-period="${period}"]`);
                             
-                            // 데이터 수집 및 최대 길이 계산
+                            // 표 헤더 추가 (고정 너비로 설정)
+                            text += "학번          이름        좌석번호\n";
+                            text += "---------------------------------------\n";
+                            
+                            // 데이터 행 추가 (고정 너비 적용)
                             periodRows.forEach(checkbox => {
                                 const row = checkbox.closest('tr');
-                                const studentId = row.cells[1].textContent.trim();
-                                const name = row.cells[2].textContent.trim();
+                                const studentId = row.cells[1].textContent.trim().padEnd(12, ' '); // 학번 12자리 고정
+                                const name = row.cells[2].textContent.trim().padEnd(10, ' '); // 이름 10자리 고정
                                 const seat = row.cells[3].textContent.trim();
-                                
-                                maxIdLength = Math.max(maxIdLength, studentId.length);
-                                maxNameLength = Math.max(maxNameLength, name.length);
-                                maxSeatLength = Math.max(maxSeatLength, seat.length);
-                                
-                                allRows.push({id: studentId, name: name, seat: seat});
-                            });
-                            
-                            // 표 헤더 추가
-                            const headerLine = `학번${' '.repeat(maxIdLength - 4)}이름${' '.repeat(maxNameLength - 4)}좌석번호\n`;
-                            const separator = `${'='.repeat(maxIdLength + maxNameLength + maxSeatLength + 6)}\n`;
-                            
-                            text += headerLine + separator;
-                            
-                            // 데이터 행 추가
-                            allRows.forEach(row => {
-                                const idPadded = row.id + ' '.repeat(maxIdLength - row.id.length + 2);
-                                const namePadded = row.name + ' '.repeat(maxNameLength - row.name.length + 2);
-                                text += `${idPadded}${namePadded}${row.seat}\n`;
+                                text += `${studentId}${name}${seat}\n`;
                             });
                             
                             text += '\n';
