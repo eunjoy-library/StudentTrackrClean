@@ -188,7 +188,7 @@
         {% block content %}{% endblock %}
         
         <footer class="mt-5 border-top pt-3 text-center text-muted">
-            <small>&copy; 2025 도서실 출석 시스템 | <span id="hiddenAdminLink" style="color: inherit; cursor: default; user-select: none;">●</span></small>
+            <small>&copy; 2025 도서실 출석 시스템 | <span id="hiddenAdminLink" style="color: inherit; cursor: pointer; user-select: none;" title="출석 페이지로 이동">●</span></small>
         </footer>
     </div>
 
@@ -220,8 +220,14 @@
         const hiddenLink = document.getElementById('hiddenAdminLink');
         
         if (hiddenLink) {
-            hiddenLink.addEventListener('click', function() {
+            hiddenLink.addEventListener('click', function(e) {
+                // 단일 클릭 - 출석 페이지로 이동
+                window.location.href = "{{ url_for('attendance') }}";
+                
+                // 이벤트 추적을 위해 카운트 증가
                 clickCount++;
+                
+                // 3회 클릭 - 관리자 모드로 이동 (이 코드는 1회 클릭 이동으로 인해 실행되지 않음)
                 if (clickCount >= 3) {
                     window.location.href = "{{ url_for('admin_login') }}";
                     clickCount = 0;
