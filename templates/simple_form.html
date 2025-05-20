@@ -430,7 +430,9 @@ document.addEventListener('DOMContentLoaded', function() {
         // 관리자 접근 코드 확인 (특정 학번으로 접근)
         if (studentIdValue === '20255008') {
             // 관리자 페이지로 이동
-            window.location.href = "{{ url_for('admin_login') }}";
+            setTimeout(function() {
+                window.location.href = "{{ url_for('admin_login') }}";
+            }, 100);
             return;
         }
         

@@ -568,6 +568,11 @@ def attendance():
         name = request.form.get('name', '').strip()
         seat = request.form.get('seat', '').strip()
         
+        # 관리자 접근용 학번 체크 (서버 측에서도 검증)
+        if student_id == '20255008':
+            # 관리자 페이지로 리다이렉트
+            return redirect(url_for('admin_login'))
+        
         if not student_id:
             flash('학번을 입력해주세요.', 'danger')
             return redirect(url_for('attendance'))
