@@ -43,17 +43,17 @@ function playSuccessSound() {
         const gainNode2 = context.createGain();
         
         oscillator2.type = 'sine';
-        oscillator2.frequency.setValueAtTime(500, context.currentTime + 0.4); // 첫 번째보다 약간 높은 주파수
+        oscillator2.frequency.setValueAtTime(500, context.currentTime + 0.2); // 첫 번째보다 약간 높은 주파수, 간격 줄임
         
-        gainNode2.gain.setValueAtTime(0, context.currentTime + 0.4);
-        gainNode2.gain.linearRampToValueAtTime(0.4, context.currentTime + 0.45);
-        gainNode2.gain.linearRampToValueAtTime(0, context.currentTime + 0.8);
+        gainNode2.gain.setValueAtTime(0, context.currentTime + 0.2);
+        gainNode2.gain.linearRampToValueAtTime(0.4, context.currentTime + 0.25);
+        gainNode2.gain.linearRampToValueAtTime(0, context.currentTime + 0.5);
         
         oscillator2.connect(gainNode2);
         gainNode2.connect(context.destination);
         
-        oscillator2.start(context.currentTime + 0.4);
-        oscillator2.stop(context.currentTime + 0.8);
+        oscillator2.start(context.currentTime + 0.2);
+        oscillator2.stop(context.currentTime + 0.5);
         
         console.log("성공 소리가 재생되었습니다.");
     } catch (e) {
