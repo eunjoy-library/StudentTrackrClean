@@ -8,44 +8,49 @@
         <div class="card-header bg-primary text-white">
             <h2>교시별 출석 현황</h2>
         </div>
+        <!-- 상단 버튼 메뉴 추가 -->
+        <div class="card-body bg-light p-2 border-bottom">
+            <div class="d-flex flex-wrap justify-content-start gap-2">
+                <a href="{{ url_for('attendance') }}" class="btn btn-success">
+                    <i class="fas fa-home me-1"></i> 출석 페이지
+                </a>
+                <a href="{{ url_for('admin_add_attendance') }}" class="btn btn-primary">
+                    <i class="fas fa-user-plus me-1"></i> 추가 출석하기
+                </a>
+                <a href="{{ url_for('list_attendance') }}" class="btn btn-secondary">
+                    <i class="fas fa-list me-1"></i> 출석 목록
+                </a>
+                <button type="submit" class="btn btn-warning" id="deleteSelectedBtn" disabled form="deleteForm">
+                    <i class="fas fa-trash me-1"></i> 선택 항목 삭제
+                </button>
+                <a href="{{ url_for('logout') }}" class="btn btn-danger">
+                    <i class="fas fa-sign-out-alt me-1"></i> 로그아웃
+                </a>
+            </div>
+        </div>
         <div class="card-body">
-            <!-- 상단 버튼 그룹 -->
             <div class="row mb-4">
                 <div class="col-md-8">
-                    <div class="mb-3">
-                        <a href="{{ url_for('attendance') }}" class="btn btn-sm btn-success">
-                            <i class="fas fa-home me-1"></i>출석 페이지
-                        </a>
-                        <a href="{{ url_for('admin_add_attendance') }}" class="btn btn-sm btn-primary">
-                            <i class="fas fa-user-plus me-1"></i>추가 출석하기
-                        </a>
-                        <a href="{{ url_for('list_attendance') }}" class="btn btn-sm btn-secondary">
-                            <i class="fas fa-list me-1"></i>전체 출석 목록
-                        </a>
-                        <button type="submit" class="btn btn-sm btn-warning" id="deleteSelectedBtn" disabled form="deleteForm">
-                            <i class="fas fa-trash me-1"></i>선택 항목 삭제
-                        </button>
-                        <a href="{{ url_for('logout') }}" class="btn btn-sm btn-danger">
-                            <i class="fas fa-sign-out-alt me-1"></i>로그아웃
-                        </a>
-                    </div>
+                    <!-- 상단 버튼 영역은 위로 이동했습니다 -->
                 </div>
                 <div class="col-md-4 text-end">
-                    <div class="btn-group me-2">
-                        <button class="btn btn-sm btn-secondary dropdown-toggle" type="button" id="sortDropdownAll" data-bs-toggle="dropdown" aria-expanded="false">
-                            <i class="fas fa-sort-amount-down me-1"></i>정렬
-                        </button>
-                        <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="sortDropdownAll">
-                            <li><h6 class="dropdown-header">전체 교시 정렬</h6></li>
-                            <li><a class="dropdown-item" href="{{ url_for('by_period', date=request.args.get('date', today), sort_by='seat', sort_direction='asc') }}">좌석번호 (오름차순)</a></li>
-                            <li><a class="dropdown-item" href="{{ url_for('by_period', date=request.args.get('date', today), sort_by='seat', sort_direction='desc') }}">좌석번호 (내림차순)</a></li>
-                            <li><hr class="dropdown-divider"></li>
-                            <li><a class="dropdown-item" href="{{ url_for('by_period', date=request.args.get('date', today), sort_by='name', sort_direction='asc') }}">이름 (가나다순)</a></li>
-                            <li><hr class="dropdown-divider"></li>
-                            <li><a class="dropdown-item" href="{{ url_for('by_period', date=request.args.get('date', today), sort_by='student_id', sort_direction='asc') }}">학번 (오름차순)</a></li>
-                        </ul>
+                    <div class="d-inline-block me-2">
+                        <div class="btn-group">
+                            <button class="btn btn-secondary dropdown-toggle" type="button" id="sortDropdownAll" data-bs-toggle="dropdown" aria-expanded="false">
+                                <i class="fas fa-sort-amount-down me-1"></i>정렬
+                            </button>
+                            <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="sortDropdownAll">
+                                <li><h6 class="dropdown-header">전체 교시 정렬</h6></li>
+                                <li><a class="dropdown-item" href="{{ url_for('by_period', date=request.args.get('date', today), sort_by='seat', sort_direction='asc') }}">좌석번호 (오름차순)</a></li>
+                                <li><a class="dropdown-item" href="{{ url_for('by_period', date=request.args.get('date', today), sort_by='seat', sort_direction='desc') }}">좌석번호 (내림차순)</a></li>
+                                <li><hr class="dropdown-divider"></li>
+                                <li><a class="dropdown-item" href="{{ url_for('by_period', date=request.args.get('date', today), sort_by='name', sort_direction='asc') }}">이름 (가나다순)</a></li>
+                                <li><hr class="dropdown-divider"></li>
+                                <li><a class="dropdown-item" href="{{ url_for('by_period', date=request.args.get('date', today), sort_by='student_id', sort_direction='asc') }}">학번 (오름차순)</a></li>
+                            </ul>
+                        </div>
                     </div>
-                    <button id="copyAllBtn" class="btn btn-sm btn-info">
+                    <button id="copyAllBtn" class="btn btn-info">
                         <i class="fas fa-copy me-1"></i>전체 복사
                     </button>
                 </div>
