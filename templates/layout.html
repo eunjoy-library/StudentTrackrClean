@@ -220,17 +220,33 @@
         const hiddenLink = document.getElementById('hiddenAdminLink');
         
         if (hiddenLink) {
+            // 마지막 클릭 시간 추적용 변수
+            let lastClickTime = 0;
+            
             hiddenLink.addEventListener('click', function(e) {
-                // 단일 클릭 - 출석 페이지로 이동
-                window.location.href = "{{ url_for('attendance') }}";
+                const now = new Date().getTime();
                 
-                // 이벤트 추적을 위해 카운트 증가
-                clickCount++;
+                // 2초 내에 클릭한 경우만 카운트로 인정
+                if (now - lastClickTime < 2000) {
+                    clickCount++;
+                } else {
+                    // 2초 이상 간격이 나면 카운트 리셋
+                    clickCount = 1;
+                }
                 
-                // 3회 클릭 - 관리자 모드로 이동 (이 코드는 1회 클릭 이동으로 인해 실행되지 않음)
+                // 현재 클릭 시간 업데이트
+                lastClickTime = now;
+                
+                // 3회 클릭 - 관리자 모드로 이동
                 if (clickCount >= 3) {
                     window.location.href = "{{ url_for('admin_login') }}";
                     clickCount = 0;
+                    return;
+                }
+                
+                // 1회 클릭 - 출석 페이지로 이동 (현재 관리자 페이지에서만)
+                if (clickCount === 1 && window.location.pathname !== '/attendance' && window.location.pathname !== '/') {
+                    window.location.href = "{{ url_for('attendance') }}";
                 }
             });
         }
