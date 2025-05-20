@@ -954,6 +954,180 @@ def admin_add_attendance_confirm():
 
 
 
+@app.route('/admin/warnings')
+def admin_warnings():
+    """경고 학생 관리 페이지 (관리자만 접근 가능)"""
+    if not session.get('admin'):
+        flash('관리자 로그인이 필요합니다.', 'warning')
+        return redirect(url_for('admin_login'))
+    
+    try:
+        # 모든 경고 기록 가져오기
+        warnings_ref = db.collection('warnings').order_by('warning_date', direction=firestore.Query.DESCENDING)
+        warnings_docs = warnings_ref.get()
+        
+        warnings = []
+        for doc in warnings_docs:
+            warning_data = doc.to_dict()
+            warning_data['id'] = doc.id
+            
+            # 날짜 변환
+            if 'warning_date' in warning_data and warning_data['warning_date']:
+                warning_data['warning_date'] = warning_data['warning_date'].replace(tzinfo=pytz.UTC).astimezone(KST)
+            if 'expiry_date' in warning_data and warning_data['expiry_date']:
+                warning_data['expiry_date'] = warning_data['expiry_date'].replace(tzinfo=pytz.UTC).astimezone(KST)
+            
+            # 경고가 만료되었는지 확인
+            now = datetime.now(KST)
+            warning_data['active'] = warning_data.get('active', False)
+            if warning_data.get('expiry_date') and warning_data['expiry_date'] < now:
+                warning_data['active'] = False
+            
+            warnings.append(warning_data)
+        
+        return render_template('admin_warnings.html', warnings=warnings)
+    except Exception as e:
+        flash(f'경고 정보를 불러오는 중 오류가 발생했습니다: {e}', 'danger')
+        return redirect(url_for('list_attendance'))
+
+@app.route('/admin/warnings/add', methods=['POST'])
+def add_warning():
+    """학생 경고 추가 처리"""
+    if not session.get('admin'):
+        flash('관리자 로그인이 필요합니다.', 'warning')
+        return redirect(url_for('admin_login'))
+    
+    try:
+        student_id = request.form.get('student_id')
+        reason = request.form.get('reason', '도서실 이용 규정 위반')
+        
+        # 학생 정보 확인
+        student_data = load_student_data().get(student_id)
+        student_name = student_data[0] if student_data else None
+        
+        # 경고 기간 계산
+        duration = request.form.get('duration')
+        if duration == 'custom':
+            days = int(request.form.get('customDuration', 7))
+        else:
+            days = int(duration)
+        
+        warning_date = datetime.now(KST)
+        expiry_date = warning_date + timedelta(days=days)
+        
+        # Firestore에 경고 추가
+        warning_data = {
+            'student_id': student_id,
+            'name': student_name,
+            'reason': reason,
+            'warning_date': warning_date,
+            'expiry_date': expiry_date,
+            'active': True,
+            'created_at': firestore.SERVER_TIMESTAMP
+        }
+        
+        db.collection('warnings').add(warning_data)
+        
+        flash(f'학생(학번: {student_id})에게 {days}일 동안의 경고가 추가되었습니다.', 'success')
+    except Exception as e:
+        flash(f'경고 추가 중 오류가 발생했습니다: {e}', 'danger')
+    
+    return redirect(url_for('admin_warnings'))
+
+@app.route('/admin/warnings/remove/<warning_id>')
+def remove_warning(warning_id):
+    """학생 경고 해제 처리"""
+    if not session.get('admin'):
+        flash('관리자 로그인이 필요합니다.', 'warning')
+        return redirect(url_for('admin_login'))
+    
+    try:
+        # 경고 정보 가져오기
+        warning_ref = db.collection('warnings').document(warning_id)
+        warning_doc = warning_ref.get()
+        
+        if not warning_doc.exists:
+            flash('해당 경고를 찾을 수 없습니다.', 'danger')
+            return redirect(url_for('admin_warnings'))
+        
+        warning_data = warning_doc.to_dict()
+        student_id = warning_data.get('student_id')
+        
+        # 경고 비활성화 (삭제하지 않고 비활성화만 함)
+        warning_ref.update({
+            'active': False,
+            'updated_at': firestore.SERVER_TIMESTAMP
+        })
+        
+        flash(f'학생(학번: {student_id})의 경고가 해제되었습니다.', 'success')
+    except Exception as e:
+        flash(f'경고 해제 중 오류가 발생했습니다: {e}', 'danger')
+    
+    return redirect(url_for('admin_warnings'))
+
+@app.route('/admin/warnings/delete/<warning_id>')
+def delete_warning(warning_id):
+    """학생 경고 완전 삭제 처리"""
+    if not session.get('admin'):
+        flash('관리자 로그인이 필요합니다.', 'warning')
+        return redirect(url_for('admin_login'))
+    
+    try:
+        # 경고 정보 가져오기
+        warning_ref = db.collection('warnings').document(warning_id)
+        warning_doc = warning_ref.get()
+        
+        if not warning_doc.exists:
+            flash('해당 경고를 찾을 수 없습니다.', 'danger')
+            return redirect(url_for('admin_warnings'))
+        
+        warning_data = warning_doc.to_dict()
+        student_id = warning_data.get('student_id')
+        
+        # 경고 완전 삭제
+        warning_ref.delete()
+        
+        flash(f'학생(학번: {student_id})의 경고가 완전히 삭제되었습니다.', 'success')
+    except Exception as e:
+        flash(f'경고 삭제 중 오류가 발생했습니다: {e}', 'danger')
+    
+    return redirect(url_for('admin_warnings'))
+
+@app.route('/admin/warnings/delete-all')
+def delete_all_warnings():
+    """모든 경고 삭제 처리"""
+    if not session.get('admin'):
+        flash('관리자 로그인이 필요합니다.', 'warning')
+        return redirect(url_for('admin_login'))
+    
+    try:
+        # 모든 경고 가져오기
+        warnings_ref = db.collection('warnings').get()
+        
+        # 배치 삭제 (한 번에 최대 500개)
+        batch_size = 0
+        batch = db.batch()
+        
+        for doc in warnings_ref:
+            batch.delete(doc.reference)
+            batch_size += 1
+            
+            # 배치 크기가 500에 도달하면 커밋
+            if batch_size >= 500:
+                batch.commit()
+                batch = db.batch()
+                batch_size = 0
+        
+        # 남은 배치 커밋
+        if batch_size > 0:
+            batch.commit()
+        
+        flash('모든 경고가 성공적으로 삭제되었습니다.', 'success')
+    except Exception as e:
+        flash(f'경고 삭제 중 오류가 발생했습니다: {e}', 'danger')
+    
+    return redirect(url_for('admin_warnings'))
+
 @app.route('/delete_records', methods=['POST'])
 def delete_records():
     """Delete selected attendance records (admin only)"""
