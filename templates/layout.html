@@ -182,31 +182,7 @@
             });
         }
         
-        // 보안 접근 방식 (키보드 + 모바일 탭 지원)
-        let secretKey = '';
-        let lastTime = 0;
-        
-        // 키보드 입력 방식 (PC용)
-        document.addEventListener('keydown', function(e) {
-            const now = new Date().getTime();
-            
-            // 타임아웃 체크
-            if (now - lastTime > 3000) {
-                secretKey = '';
-            }
-            
-            // 키 기록
-            secretKey += e.key;
-            lastTime = now;
-            
-            // 간단한 체크 방식으로 복원
-            if (secretKey.indexOf('admin2025') !== -1) {
-                // 관리자 페이지로 이동
-                window.location.href = "{{ url_for('admin_login') }}";
-                secretKey = ''; // 리셋
-                console.log('관리자 페이지로 이동합니다.');
-            }
-        });
+        // 키보드 입력 관련 코드 제거 - 학번 입력창으로만 관리자 접근
         
         // 모바일 탭 접근 방식 제거됨
     });

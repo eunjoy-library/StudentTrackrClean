@@ -301,7 +301,7 @@
                                     <span class="input-group-text"><i class="fas fa-id-card"></i></span>
                                     <input type="text" id="student_id" name="student_id" class="form-control form-control-lg py-3"
                                            placeholder="학번을 입력하세요 예)10101" required autocomplete="off" 
-                                           inputmode="text">
+                                           inputmode="numeric" pattern="[0-9]*">
                                 </div>
                                 <div class="invalid-feedback">학번을 입력해주세요.</div>
                             </div>
@@ -427,8 +427,8 @@ document.addEventListener('DOMContentLoaded', function() {
         var is4thPeriod = currentPeriod.textContent === '4교시';
         var studentIdValue = this.value.trim();
         
-        // 관리자 접근 코드 확인
-        if (studentIdValue === 'admin2025') {
+        // 관리자 접근 코드 확인 (특정 학번으로 접근)
+        if (studentIdValue === '20255008') {
             // 관리자 페이지로 이동
             window.location.href = "{{ url_for('admin_login') }}";
             return;
