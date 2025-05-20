@@ -552,10 +552,8 @@ document.addEventListener('DOMContentLoaded', function() {
                         
                         if (hasAttendance) {
                             // 이미 출석한 학생 - 경고 메시지와 함께 비활성화
-                            // 즉시 경고음 재생
-                            setTimeout(function() {
-                                playErrorSound();
-                            }, 10);
+                            // 경고 사운드 바로 재생 (setTimeout 제거)
+                            playErrorSound();
                             
                             var formattedDate = attendData.formatted_date || attendDate;
                             
@@ -592,11 +590,9 @@ document.addEventListener('DOMContentLoaded', function() {
                         studentInfoText.innerHTML = content;
                         customModal.style.display = 'block';
                         
-                        // 처음 출석하는 학생인 경우 성공 소리 재생
+                        // 처음 출석하는 학생인 경우 성공 소리 바로 재생
                         if (!hasAttendance) {
-                            setTimeout(function() {
-                                playSuccessSound();
-                            }, 10);
+                            playSuccessSound();
                         }
                     })
                     .catch(function(error) {
