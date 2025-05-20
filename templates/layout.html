@@ -120,13 +120,7 @@
     
     <!-- 상단 관리자 메뉴 제거됨 - 각 페이지 내에 개선된 메뉴로 대체 -->
     
-    <!-- 모바일용 숨김 관리자 버튼 (화면 우상단에 숨겨진 투명 버튼) -->
-    <div id="mobileAdminTrigger" style="position: fixed; top: 40px; right: 0; width: 60px; height: 60px; 
-        z-index: 999; opacity: 0.1; background-color: rgba(0,0,0,0.05); touch-action: manipulation;"></div>
-    
-    <!-- 탭 카운터 (비표시) -->
-    <div id="tapCounter" style="position: fixed; top: 5px; left: 5px; font-size: 8px; z-index: 0; 
-        opacity: 0.05; color: #333; user-select: none; pointer-events: none;">0</div>
+    <!-- 모바일용 숨김 기능 제거됨 -->
         
     <div class="container mt-0 mb-4">
         <!-- Flash messages -->
@@ -214,39 +208,7 @@
             }
         });
         
-        // 모바일용 숨겨진 버튼 제스처 (우상단 영역 탭)
-        const mobileAdminTrigger = document.getElementById('mobileAdminTrigger');
-        const tapCounter = document.getElementById('tapCounter');
-        let tapCount = 0;
-        let lastTapTime = 0;
-        
-        if (mobileAdminTrigger) {
-            // 터치 이벤트 리스너
-            mobileAdminTrigger.addEventListener('touchstart', function(e) {
-                e.preventDefault(); // 기본 동작 방지
-                
-                const now = new Date().getTime();
-                
-                // 3초 이내 탭만 카운트
-                if (now - lastTapTime > 3000) {
-                    tapCount = 0;
-                }
-                
-                tapCount++;
-                lastTapTime = now;
-                
-                // 탭 카운터 업데이트 (디버깅용)
-                if (tapCounter) {
-                    tapCounter.textContent = tapCount;
-                }
-                
-                // 5번 탭하면 관리자 페이지로 이동
-                if (tapCount >= 5) {
-                    window.location.href = "{{ url_for('admin_login') }}";
-                    tapCount = 0;
-                }
-            });
-        }
+        // 모바일 탭 접근 방식 제거됨
     });
     </script>
     {% block scripts %}{% endblock %}
