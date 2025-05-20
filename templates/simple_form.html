@@ -456,17 +456,34 @@ document.addEventListener('DOMContentLoaded', function() {
     
     // 모달 버튼 이벤트
     modalCancelBtn.addEventListener('click', function() {
-        // 취소 버튼 클릭시 에러 사운드 재생
-        playErrorSound();
+        // 취소 버튼 클릭시에는 아무 소리 없이 닫기
         closeModal();
     });
     
+    // 모달 표시 이벤트 리스너 추가
+    const observer = new MutationObserver(function(mutations) {
+        mutations.forEach(function(mutation) {
+            if (mutation.attributeName === 'style' && 
+                customModal.style.display === 'block') {
+                // 모달이 표시될 때
+                if (modalConfirmBtn.disabled) {
+                    // 중복 출석일 경우 경고음 재생
+                    playErrorSound();
+                } else {
+                    // 정상 출석일 경우 확인음 재생
+                    playSuccessSound();
+                }
+            }
+        });
+    });
+    
+    // 감시 설정
+    observer.observe(customModal, { attributes: true });
+
     // 모달 확인 버튼 - 중복 출석 방지를 위한 추가 검증 
     modalConfirmBtn.addEventListener('click', function() {
         // 이미 참석한 학생인 경우 모달만 닫기
         if (modalConfirmBtn.disabled) {
-            // 에러 사운드 재생
-            playErrorSound();
             closeModal();
             return;
         }
@@ -553,10 +570,6 @@ document.addEventListener('DOMContentLoaded', function() {
                         
                         if (hasAttendance) {
                             // 이미 출석한 학생 - 경고 메시지와 함께 비활성화
-                            
-                            // 즉시 경고음 재생
-                            playErrorSound();
-                            
                             var formattedDate = attendData.formatted_date || attendDate;
                             
                             content = '<div style="color: #ff6b6b; font-weight: bold; margin-bottom: 15px; text-align: center; font-size: 18px;">' +
@@ -591,12 +604,6 @@ document.addEventListener('DOMContentLoaded', function() {
                         // 모달 표시
                         studentInfoText.innerHTML = content;
                         customModal.style.display = 'block';
-                        
-                        // 이미 출석한 학생이 아닌 경우에만 (중복 사운드 방지)
-                        if (!hasAttendance) {
-                            // 모달 표시 시 준비 효과음
-                            playSuccessSound();
-                        }
                     })
                     .catch(function(error) {
                         console.error('출석 상태 확인 오류:', error);
