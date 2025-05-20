@@ -590,10 +590,7 @@ document.addEventListener('DOMContentLoaded', function() {
                         studentInfoText.innerHTML = content;
                         customModal.style.display = 'block';
                         
-                        // 처음 출석하는 학생인 경우 성공 소리 바로 재생
-                        if (!hasAttendance) {
-                            playSuccessSound();
-                        }
+                        // 모달창이 뜰 때는 소리를 재생하지 않음 - 확인 버튼을 누를 때만 재생
                     })
                     .catch(function(error) {
                         console.error('출석 상태 확인 오류:', error);
