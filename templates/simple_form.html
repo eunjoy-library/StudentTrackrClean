@@ -552,8 +552,10 @@ document.addEventListener('DOMContentLoaded', function() {
                         
                         if (hasAttendance) {
                             // 이미 출석한 학생 - 경고 메시지와 함께 비활성화
-                            // 경고 사운드 바로 재생 (setTimeout 제거)
-                            playErrorSound();
+                            // 잠시 후 경고 사운드 재생 (딜레이 추가)
+                            setTimeout(function() {
+                                playErrorSound();
+                            }, 100);
                             
                             var formattedDate = attendData.formatted_date || attendDate;
                             
@@ -590,20 +592,26 @@ document.addEventListener('DOMContentLoaded', function() {
                         studentInfoText.innerHTML = content;
                         customModal.style.display = 'block';
                         
-                        // 처음 출석하는 학생인 경우 성공 소리 바로 재생
+                        // 처음 출석하는 학생인 경우 성공 소리 재생 (딜레이 추가)
                         if (!hasAttendance) {
-                            playSuccessSound();
+                            setTimeout(function() {
+                                playSuccessSound();
+                            }, 100);
                         }
                     })
                     .catch(function(error) {
                         console.error('출석 상태 확인 오류:', error);
-                        playErrorSound(); // 오류 발생 시 소리 추가
+                        setTimeout(function() {
+                            playErrorSound(); // 오류 발생 시 소리 추가
+                        }, 100);
                         alert('출석 상태를 확인하는 중 오류가 발생했습니다.');
                     });
             })
             .catch(function(error) {
                 console.error('학생 정보 조회 오류:', error);
-                playErrorSound(); // 오류 발생 시 소리 추가
+                setTimeout(function() {
+                    playErrorSound(); // 오류 발생 시 소리 추가
+                }, 100);
                 alert('학생 정보를 조회하는 중 오류가 발생했습니다.');
             });
     });
