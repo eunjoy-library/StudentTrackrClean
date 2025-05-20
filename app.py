@@ -825,7 +825,7 @@ def admin_login():
     """Admin login page"""
     if request.method == 'POST':
         password = request.form.get('password')
-        if password == '1234':  # 임시 비밀번호 (실제 구현에서는 환경변수나 보안 저장소 사용)
+        if password == '9929':  # 비밀번호 변경 (9929)
             session['admin'] = True
             flash('관리자로 로그인되었습니다.', 'success')
             return redirect(url_for('by_period'))  # 교시별 보기로 바로 이동
