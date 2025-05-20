@@ -1,87 +1,82 @@
-// HTML5 오디오 엘리먼트를 사용한 간단한 소리 재생
-// Base64로 인코딩된 오디오 데이터
-
-// 성공 소리 (띵동) - 짧은 MP3 형식
-const successAudioBase64 = "data:audio/mp3;base64,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";
-
-// 오류 소리 (경고음) - 짧은 MP3 형식
-const errorAudioBase64 = "data:audio/mp3;base64,SUQzAwAAAAAAJlRQRTEAAAAcAAAAU291bmRKYXkuY29tIFNvdW5kIEVmZmVjdHMA//uQxAAABLQxePE8QAgRiGa9z7QAAAAAABESRJkiSJMkRERE3d3d3REREXd3d9EREREzMzMhEREX//////REiIiIuzMzIi7u7u7u7u7u7u7/////VVVVVhEREVVVVVVVf////9VVVf//zJVmZmZmZmZklgICAgICAgICAgIGMYxjGMYxjGP/8YxjGP////jGMYxjGMYx//jGMYxjGMYxBwOBwOBwOBwOBwf/jGMYxjGMYxjGMYxjCEIQhBCEEIQQhCEIQhCEIQhCEIQhCEIQhCEIQhCEIQhCEIQRERERERERERERERERERERERERERERERERERERERERDMzMzMzMzMzMzMzMzMzMzMzMzMzMzMzMzMzMzMzMzMzMzMzMxVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmf/7kMQAAAp0X19ufEBCJiHrteaMAKZmZm7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7vVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVMQU1FMy45OS41VVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVf/7kMQAA/AAAf4AAAAACAAAwgAAABVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVV";
-
-// 오디오 객체 생성
-let successAudio = null;
-let errorAudio = null;
-
-// 페이지 로드 시 오디오 초기화
-function initAudio() {
-    try {
-        // 성공 소리 객체 생성
-        successAudio = new Audio(successAudioBase64);
-        successAudio.volume = 0.5;
-        
-        // 오류 소리 객체 생성
-        errorAudio = new Audio(errorAudioBase64);
-        errorAudio.volume = 0.5;
-        
-        // 미리 로드 (모바일에서도 잘 작동하도록)
-        successAudio.load();
-        errorAudio.load();
-        
-        console.log("오디오 객체가 초기화되었습니다.");
-    } catch (e) {
-        console.error("오디오 초기화 오류:", e);
-    }
-}
-
-// 성공 소리 재생
-function playSuccessSound() {
-    try {
-        if (!successAudio) {
-            initAudio();
+// 간단한 비프음 함수 구현
+(function() {
+    // AudioContext 인스턴스를 저장할 변수 (처음 클릭 시 생성)
+    var audioCtx = null;
+    
+    // AudioContext 초기화 (사용자 제스처 필요)
+    function initAudio() {
+        if (!audioCtx) {
+            try {
+                audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+                console.log("오디오 시스템이 초기화되었습니다");
+            } catch (e) {
+                console.error("오디오 초기화 오류:", e);
+            }
         }
-        
-        // 현재 재생 중이면 처음부터 다시 재생
-        successAudio.pause();
-        successAudio.currentTime = 0;
-        
-        // 소리 재생
-        successAudio.play().then(() => {
-            console.log("성공 소리가 재생되었습니다.");
-        }).catch(e => {
-            console.error("성공 오디오 재생 오류:", e);
-        });
-    } catch (e) {
-        console.error("성공 소리 재생 실패:", e);
+        return audioCtx;
     }
-}
-
-// 오류 소리 재생
-function playErrorSound() {
-    try {
-        if (!errorAudio) {
-            initAudio();
+    
+    // 기본 비프음 생성 함수
+    function beep(freq, duration, volume, type) {
+        var ctx = initAudio();
+        if (!ctx) return false;
+        
+        try {
+            var oscillator = ctx.createOscillator();
+            var gainNode = ctx.createGain();
+            
+            oscillator.type = type || 'sine';
+            oscillator.frequency.value = freq;
+            gainNode.gain.value = volume || 0.1;
+            
+            oscillator.connect(gainNode);
+            gainNode.connect(ctx.destination);
+            
+            oscillator.start(ctx.currentTime);
+            oscillator.stop(ctx.currentTime + (duration || 0.5));
+            
+            return true;
+        } catch (e) {
+            console.error("비프음 생성 오류:", e);
+            return false;
         }
-        
-        // 현재 재생 중이면 처음부터 다시 재생
-        errorAudio.pause();
-        errorAudio.currentTime = 0;
-        
-        // 소리 재생
-        errorAudio.play().then(() => {
-            console.log("오류 소리가 재생되었습니다.");
-        }).catch(e => {
-            console.error("오류 오디오 재생 오류:", e);
-        });
-    } catch (e) {
-        console.error("오류 소리 재생 실패:", e);
     }
-}
-
-// 페이지 로드 시 오디오 초기화
-document.addEventListener('DOMContentLoaded', function() {
-    // 사용자 상호작용 후 초기화하기 위해 클릭 이벤트 리스너 추가
+    
+    // 성공 소리 (띵동) - 더 낮은 주파수, 더 짧은 간격
+    window.playSuccessSound = function() {
+        try {
+            // 첫 번째 음 (띵)
+            beep(400, 0.15, 0.2, 'sine');
+            
+            // 두 번째 음 (동) - 0.15초 후
+            setTimeout(function() {
+                beep(600, 0.15, 0.2, 'sine');
+            }, 150);
+            
+            console.log("성공 소리 재생");
+            return true;
+        } catch (e) {
+            console.error("성공 소리 오류:", e);
+            return false;
+        }
+    };
+    
+    // 오류 소리 (삐~)
+    window.playErrorSound = function() {
+        try {
+            beep(700, 0.3, 0.2, 'sawtooth');
+            console.log("오류 소리 재생");
+            return true;
+        } catch (e) {
+            console.error("오류 소리 오류:", e);
+            return false;
+        }
+    };
+    
+    // 페이지 로드 시 첫 클릭에서 오디오 컨텍스트 초기화
     document.addEventListener('click', function() {
         initAudio();
     }, { once: true });
-});
-
-console.log("오디오 처리 모듈이 로드되었습니다.");
+    
+    console.log("오디오 처리 모듈이 로드되었습니다");
+})();
