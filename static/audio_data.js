@@ -93,6 +93,10 @@ function playErrorSound() {
     }
 }
 
+// 레거시 코드 호환성을 위한 변수 정의
+const successAudioBase64 = null;
+const errorAudioBase64 = null;
+
 // 페이지 로드 시 사용자 상호작용 후 오디오 컨텍스트 초기화
 document.addEventListener('click', function() {
     initAudioContext();
