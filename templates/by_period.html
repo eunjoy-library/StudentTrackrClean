@@ -22,6 +22,9 @@
                         <a href="{{ url_for('list_attendance') }}" class="btn btn-sm btn-secondary">
                             <i class="fas fa-list me-1"></i>전체 출석 목록
                         </a>
+                        <button type="submit" class="btn btn-sm btn-warning" id="deleteSelectedBtn" disabled form="deleteForm">
+                            <i class="fas fa-trash me-1"></i>선택 항목 삭제
+                        </button>
                         <a href="{{ url_for('logout') }}" class="btn btn-sm btn-danger">
                             <i class="fas fa-sign-out-alt me-1"></i>로그아웃
                         </a>
@@ -124,13 +127,7 @@
             </div>
             {% endfor %}
             
-            <div class="d-flex justify-content-between mt-3 mb-3">
-                <div>
-                    <button type="submit" class="btn btn-danger" id="deleteSelectedBtn" disabled>
-                        <i class="fas fa-trash me-1"></i>선택 항목 삭제
-                    </button>
-                </div>
-            </div>
+            <!-- 하단 삭제 버튼 영역 제거됨 - 상단 메뉴로 대체 -->
             </form>
         </div>
         <!-- 하단 버튼 영역 제거됨 - 상단 메뉴로 대체 -->
