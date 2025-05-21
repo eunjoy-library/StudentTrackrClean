@@ -3,6 +3,7 @@
 (function() {
     // 전역 변수로 AudioContext 선언
     var audioContext = null;
+    var audioInitialized = false;
     
     // 오디오 컨텍스트 초기화 (사용자 인터랙션 필요)
     function initAudioContext() {
@@ -10,6 +11,7 @@
             try {
                 // 브라우저 호환성 처리
                 audioContext = new (window.AudioContext || window.webkitAudioContext)();
+                audioInitialized = true;
                 console.log("오디오 컨텍스트가 초기화되었습니다.");
             } catch (e) {
                 console.error("오디오 컨텍스트 생성 오류:", e);
@@ -18,9 +20,17 @@
         return audioContext;
     }
     
+    // 사용자 인터랙션을 위한 초기화 함수
+    function ensureAudioContext() {
+        if (!audioInitialized) {
+            initAudioContext();
+        }
+        return audioContext;
+    }
+    
     // 성공 소리 재생 (띵동 소리)
     window.playSuccessSound = function() {
-        var context = initAudioContext();
+        var context = ensureAudioContext();
         if (!context) return;
         
         try {
@@ -66,7 +76,7 @@
     
     // 오류 소리 재생 (삐- 경고음)
     window.playErrorSound = function() {
-        var context = initAudioContext();
+        var context = ensureAudioContext();
         if (!context) return;
         
         try {
@@ -97,6 +107,11 @@
     document.addEventListener('click', function() {
         initAudioContext();
     }, { once: true });
+    
+    // 페이지 로드 후 자동 초기화 시도 (일부 브라우저에서는 제한될 수 있음)
+    window.addEventListener('load', function() {
+        initAudioContext();
+    });
     
     console.log("오디오 처리 모듈이 로드되었습니다.");
 })();
