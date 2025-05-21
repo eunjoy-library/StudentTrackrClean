@@ -1266,15 +1266,22 @@ def api_get_students():
         # 학생 데이터 로드
         students_data = load_student_data()
         
-        # 요청한 학번에 해당하는 학생 정보만 필터링
+        # 새로운 학생 데이터도 추가하기 위해 현재 요청 목록에서 학번을 모두 처리
         result = []
         for student_id in student_id_list:
             if student_id in students_data:
                 name, seat = students_data[student_id]
                 result.append({
                     "student_id": student_id,
-                    "name": name,
-                    "seat": seat
+                    "name": name or "이름 없음",  # 이름이 없는 경우 대체 텍스트
+                    "seat": seat or "-"           # 좌석번호가 없는 경우 대체 텍스트
+                })
+            else:
+                # 데이터베이스에 없는 새 학생인 경우
+                result.append({
+                    "student_id": student_id,
+                    "name": "새 학생",
+                    "seat": "-"
                 })
         
         return jsonify(result)
