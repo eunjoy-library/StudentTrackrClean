@@ -1172,14 +1172,32 @@ def delete_records():
         flash('관리자 권한이 필요합니다.', 'danger')
         return redirect(url_for('admin_login'))
     
+    # 이전 페이지 확인 (교시별 보기 또는 출석 목록)
+    referrer = request.referrer
+    redirect_to_period_view = False
+    
+    # referrer URL에서 경로 추출 (by_period인지 확인)
+    if referrer:
+        from urllib.parse import urlparse
+        parsed_uri = urlparse(referrer)
+        path = parsed_uri.path
+        if path.endswith('/by_period'):
+            redirect_to_period_view = True
+            # 쿼리 파라미터도 기억 (날짜 등)
+            query = parsed_uri.query
+    
     record_ids = request.form.getlist('record_ids[]')
     if not record_ids:
         flash('삭제할 기록을 선택해주세요.', 'warning')
+        if redirect_to_period_view:
+            return redirect(url_for('by_period'))
         return redirect(url_for('list_attendance'))
     
     try:
         if not db:
             flash("Firebase 설정이 완료되지 않았습니다.", "danger")
+            if redirect_to_period_view:
+                return redirect(url_for('by_period'))
             return redirect(url_for('list_attendance'))
         
         for record_id in record_ids:
@@ -1188,6 +1206,13 @@ def delete_records():
         flash(f'{len(record_ids)}개의 기록이 삭제되었습니다.', 'success')
     except Exception as e:
         flash(f'기록 삭제 중 오류가 발생했습니다: {e}', 'danger')
+    
+    # 이전 페이지가 교시별 보기였으면 그쪽으로 리다이렉트
+    if redirect_to_period_view:
+        # 원래 URL에 있던 쿼리 파라미터(예: 날짜) 유지
+        if 'query' in locals() and query:
+            return redirect(url_for('by_period') + '?' + query)
+        return redirect(url_for('by_period'))
     
     return redirect(url_for('list_attendance'))
 
