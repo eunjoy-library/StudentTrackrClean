@@ -1264,26 +1264,25 @@ def add_direct_student():
     seat = data['seat']
     
     try:
-        # 학생 데이터 로드
-        students_data = load_student_data()
+        # 학생 추가 모듈 사용
+        from add_student import add_new_student
+        success, message = add_new_student(student_id, name, seat)
         
-        # 이미 존재하는 학번인지 확인
-        if student_id in students_data:
-            return jsonify({"warning": "이미 존재하는 학번입니다. 정보가 업데이트되지 않았습니다."}), 200
-        
-        # 새 학생 정보를 students.txt 파일에 추가
-        with open('new_students.txt', 'a', encoding='utf-8') as f:
-            f.write(f"{student_id},{name},{seat}\n")
-        
-        # 캐시 초기화
-        global _student_data_cache, _student_data_timestamp
-        _student_data_cache = None
-        _student_data_timestamp = None
-        
-        return jsonify({
-            "success": True,
-            "message": f"학생이 추가되었습니다: 학번 {student_id}, 이름 {name}, 좌석번호 {seat}"
-        })
+        if success:
+            # 캐시 초기화
+            global _student_data_cache, _student_data_timestamp
+            _student_data_cache = None
+            _student_data_timestamp = None
+            
+            return jsonify({
+                "success": True,
+                "message": message
+            })
+        else:
+            return jsonify({
+                "warning": message
+            }), 200
+            
     except Exception as e:
         return jsonify({"error": f"학생 추가 중 오류 발생: {str(e)}"}), 500
 
