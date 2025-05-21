@@ -137,10 +137,23 @@ def load_student_data(force_reload=False):
                         seat_column = i
                         break
                 
+                # 학번과 이름 열 인덱스 찾기
+                student_id_column = -1
+                name_column = -1
+                for i, header in enumerate(headers):
+                    if header == '학번':
+                        student_id_column = i
+                    elif header == '이름':
+                        name_column = i
+                
+                if student_id_column == -1 or name_column == -1:
+                    logging.error(f"헤더 구조 문제: 학번 또는 이름 열을 찾을 수 없음. 헤더: {headers}")
+                    return {}
+                
                 # 학생 데이터 읽기 (2번째 행부터)
                 for row in ws.iter_rows(min_row=2):
-                    student_id = row[0].value
-                    name = row[1].value
+                    student_id = row[student_id_column].value
+                    name = row[name_column].value
                     seat = row[seat_column].value if len(row) > seat_column else ''
                     
                     # 값이 모두 있는 경우만 추가
