@@ -95,26 +95,41 @@ def get_current_period():
     # 어느 교시에도 해당하지 않으면 시간 외로 처리
     return -1
 
-def load_student_data():
+def load_student_data(force_reload=False):
     """
     Load student data from Excel file with caching
     Returns a dictionary with student_id as key and (name, seat) as value
+    
+    Args:
+        force_reload: 강제로 새로 로딩할지 여부 (기본값: False)
     """
     global _student_data_cache, _last_student_data_load_time
     now = datetime.now()
     
-    # 캐시 사용 - 30초 유효 (빠른 업데이트를 위해 짧게 설정)
-    if _student_data_cache and _last_student_data_load_time and (now - _last_student_data_load_time).seconds < 30:
+    # 새로고침 필요 없고, 캐시가 있는 경우 (시간 체크 제거)
+    if not force_reload and _student_data_cache:
+        logging.debug("학생 데이터 캐시 사용")
         return _student_data_cache
 
+    logging.debug("학생 데이터 새로 로딩")
     try:
         # 엑셀 파일에서 학생 정보 읽기
         try:
             df = pd.read_excel('students.xlsx', dtype={'학번': str})
-            student_data = {
-                str(row['학번']).strip(): (row['이름'], row.get('공강좌석번호', ''))
-                for _, row in df.iterrows() if row['학번'] and row['이름']
-            }
+            # 컬럼명 확인 (좌석번호 또는 공강좌석번호)
+            seat_column = '공강좌석번호' if '공강좌석번호' in df.columns else '좌석번호'
+            
+            student_data = {}
+            for _, row in df.iterrows():
+                # 학번이 있는 경우만 처리
+                if pd.notna(row['학번']) and pd.notna(row['이름']):
+                    student_id = str(row['학번']).strip()
+                    name = str(row['이름']).strip()
+                    # 좌석번호 가져오기 (없으면 빈 문자열)
+                    seat = str(row.get(seat_column, '')) if pd.notna(row.get(seat_column, '')) else ''
+                    student_data[student_id] = (name, seat)
+            
+            logging.debug(f"로드된 학생 수: {len(student_data)}")
         except Exception as excel_error:
             logging.error(f"엑셀 파일 읽기 실패: {excel_error}")
             # 임시 학생 데이터 제공 (테스트용)
@@ -1278,10 +1293,10 @@ def add_direct_student():
         success, message = add_new_student(student_id, name, seat)
         
         if success:
-            # 캐시 초기화
-            global _student_data_cache, _student_data_timestamp
+            # 데이터를 강제로 새로 로딩하여 캐시 갱신
+            global _student_data_cache
             _student_data_cache = None
-            _student_data_timestamp = None
+            load_student_data(force_reload=True)
             
             return jsonify({
                 "success": True,
