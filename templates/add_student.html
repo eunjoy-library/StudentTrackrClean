@@ -1,71 +1,91 @@
 {% extends "layout.html" %}
 
-{% block title %}학생 추가{% endblock %}
+{% block title %}새 학생 추가{% endblock %}
 
 {% block content %}
-<div class="container">
-    <div class="row justify-content-center">
-        <div class="col-md-8 col-lg-6">
-            <div class="card shadow-lg mt-5">
-                <div class="card-header bg-primary text-white">
-                    <h1 class="h3 mb-0">새 학생 등록</h1>
-                </div>
-                <div class="card-body">
-                    <div class="alert alert-info">
-                        <i class="fas fa-info-circle"></i> 새 학생을 등록하려면 아래 정보를 입력하세요.
-                    </div>
-
-                    <form id="addStudentForm">
-                        <div class="mb-3">
-                            <label for="student_id" class="form-label">학번</label>
-                            <input type="text" class="form-control" id="student_id" name="student_id" required>
-                        </div>
-                        <div class="mb-3">
-                            <label for="name" class="form-label">이름</label>
-                            <input type="text" class="form-control" id="name" name="name" required>
-                        </div>
-                        <div class="mb-3">
-                            <label for="seat" class="form-label">좌석번호</label>
-                            <input type="text" class="form-control" id="seat" name="seat" required>
-                        </div>
-                        <div class="d-grid gap-2">
-                            <button type="submit" class="btn btn-primary">
-                                <i class="fas fa-plus-circle me-2"></i>학생 추가
-                            </button>
-                            <a href="{{ url_for('list_attendance') }}" class="btn btn-secondary">
-                                <i class="fas fa-arrow-left me-2"></i>돌아가기
-                            </a>
-                        </div>
-                    </form>
-                </div>
+<div class="card shadow">
+    <div class="card-header bg-primary text-white">
+        <h2><i class="fas fa-user-plus me-2"></i>새 학생 등록</h2>
+    </div>
+    <div class="card-body">
+        <form id="addStudentForm">
+            <div class="alert alert-info">
+                <i class="fas fa-info-circle me-2"></i>신규 학생 정보를 입력해주세요. 모든 항목은 필수입니다.
             </div>
+            
+            <div class="mb-3">
+                <label for="student_id" class="form-label">학번</label>
+                <input type="text" class="form-control" id="student_id" name="student_id" required 
+                       placeholder="학번을 입력하세요 (예: 10101)">
+                <div class="form-text">학번은 중복될 수 없습니다.</div>
+            </div>
+            
+            <div class="mb-3">
+                <label for="name" class="form-label">이름</label>
+                <input type="text" class="form-control" id="name" name="name" required
+                       placeholder="학생 이름을 입력하세요">
+            </div>
+            
+            <div class="mb-3">
+                <label for="seat" class="form-label">좌석번호</label>
+                <input type="text" class="form-control" id="seat" name="seat" required
+                       placeholder="좌석번호를 입력하세요 (예: 101)">
+            </div>
+            
+            <div class="d-flex justify-content-between">
+                <button type="submit" class="btn btn-primary">
+                    <i class="fas fa-save me-2"></i>학생 등록
+                </button>
+                <a href="{{ url_for('list_attendance') }}" class="btn btn-secondary">
+                    <i class="fas fa-arrow-left me-2"></i>관리자 페이지로 돌아가기
+                </a>
+            </div>
+        </form>
+    </div>
+</div>
 
-            <!-- 결과 메시지 영역 -->
-            <div id="resultAlert" class="alert mt-3" style="display: none;"></div>
+<!-- 결과 모달 -->
+<div class="modal fade" id="resultModal" tabindex="-1" aria-labelledby="resultModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="resultModalLabel">등록 결과</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="닫기"></button>
+            </div>
+            <div class="modal-body" id="resultModalBody">
+                처리 중...
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">닫기</button>
+                <button type="button" class="btn btn-primary" id="addAnotherBtn">다른 학생 추가</button>
+                <a href="{{ url_for('list_attendance') }}" class="btn btn-success">목록으로 돌아가기</a>
+            </div>
         </div>
     </div>
 </div>
-{% endblock %}
 
-{% block scripts %}
 <script>
 document.addEventListener('DOMContentLoaded', function() {
-    const form = document.getElementById('addStudentForm');
-    const resultAlert = document.getElementById('resultAlert');
-
-    form.addEventListener('submit', function(e) {
+    const addStudentForm = document.getElementById('addStudentForm');
+    const resultModal = new bootstrap.Modal(document.getElementById('resultModal'));
+    const resultModalBody = document.getElementById('resultModalBody');
+    const addAnotherBtn = document.getElementById('addAnotherBtn');
+    
+    addStudentForm.addEventListener('submit', function(e) {
         e.preventDefault();
         
         const studentId = document.getElementById('student_id').value.trim();
         const name = document.getElementById('name').value.trim();
         const seat = document.getElementById('seat').value.trim();
         
+        // 입력값 유효성 검사
         if (!studentId || !name || !seat) {
-            showAlert('모든 필드를 입력해주세요.', 'danger');
+            resultModalBody.innerHTML = '<div class="alert alert-danger">모든 항목을 입력해주세요.</div>';
+            resultModal.show();
             return;
         }
         
-        // API 호출
+        // API 요청
         fetch('/api/add_direct_student', {
             method: 'POST',
             headers: {
@@ -80,31 +100,49 @@ document.addEventListener('DOMContentLoaded', function() {
         .then(response => response.json())
         .then(data => {
             if (data.success) {
-                showAlert(data.message, 'success');
-                form.reset(); // 폼 초기화
+                resultModalBody.innerHTML = `
+                    <div class="alert alert-success">
+                        <i class="fas fa-check-circle me-2"></i>${data.message}
+                    </div>
+                    <div class="card">
+                        <div class="card-header bg-light">등록된 학생 정보</div>
+                        <div class="card-body">
+                            <p><strong>학번:</strong> ${studentId}</p>
+                            <p><strong>이름:</strong> ${name}</p>
+                            <p><strong>좌석번호:</strong> ${seat}</p>
+                        </div>
+                    </div>
+                `;
             } else if (data.warning) {
-                showAlert(data.warning, 'warning');
+                resultModalBody.innerHTML = `
+                    <div class="alert alert-warning">
+                        <i class="fas fa-exclamation-triangle me-2"></i>${data.warning}
+                    </div>
+                `;
             } else if (data.error) {
-                showAlert(data.error, 'danger');
+                resultModalBody.innerHTML = `
+                    <div class="alert alert-danger">
+                        <i class="fas fa-times-circle me-2"></i>${data.error}
+                    </div>
+                `;
             }
+            resultModal.show();
         })
         .catch(error => {
-            console.error('Error:', error);
-            showAlert('서버 오류가 발생했습니다.', 'danger');
+            resultModalBody.innerHTML = `
+                <div class="alert alert-danger">
+                    <i class="fas fa-times-circle me-2"></i>오류가 발생했습니다: ${error.message}
+                </div>
+            `;
+            resultModal.show();
         });
     });
     
-    // 결과 알림 표시 함수
-    function showAlert(message, type) {
-        resultAlert.textContent = message;
-        resultAlert.className = `alert mt-3 alert-${type}`;
-        resultAlert.style.display = 'block';
-        
-        // 5초 후 알림 숨기기
-        setTimeout(() => {
-            resultAlert.style.display = 'none';
-        }, 5000);
-    }
+    // 다른 학생 추가 버튼
+    addAnotherBtn.addEventListener('click', function() {
+        resultModal.hide();
+        addStudentForm.reset();
+    });
 });
 </script>
 {% endblock %}

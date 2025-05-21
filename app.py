@@ -103,8 +103,8 @@ def load_student_data():
     global _student_data_cache, _last_student_data_load_time
     now = datetime.now()
     
-    # 캐시 사용 - 30분 유효
-    if _student_data_cache and _last_student_data_load_time and (now - _last_student_data_load_time).seconds < 1800:
+    # 캐시 사용 - 30초 유효 (빠른 업데이트를 위해 짧게 설정)
+    if _student_data_cache and _last_student_data_load_time and (now - _last_student_data_load_time).seconds < 30:
         return _student_data_cache
 
     try:
