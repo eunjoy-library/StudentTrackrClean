@@ -35,8 +35,9 @@
                         <div class="tab-pane fade show active" id="upload" role="tabpanel" aria-labelledby="upload-tab">
                             <div class="alert alert-info">
                                 <p><i class="fas fa-info-circle me-1"></i> CSV 파일 형식 (첫 줄은 헤더여야 합니다):</p>
-                                <p><code>학번,좌석번호</code></p>
-                                <p>예시: <code>10101,123</code></p>
+                                <p><code>학번,이름,좌석번호</code> 또는 <code>학번,좌석번호</code></p>
+                                <p>예시: <code>10101,홍길동,123</code> 또는 <code>10101,123</code></p>
+                                <p>* 이름은 선택 사항입니다. 이름 칼럼이 있으면 업데이트되고, 없으면 기존 이름이 유지됩니다.</p>
                             </div>
                             
                             <form id="csvUploadForm" enctype="multipart/form-data" class="mb-4">
@@ -53,11 +54,12 @@
                         <!-- 직접 입력 탭 -->
                         <div class="tab-pane fade" id="bulk" role="tabpanel" aria-labelledby="bulk-tab">
                             <div class="alert alert-info">
-                                <i class="fas fa-info-circle me-1"></i> 각 줄에 "학번,좌석번호" 형식으로 입력하세요.
+                                <i class="fas fa-info-circle me-1"></i> 각 줄에 "학번,이름,좌석번호" 또는 "학번,좌석번호" 형식으로 입력하세요.
+                                <p>* 이름은 선택 사항입니다. 포함하면 업데이트되고, 생략하면 기존 이름이 유지됩니다.</p>
                             </div>
                             <div class="mb-3">
                                 <label for="manualInput" class="form-label">학번과 좌석번호 입력</label>
-                                <textarea class="form-control" id="manualInput" rows="10" placeholder="10101,123&#10;10102,124&#10;10103,125"></textarea>
+                                <textarea class="form-control" id="manualInput" rows="10" placeholder="10101,홍길동,123&#10;10102,김철수,124&#10;10103,125"></textarea>
                             </div>
                             <button type="button" id="parseManual" class="btn btn-primary">
                                 <i class="fas fa-check me-1"></i> 입력 데이터 파싱
@@ -152,7 +154,8 @@
                         <thead>
                             <tr>
                                 <th>학번</th>
-                                <th>이름</th>
+                                <th>현재 이름</th>
+                                <th>새 이름</th>
                                 <th>현재 좌석번호</th>
                                 <th>새 좌석번호</th>
                                 <th width="100">상태</th>
@@ -283,10 +286,21 @@
                     if (line) {
                         const parts = line.split(',');
                         if (parts.length >= 2) {
-                            data.push({
-                                student_id: parts[0].trim(),
-                                new_seat: parts[1].trim()
-                            });
+                            // CSV 형식에 따라 처리 (학번,이름,좌석번호 또는 학번,좌석번호)
+                            if (parts.length >= 3) {
+                                // 학번,이름,좌석번호 형식
+                                data.push({
+                                    student_id: parts[0].trim(),
+                                    new_name: parts[1].trim(),
+                                    new_seat: parts[2].trim()
+                                });
+                            } else {
+                                // 학번,좌석번호 형식 (이름은 업데이트하지 않음)
+                                data.push({
+                                    student_id: parts[0].trim(),
+                                    new_seat: parts[1].trim()
+                                });
+                            }
                         }
                     }
                 }
