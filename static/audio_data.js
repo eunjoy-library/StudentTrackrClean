@@ -77,8 +77,8 @@
             oscillator.frequency.value = 700; // 높은 주파수 삐- 소리
             
             gainNode.gain.setValueAtTime(0, context.currentTime);
-            gainNode.gain.linearRampToValueAtTime(0.2, context.currentTime + 0.05); // 음량 조정 (0.15 → 0.2)
-            gainNode.gain.linearRampToValueAtTime(0.2, context.currentTime + 0.3); // 음량 조정 (0.15 → 0.2)
+            gainNode.gain.linearRampToValueAtTime(0.1, context.currentTime + 0.05); // 음량 조정 (0.2 → 0.1)
+            gainNode.gain.linearRampToValueAtTime(0.1, context.currentTime + 0.3); // 음량 조정 (0.2 → 0.1)
             gainNode.gain.linearRampToValueAtTime(0, context.currentTime + 0.4);
             
             oscillator.connect(gainNode);
