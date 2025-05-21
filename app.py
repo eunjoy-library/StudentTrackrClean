@@ -1283,7 +1283,7 @@ def api_get_students():
 
 @app.route('/api/bulk_update_seats', methods=['POST'])
 def api_bulk_update_seats():
-    """학생 좌석번호 일괄 업데이트 API (관리자 전용)"""
+    """학생 좌석번호 및 이름 일괄 업데이트 API (관리자 전용)"""
     if not session.get('admin'):
         return jsonify({"error": "관리자 권한이 필요합니다."}), 403
     
