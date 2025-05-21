@@ -1249,6 +1249,44 @@ def update_seat():
     except Exception as e:
         return jsonify({"error": f"좌석번호 업데이트 중 오류가 발생했습니다: {str(e)}"}), 500
 
+@app.route('/api/add_direct_student', methods=['POST'])
+def add_direct_student():
+    """새 학생을 직접 추가하는 API"""
+    if not session.get('admin'):
+        return jsonify({"error": "관리자 권한이 필요합니다."}), 403
+    
+    data = request.json
+    if not data or 'student_id' not in data or 'name' not in data or 'seat' not in data:
+        return jsonify({"error": "필수 정보가 누락되었습니다. (학번, 이름, 좌석번호)"}), 400
+    
+    student_id = data['student_id']
+    name = data['name']
+    seat = data['seat']
+    
+    try:
+        # 학생 데이터 로드
+        students_data = load_student_data()
+        
+        # 이미 존재하는 학번인지 확인
+        if student_id in students_data:
+            return jsonify({"warning": "이미 존재하는 학번입니다. 정보가 업데이트되지 않았습니다."}), 200
+        
+        # 새 학생 정보를 students.txt 파일에 추가
+        with open('new_students.txt', 'a', encoding='utf-8') as f:
+            f.write(f"{student_id},{name},{seat}\n")
+        
+        # 캐시 초기화
+        global _student_data_cache, _student_data_timestamp
+        _student_data_cache = None
+        _student_data_timestamp = None
+        
+        return jsonify({
+            "success": True,
+            "message": f"학생이 추가되었습니다: 학번 {student_id}, 이름 {name}, 좌석번호 {seat}"
+        })
+    except Exception as e:
+        return jsonify({"error": f"학생 추가 중 오류 발생: {str(e)}"}), 500
+
 @app.route('/api/students', methods=['GET'])
 def api_get_students():
     """학생 정보 조회 API (학번 목록으로 학생 정보 반환)"""
@@ -1266,6 +1304,15 @@ def api_get_students():
         # 학생 데이터 로드
         students_data = load_student_data()
         
+        # 새 학생 텍스트 파일이 있으면 추가 로드
+        new_students = {}
+        if os.path.exists('new_students.txt'):
+            with open('new_students.txt', 'r', encoding='utf-8') as f:
+                for line in f:
+                    parts = line.strip().split(',')
+                    if len(parts) >= 3:
+                        new_students[parts[0]] = (parts[1], parts[2])
+        
         # 새로운 학생 데이터도 추가하기 위해 현재 요청 목록에서 학번을 모두 처리
         result = []
         for student_id in student_id_list:
@@ -1275,6 +1322,13 @@ def api_get_students():
                     "student_id": student_id,
                     "name": name or "이름 없음",  # 이름이 없는 경우 대체 텍스트
                     "seat": seat or "-"           # 좌석번호가 없는 경우 대체 텍스트
+                })
+            elif student_id in new_students:
+                name, seat = new_students[student_id]
+                result.append({
+                    "student_id": student_id,
+                    "name": name or "이름 없음",
+                    "seat": seat or "-"
                 })
             else:
                 # 데이터베이스에 없는 새 학생인 경우
