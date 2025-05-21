@@ -375,10 +375,32 @@
             });
         });
         
+        // 각 교시별 삭제 버튼 이벤트
+        periodDeleteBtns.forEach(button => {
+            button.addEventListener('click', function() {
+                const period = this.dataset.period;
+                const periodCheckboxes = document.querySelectorAll(`.record-checkbox[data-period="${period}"]:checked`);
+                
+                if (periodCheckboxes.length === 0) {
+                    alert('삭제할 항목을 선택해주세요.');
+                    return;
+                }
+                
+                if (confirm(`${period}의 선택한 ${periodCheckboxes.length}개 항목을 삭제하시겠습니까?`)) {
+                    // 폼 제출 전 다른 교시의 체크박스 해제
+                    document.querySelectorAll('.record-checkbox:checked').forEach(cb => {
+                        if (cb.dataset.period !== period) {
+                            cb.checked = false;
+                        }
+                    });
+                    
+                    // 폼 제출
+                    document.getElementById('deleteForm').submit();
+                }
+            });
+        });
+        
         // 전체 복사 버튼 이벤트
-        const copyAllBtn = document.getElementById('copyAllBtn');
-        if (copyAllBtn) {
-            copyAllBtn.addEventListener('click', function() {
         const copyAllBtn = document.getElementById('copyAllBtn');
         if (copyAllBtn) {
             copyAllBtn.addEventListener('click', function() {
