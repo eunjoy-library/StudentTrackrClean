@@ -84,18 +84,18 @@
             var gainNode = context.createGain();
             
             oscillator.type = 'sine'; // 사인파로 변경해 부드러운 소리로
-            oscillator.frequency.value = 350; // 낮은 주파수로 변경 (700 → 350)
+            oscillator.frequency.value = 380; // 음높이 조금 높임 (350 → 380)
             
             gainNode.gain.setValueAtTime(0, context.currentTime);
-            gainNode.gain.linearRampToValueAtTime(0.08, context.currentTime + 0.05); // 음량 더 낮춤
-            gainNode.gain.linearRampToValueAtTime(0.08, context.currentTime + 0.3); 
-            gainNode.gain.linearRampToValueAtTime(0, context.currentTime + 0.5); // 페이드 아웃 시간 연장
+            gainNode.gain.linearRampToValueAtTime(0.12, context.currentTime + 0.05); // 음량 조금 높임 (0.08 → 0.12)
+            gainNode.gain.linearRampToValueAtTime(0.12, context.currentTime + 0.3); 
+            gainNode.gain.linearRampToValueAtTime(0, context.currentTime + 0.6); // 페이드 아웃 시간 늘림 (0.5 → 0.6)
             
             oscillator.connect(gainNode);
             gainNode.connect(context.destination);
             
             oscillator.start(context.currentTime);
-            oscillator.stop(context.currentTime + 0.5); // 더 길게 재생
+            oscillator.stop(context.currentTime + 0.6); // 더 길게 재생 (0.5 → 0.6)
             
             console.log("오류 소리가 재생되었습니다.");
         } catch (e) {
