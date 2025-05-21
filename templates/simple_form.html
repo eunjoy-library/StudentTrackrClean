@@ -564,17 +564,19 @@ document.addEventListener('DOMContentLoaded', function() {
                         
                         if (hasAttendance) {
                             // 이미 출석한 학생 - 경고 메시지와 함께 비활성화
-                            // 경고 사운드 바로 재생 (setTimeout 제거)
+                            // 경고 사운드 바로 재생 (중요: 모달 표시 전에 먼저 재생)
                             playErrorSound();
                             
                             var formattedDate = attendData.formatted_date || attendDate;
                             
-                            content = '<div style="color: #ff6b6b; font-weight: bold; margin-bottom: 15px; text-align: center; font-size: 18px;">' +
-                                    '이번주에 이미 출석하셨습니다.<br>' +
+                            // 경고 메시지 스타일 강화
+                            content = '<div style="color: #ff3b3b; font-weight: bold; margin-bottom: 15px; text-align: center; font-size: 22px; animation: pulse 1.5s infinite; background-color: rgba(255, 0, 0, 0.1); padding: 15px; border-radius: 10px;">' +
+                                    '<i class="fas fa-exclamation-triangle" style="color: #ffcc00; font-size: 28px; margin-bottom: 10px;"></i><br>' +
+                                    '이번주에 이미 출석하셨습니다!<br>' +
                                     '4층 공강실로 올라가주세요~!';
                             
                             if (formattedDate) {
-                                content += '<div style="font-size: 16px; margin-top: 5px; color: #ffef99;">출석일: ' + formattedDate + '</div>';
+                                content += '<div style="font-size: 16px; margin-top: 10px; color: #ffef99;">출석일: ' + formattedDate + '</div>';
                             }
                             
                             content += '</div>' +
@@ -583,9 +585,15 @@ document.addEventListener('DOMContentLoaded', function() {
                                      '<div>공강실 좌석번호: ' + seatNumber + '</div>' +
                                      '</div>';
                             
-                            // 버튼 비활성화
+                            // 버튼 비활성화 및 스타일 변경
                             modalConfirmBtn.disabled = true;
                             modalConfirmBtn.className = 'btn modal-button btn-secondary';
+                            modalConfirmBtn.innerHTML = '<i class="fas fa-check me-2"></i>확인했습니다';
+                            
+                            // 모달 표시 후 3초 후에 한번 더 경고음
+                            setTimeout(function() {
+                                playErrorSound();
+                            }, 1000);
                         } else {
                             // 처음 출석하는 학생
                             content = '<div style="font-size: 20px; font-weight: bold; color: #fff; text-align: center;">' +
