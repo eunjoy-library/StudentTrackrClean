@@ -74,7 +74,7 @@
         }
     };
     
-    // 오류 소리 재생 (삐- 경고음)
+    // 오류 소리 재생 (부드러운 경고음)
     window.playErrorSound = function() {
         var context = ensureAudioContext();
         if (!context) return;
@@ -83,19 +83,19 @@
             var oscillator = context.createOscillator();
             var gainNode = context.createGain();
             
-            oscillator.type = 'sawtooth'; // 톱니파로 더 날카로운 경고음
-            oscillator.frequency.value = 700; // 높은 주파수 삐- 소리
+            oscillator.type = 'sine'; // 사인파로 변경해 부드러운 소리로
+            oscillator.frequency.value = 350; // 낮은 주파수로 변경 (700 → 350)
             
             gainNode.gain.setValueAtTime(0, context.currentTime);
-            gainNode.gain.linearRampToValueAtTime(0.1, context.currentTime + 0.05); // 음량 조정 (0.2 → 0.1)
-            gainNode.gain.linearRampToValueAtTime(0.1, context.currentTime + 0.3); // 음량 조정 (0.2 → 0.1)
-            gainNode.gain.linearRampToValueAtTime(0, context.currentTime + 0.4);
+            gainNode.gain.linearRampToValueAtTime(0.08, context.currentTime + 0.05); // 음량 더 낮춤
+            gainNode.gain.linearRampToValueAtTime(0.08, context.currentTime + 0.3); 
+            gainNode.gain.linearRampToValueAtTime(0, context.currentTime + 0.5); // 페이드 아웃 시간 연장
             
             oscillator.connect(gainNode);
             gainNode.connect(context.destination);
             
             oscillator.start(context.currentTime);
-            oscillator.stop(context.currentTime + 0.4);
+            oscillator.stop(context.currentTime + 0.5); // 더 길게 재생
             
             console.log("오류 소리가 재생되었습니다.");
         } catch (e) {
