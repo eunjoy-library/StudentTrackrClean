@@ -708,9 +708,38 @@ def list_attendance():
         limit = request.args.get('limit', 50, type=int)
         sort_by = request.args.get('sort_by', 'date')  # 기본 정렬: 날짜
         sort_direction = request.args.get('sort_direction', 'desc')  # 기본 방향: 내림차순
+        search_query = request.args.get('search', '').strip()
+        search_field = request.args.get('search_field', 'all')
         
         # 모든 출석 기록 로드
         all_records = load_attendance()
+        total_count = len(all_records)
+        
+        # 검색 기능 적용
+        if search_query:
+            filtered_records = []
+            search_query = search_query.lower()
+            
+            for record in all_records:
+                # 검색 필드에 따른 필터링
+                if search_field == 'all':
+                    # 모든 필드에서 검색
+                    if (
+                        search_query in str(record.get('student_id', '')).lower() or
+                        search_query in str(record.get('name', '')).lower() or
+                        search_query in str(record.get('seat', '')).lower() or
+                        search_query in str(record.get('period', '')).lower() or
+                        search_query in str(record.get('date', '')).lower()
+                    ):
+                        filtered_records.append(record)
+                else:
+                    # 특정 필드에서만 검색
+                    field_value = str(record.get(search_field, '')).lower()
+                    if search_query in field_value:
+                        filtered_records.append(record)
+            
+            all_records = filtered_records
+            total_count = len(all_records)
         
         # 정렬 처리
         if sort_by and all_records:
@@ -739,9 +768,12 @@ def list_attendance():
                               records=paged_records, 
                               current_page=current_page, 
                               total_pages=total_pages, 
+                              total_count=total_count,
                               limit=limit,
                               sort_by=sort_by,
-                              sort_direction=sort_direction)
+                              sort_direction=sort_direction,
+                              search_query=search_query,
+                              search_field=search_field)
     else:
         flash('관리자 로그인이 필요합니다.', 'warning')
         return redirect(url_for('admin_login'))

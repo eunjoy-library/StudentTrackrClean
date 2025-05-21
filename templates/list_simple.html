@@ -31,7 +31,7 @@
     </div>
     <!-- 상단 버튼 메뉴 추가 -->
     <div class="card-body bg-light p-2 border-bottom">
-        <div class="d-flex flex-wrap justify-content-start gap-2">
+        <div class="d-flex flex-wrap justify-content-start gap-2 mb-2">
             <a href="{{ url_for('by_period') }}" class="btn btn-info">
                 <i class="fas fa-clock me-1"></i> 교시별 보기
             </a>
@@ -51,6 +51,33 @@
                 <i class="fas fa-trash me-1"></i> 선택 항목 삭제
             </button>
         </div>
+        
+        <!-- 검색 기능 추가 -->
+        <div class="row mt-2">
+            <div class="col-md-12">
+                <form action="{{ url_for('list_attendance') }}" method="get" class="d-flex">
+                    <input type="hidden" name="sort_by" value="{{ sort_by }}">
+                    <input type="hidden" name="sort_direction" value="{{ sort_direction }}">
+                    <div class="input-group">
+                        <input type="text" name="search" class="form-control" placeholder="학번, 이름, 좌석번호 또는 교시로 검색" value="{{ search_query if search_query else '' }}">
+                        <select name="search_field" class="form-select" style="max-width: 160px;">
+                            <option value="all" {% if search_field == 'all' %}selected{% endif %}>모든 필드</option>
+                            <option value="student_id" {% if search_field == 'student_id' %}selected{% endif %}>학번</option>
+                            <option value="name" {% if search_field == 'name' %}selected{% endif %}>이름</option>
+                            <option value="seat" {% if search_field == 'seat' %}selected{% endif %}>좌석</option>
+                            <option value="period" {% if search_field == 'period' %}selected{% endif %}>교시</option>
+                            <option value="date" {% if search_field == 'date' %}selected{% endif %}>날짜</option>
+                        </select>
+                        <button type="submit" class="btn btn-primary">
+                            <i class="fas fa-search"></i> 검색
+                        </button>
+                        <a href="{{ url_for('list_attendance') }}" class="btn btn-secondary">
+                            <i class="fas fa-times"></i> 초기화
+                        </a>
+                    </div>
+                </form>
+            </div>
+        </div>
     </div>
     <div class="card-body">
         {% if records %}
@@ -69,6 +96,22 @@
                 <span class="badge bg-info">이름 (역순) 정렬 적용됨</span>
             {% elif sort_by == 'period' and sort_direction == 'asc' %}
                 <span class="badge bg-info">교시 (오름차순) 정렬 적용됨</span>
+            {% endif %}
+            
+            {% if search_query %}
+                <span class="badge bg-primary ms-2">검색어: {{ search_query }}</span>
+                {% if search_field and search_field != 'all' %}
+                    <span class="badge bg-secondary ms-1">
+                        검색 필드: 
+                        {% if search_field == 'student_id' %}학번
+                        {% elif search_field == 'name' %}이름
+                        {% elif search_field == 'seat' %}좌석
+                        {% elif search_field == 'period' %}교시
+                        {% elif search_field == 'date' %}날짜
+                        {% endif %}
+                    </span>
+                {% endif %}
+                <span class="badge bg-success ms-1">검색 결과: {{ total_count }}건</span>
             {% endif %}
         </div>
         <form id="deleteForm" action="{{ url_for('delete_records') }}" method="post" onsubmit="return confirm('선택한 항목을 삭제하시겠습니까?');">
@@ -109,19 +152,19 @@
                         <ul class="pagination">
                             {% if current_page > 1 %}
                             <li class="page-item">
-                                <a class="page-link" href="{{ url_for('list_attendance', page=current_page-1, sort_by=sort_by, sort_direction=sort_direction) }}">이전</a>
+                                <a class="page-link" href="{{ url_for('list_attendance', page=current_page-1, sort_by=sort_by, sort_direction=sort_direction, search=search_query, search_field=search_field) }}">이전</a>
                             </li>
                             {% endif %}
                             
                             {% for p in range(1, total_pages + 1) %}
                             <li class="page-item {% if p == current_page %}active{% endif %}">
-                                <a class="page-link" href="{{ url_for('list_attendance', page=p, sort_by=sort_by, sort_direction=sort_direction) }}">{{ p }}</a>
+                                <a class="page-link" href="{{ url_for('list_attendance', page=p, sort_by=sort_by, sort_direction=sort_direction, search=search_query, search_field=search_field) }}">{{ p }}</a>
                             </li>
                             {% endfor %}
                             
                             {% if current_page < total_pages %}
                             <li class="page-item">
-                                <a class="page-link" href="{{ url_for('list_attendance', page=current_page+1, sort_by=sort_by, sort_direction=sort_direction) }}">다음</a>
+                                <a class="page-link" href="{{ url_for('list_attendance', page=current_page+1, sort_by=sort_by, sort_direction=sort_direction, search=search_query, search_field=search_field) }}">다음</a>
                             </li>
                             {% endif %}
                         </ul>
