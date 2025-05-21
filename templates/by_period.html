@@ -90,6 +90,9 @@
                             <button type="button" class="btn btn-light btn-sm toggle-check" data-period="{{ period }}">
                                 <i class="fas fa-check-square"></i> 전체 선택
                             </button>
+                            <button type="button" class="btn btn-warning btn-sm delete-period-btn" data-period="{{ period }}" disabled>
+                                <i class="fas fa-trash"></i> 선택 삭제
+                            </button>
                         </div>
                         {% endif %}
                     </div>
@@ -149,12 +152,21 @@
         // 체크박스 기능
         const checkboxes = document.querySelectorAll('.record-checkbox');
         const deleteBtn = document.getElementById('deleteSelectedBtn');
+        const periodDeleteBtns = document.querySelectorAll('.delete-period-btn');
         const periodSelectAllCheckboxes = document.querySelectorAll('.period-select-all');
         
         // 삭제 버튼 활성화 상태 업데이트
         function updateDeleteButtonState() {
             const anyChecked = [...checkboxes].some(cb => cb.checked);
             deleteBtn.disabled = !anyChecked;
+            
+            // 각 교시별 삭제 버튼 상태 업데이트
+            periodDeleteBtns.forEach(btn => {
+                const period = btn.dataset.period;
+                const periodCheckboxes = document.querySelectorAll(`.record-checkbox[data-period="${period}"]`);
+                const anyPeriodChecked = [...periodCheckboxes].some(cb => cb.checked);
+                btn.disabled = !anyPeriodChecked;
+            });
         }
         
         // 개별 체크박스 이벤트
@@ -338,7 +350,35 @@
             });
         });
         
+        // 각 교시별 삭제 버튼 이벤트
+        periodDeleteBtns.forEach(button => {
+            button.addEventListener('click', function() {
+                const period = this.dataset.period;
+                const periodCheckboxes = document.querySelectorAll(`.record-checkbox[data-period="${period}"]:checked`);
+                
+                if (periodCheckboxes.length === 0) {
+                    alert('삭제할 항목을 선택해주세요.');
+                    return;
+                }
+                
+                if (confirm(`${period}의 선택한 ${periodCheckboxes.length}개 항목을 삭제하시겠습니까?`)) {
+                    // 폼 제출 전 다른 교시의 체크박스 해제
+                    document.querySelectorAll('.record-checkbox:checked').forEach(cb => {
+                        if (cb.dataset.period !== period) {
+                            cb.checked = false;
+                        }
+                    });
+                    
+                    // 폼 제출
+                    document.getElementById('deleteForm').submit();
+                }
+            });
+        });
+        
         // 전체 복사 버튼 이벤트
+        const copyAllBtn = document.getElementById('copyAllBtn');
+        if (copyAllBtn) {
+            copyAllBtn.addEventListener('click', function() {
         const copyAllBtn = document.getElementById('copyAllBtn');
         if (copyAllBtn) {
             copyAllBtn.addEventListener('click', function() {
