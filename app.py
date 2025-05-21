@@ -553,8 +553,11 @@ def check_attendance_status():
 
 @app.route('/')
 def index():
-    """Redirect to attendance page"""
-    return redirect(url_for('attendance'))
+    """관리자 로그인 여부에 따라 적절한 페이지로 리다이렉트"""
+    if session.get('admin'):
+        return redirect(url_for('by_period'))  # 관리자면 교시별 보기로
+    else:
+        return redirect(url_for('attendance'))  # 일반 사용자면 출석 페이지로
 
 @app.route('/favicon.ico')
 def favicon():
