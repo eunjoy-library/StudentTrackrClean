@@ -1,0 +1,534 @@
+{% extends "layout.html" %}
+
+{% block title %}일괄 좌석번호 수정{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="card">
+        <div class="card-header bg-primary text-white">
+            <h2>학생 좌석번호 일괄 수정</h2>
+        </div>
+        
+        <div class="card-body">
+            <div class="row mb-4">
+                <div class="col-md-12">
+                    <ul class="nav nav-tabs" id="editTabs" role="tablist">
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link active" id="upload-tab" data-bs-toggle="tab" data-bs-target="#upload" type="button" role="tab" aria-controls="upload" aria-selected="true">
+                                <i class="fas fa-file-upload me-1"></i> CSV 업로드
+                            </button>
+                        </li>
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link" id="bulk-tab" data-bs-toggle="tab" data-bs-target="#bulk" type="button" role="tab" aria-controls="bulk" aria-selected="false">
+                                <i class="fas fa-edit me-1"></i> 직접 입력
+                            </button>
+                        </li>
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link" id="pattern-tab" data-bs-toggle="tab" data-bs-target="#pattern" type="button" role="tab" aria-controls="pattern" aria-selected="false">
+                                <i class="fas fa-magic me-1"></i> 패턴 생성
+                            </button>
+                        </li>
+                    </ul>
+                    
+                    <div class="tab-content mt-3" id="editTabsContent">
+                        <!-- CSV 업로드 탭 -->
+                        <div class="tab-pane fade show active" id="upload" role="tabpanel" aria-labelledby="upload-tab">
+                            <div class="alert alert-info">
+                                <p><i class="fas fa-info-circle me-1"></i> CSV 파일 형식 (첫 줄은 헤더여야 합니다):</p>
+                                <p><code>학번,좌석번호</code></p>
+                                <p>예시: <code>10101,123</code></p>
+                            </div>
+                            
+                            <form id="csvUploadForm" enctype="multipart/form-data" class="mb-4">
+                                <div class="mb-3">
+                                    <label for="csvFile" class="form-label">CSV 파일 선택</label>
+                                    <input type="file" class="form-control" id="csvFile" name="csvFile" accept=".csv">
+                                </div>
+                                <button type="button" id="parseCSV" class="btn btn-primary">
+                                    <i class="fas fa-check me-1"></i> CSV 파싱
+                                </button>
+                            </form>
+                        </div>
+                        
+                        <!-- 직접 입력 탭 -->
+                        <div class="tab-pane fade" id="bulk" role="tabpanel" aria-labelledby="bulk-tab">
+                            <div class="alert alert-info">
+                                <i class="fas fa-info-circle me-1"></i> 각 줄에 "학번,좌석번호" 형식으로 입력하세요.
+                            </div>
+                            <div class="mb-3">
+                                <label for="manualInput" class="form-label">학번과 좌석번호 입력</label>
+                                <textarea class="form-control" id="manualInput" rows="10" placeholder="10101,123&#10;10102,124&#10;10103,125"></textarea>
+                            </div>
+                            <button type="button" id="parseManual" class="btn btn-primary">
+                                <i class="fas fa-check me-1"></i> 입력 데이터 파싱
+                            </button>
+                        </div>
+                        
+                        <!-- 패턴 생성 탭 -->
+                        <div class="tab-pane fade" id="pattern" role="tabpanel" aria-labelledby="pattern-tab">
+                            <div class="alert alert-info mb-3">
+                                <i class="fas fa-info-circle me-1"></i> 학번 범위와 패턴을 설정하여 좌석번호를 자동 생성합니다.
+                            </div>
+                            
+                            <div class="card mb-4">
+                                <div class="card-header bg-light">
+                                    <h5 class="mb-0">학번 범위 설정</h5>
+                                </div>
+                                <div class="card-body">
+                                    <div class="row">
+                                        <div class="col-md-6">
+                                            <div class="mb-3">
+                                                <label for="startId" class="form-label">시작 학번</label>
+                                                <input type="text" class="form-control" id="startId" placeholder="10101">
+                                            </div>
+                                        </div>
+                                        <div class="col-md-6">
+                                            <div class="mb-3">
+                                                <label for="endId" class="form-label">끝 학번</label>
+                                                <input type="text" class="form-control" id="endId" placeholder="10120">
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="card mb-4">
+                                <div class="card-header bg-light">
+                                    <h5 class="mb-0">좌석번호 생성 방식</h5>
+                                </div>
+                                <div class="card-body">
+                                    <div class="mb-3">
+                                        <label for="patternType" class="form-label">패턴 유형</label>
+                                        <select class="form-select" id="patternType">
+                                            <option value="sequential">순차 번호 (1, 2, 3, ...)</option>
+                                            <option value="offset">학번 + 오프셋</option>
+                                            <option value="custom">커스텀 규칙</option>
+                                        </select>
+                                    </div>
+                                    
+                                    <div id="sequentialOptions" class="pattern-options">
+                                        <div class="mb-3">
+                                            <label for="startSeat" class="form-label">시작 좌석번호</label>
+                                            <input type="number" class="form-control" id="startSeat" value="101">
+                                        </div>
+                                    </div>
+                                    
+                                    <div id="offsetOptions" class="pattern-options" style="display:none;">
+                                        <div class="mb-3">
+                                            <label for="offsetValue" class="form-label">오프셋 값 (학번에 더할 값)</label>
+                                            <input type="number" class="form-control" id="offsetValue" value="0">
+                                        </div>
+                                    </div>
+                                    
+                                    <div id="customOptions" class="pattern-options" style="display:none;">
+                                        <div class="alert alert-warning">
+                                            <i class="fas fa-exclamation-triangle me-1"></i> 커스텀 규칙 사용 시 JS 함수로 입력하세요. 'id'를 매개변수로 받아 좌석번호를 반환합니다.
+                                        </div>
+                                        <div class="mb-3">
+                                            <label for="customRule" class="form-label">좌석번호 생성 함수</label>
+                                            <textarea class="form-control font-monospace" id="customRule" rows="5">function(id) {
+  // 예: 학번 마지막 3자리를 좌석번호로 사용
+  return id.toString().slice(-3);
+}</textarea>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <button type="button" id="generatePattern" class="btn btn-primary">
+                                <i class="fas fa-cog me-1"></i> 패턴 생성
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- 공통 결과 테이블 -->
+            <div id="resultSection" style="display:none;">
+                <h4 class="mb-3">변경 예정 목록 <span id="recordCount" class="badge bg-info"></span></h4>
+                
+                <div class="table-responsive mb-3">
+                    <table class="table table-striped table-hover" id="previewTable">
+                        <thead>
+                            <tr>
+                                <th>학번</th>
+                                <th>이름</th>
+                                <th>현재 좌석번호</th>
+                                <th>새 좌석번호</th>
+                                <th width="100">상태</th>
+                            </tr>
+                        </thead>
+                        <tbody id="previewBody">
+                            <!-- 결과가 여기에 표시됩니다 -->
+                        </tbody>
+                    </table>
+                </div>
+                
+                <div class="alert alert-warning">
+                    <i class="fas fa-exclamation-triangle me-1"></i> 변경사항을 검토한 후 저장 버튼을 클릭하세요. 이 작업은 실제로 학생 데이터를 수정합니다.
+                </div>
+                
+                <div class="d-flex justify-content-between">
+                    <button type="button" id="cancelBtn" class="btn btn-secondary">
+                        <i class="fas fa-times me-1"></i> 취소
+                    </button>
+                    <button type="button" id="saveChanges" class="btn btn-success">
+                        <i class="fas fa-save me-1"></i> 저장하기
+                    </button>
+                </div>
+            </div>
+            
+            <!-- 로딩 표시기 -->
+            <div id="loadingIndicator" style="display:none;">
+                <div class="d-flex justify-content-center my-5">
+                    <div class="spinner-border text-primary" role="status">
+                        <span class="visually-hidden">로딩 중...</span>
+                    </div>
+                    <span class="ms-2">처리 중입니다...</span>
+                </div>
+            </div>
+            
+            <!-- 결과 메시지 -->
+            <div id="resultMessage" class="alert mt-3" style="display:none;"></div>
+        </div>
+        
+        <div class="card-footer">
+            <div class="d-flex justify-content-between">
+                <a href="{{ url_for('list_attendance') }}" class="btn btn-secondary">
+                    <i class="fas fa-arrow-left me-1"></i> 돌아가기
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // 패턴 옵션 전환
+        document.getElementById('patternType').addEventListener('change', function() {
+            const patternType = this.value;
+            document.querySelectorAll('.pattern-options').forEach(el => el.style.display = 'none');
+            
+            if (patternType === 'sequential') {
+                document.getElementById('sequentialOptions').style.display = 'block';
+            } else if (patternType === 'offset') {
+                document.getElementById('offsetOptions').style.display = 'block';
+            } else if (patternType === 'custom') {
+                document.getElementById('customOptions').style.display = 'block';
+            }
+        });
+        
+        // CSV 파싱 버튼
+        document.getElementById('parseCSV').addEventListener('click', function() {
+            const fileInput = document.getElementById('csvFile');
+            if (!fileInput.files.length) {
+                showMessage('CSV 파일을 선택해주세요.', 'danger');
+                return;
+            }
+            
+            const file = fileInput.files[0];
+            parseCSVFile(file);
+        });
+        
+        // 수동 입력 파싱 버튼
+        document.getElementById('parseManual').addEventListener('click', function() {
+            const manualInput = document.getElementById('manualInput').value.trim();
+            if (!manualInput) {
+                showMessage('데이터를 입력해주세요.', 'danger');
+                return;
+            }
+            
+            parseManualInput(manualInput);
+        });
+        
+        // 패턴 생성 버튼
+        document.getElementById('generatePattern').addEventListener('click', function() {
+            const startId = document.getElementById('startId').value.trim();
+            const endId = document.getElementById('endId').value.trim();
+            
+            if (!startId || !endId) {
+                showMessage('시작 학번과 끝 학번을 모두 입력해주세요.', 'danger');
+                return;
+            }
+            
+            generateFromPattern(startId, endId);
+        });
+        
+        // 취소 버튼
+        document.getElementById('cancelBtn').addEventListener('click', function() {
+            document.getElementById('resultSection').style.display = 'none';
+            document.getElementById('resultMessage').style.display = 'none';
+        });
+        
+        // 저장 버튼
+        document.getElementById('saveChanges').addEventListener('click', function() {
+            saveChanges();
+        });
+        
+        // CSV 파일 파싱 함수
+        function parseCSVFile(file) {
+            showLoading(true);
+            
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                const content = e.target.result;
+                const lines = content.split('\n');
+                
+                // 헤더 제거 및 데이터 파싱
+                const data = [];
+                for (let i = 1; i < lines.length; i++) {
+                    const line = lines[i].trim();
+                    if (line) {
+                        const parts = line.split(',');
+                        if (parts.length >= 2) {
+                            data.push({
+                                student_id: parts[0].trim(),
+                                new_seat: parts[1].trim()
+                            });
+                        }
+                    }
+                }
+                
+                if (data.length > 0) {
+                    fetchStudentDataAndPreview(data);
+                } else {
+                    showLoading(false);
+                    showMessage('유효한 데이터를 찾을 수 없습니다.', 'warning');
+                }
+            };
+            
+            reader.readAsText(file);
+        }
+        
+        // 수동 입력 파싱 함수
+        function parseManualInput(input) {
+            showLoading(true);
+            
+            const lines = input.split('\n');
+            const data = [];
+            
+            for (let i = 0; i < lines.length; i++) {
+                const line = lines[i].trim();
+                if (line) {
+                    const parts = line.split(',');
+                    if (parts.length >= 2) {
+                        data.push({
+                            student_id: parts[0].trim(),
+                            new_seat: parts[1].trim()
+                        });
+                    }
+                }
+            }
+            
+            if (data.length > 0) {
+                fetchStudentDataAndPreview(data);
+            } else {
+                showLoading(false);
+                showMessage('유효한 데이터를 찾을 수 없습니다.', 'warning');
+            }
+        }
+        
+        // 패턴 기반 생성 함수
+        function generateFromPattern(startId, endId) {
+            showLoading(true);
+            
+            // 학번 범위 생성
+            const start = parseInt(startId, 10);
+            const end = parseInt(endId, 10);
+            
+            if (isNaN(start) || isNaN(end) || start > end) {
+                showLoading(false);
+                showMessage('올바른 학번 범위를 입력해주세요.', 'danger');
+                return;
+            }
+            
+            // 패턴 유형에 따라 좌석번호 생성
+            const patternType = document.getElementById('patternType').value;
+            const data = [];
+            
+            // 순차 번호 패턴
+            if (patternType === 'sequential') {
+                const startSeat = parseInt(document.getElementById('startSeat').value, 10);
+                if (isNaN(startSeat)) {
+                    showLoading(false);
+                    showMessage('올바른 시작 좌석번호를 입력해주세요.', 'danger');
+                    return;
+                }
+                
+                let seatNum = startSeat;
+                for (let id = start; id <= end; id++) {
+                    data.push({
+                        student_id: id.toString(),
+                        new_seat: seatNum.toString()
+                    });
+                    seatNum++;
+                }
+            }
+            // 오프셋 패턴
+            else if (patternType === 'offset') {
+                const offset = parseInt(document.getElementById('offsetValue').value, 10);
+                if (isNaN(offset)) {
+                    showLoading(false);
+                    showMessage('올바른 오프셋 값을 입력해주세요.', 'danger');
+                    return;
+                }
+                
+                for (let id = start; id <= end; id++) {
+                    data.push({
+                        student_id: id.toString(),
+                        new_seat: (id + offset).toString()
+                    });
+                }
+            }
+            // 커스텀 규칙 패턴
+            else if (patternType === 'custom') {
+                try {
+                    const customRuleStr = document.getElementById('customRule').value;
+                    const customRule = eval(customRuleStr);
+                    
+                    for (let id = start; id <= end; id++) {
+                        const seatNum = customRule(id);
+                        data.push({
+                            student_id: id.toString(),
+                            new_seat: seatNum.toString()
+                        });
+                    }
+                } catch (error) {
+                    showLoading(false);
+                    showMessage('커스텀 규칙 실행 중 오류가 발생했습니다: ' + error.message, 'danger');
+                    return;
+                }
+            }
+            
+            if (data.length > 0) {
+                fetchStudentDataAndPreview(data);
+            } else {
+                showLoading(false);
+                showMessage('데이터를 생성할 수 없습니다.', 'warning');
+            }
+        }
+        
+        // 학생 데이터 가져와서 미리보기 표시
+        function fetchStudentDataAndPreview(data) {
+            // API를 통해 현재 학생 데이터 가져오기
+            fetch('/api/students?ids=' + data.map(item => item.student_id).join(','))
+                .then(response => response.json())
+                .then(studentData => {
+                    showLoading(false);
+                    
+                    // 미리보기 테이블에 데이터 표시
+                    const tbody = document.getElementById('previewBody');
+                    tbody.innerHTML = '';
+                    
+                    let foundCount = 0;
+                    let notFoundCount = 0;
+                    
+                    data.forEach(item => {
+                        const student = studentData.find(s => s.student_id === item.student_id);
+                        const row = document.createElement('tr');
+                        
+                        if (student) {
+                            row.innerHTML = `
+                                <td>${item.student_id}</td>
+                                <td>${student.name}</td>
+                                <td>${student.seat}</td>
+                                <td>${item.new_seat}</td>
+                                <td><span class="badge bg-success">변경 가능</span></td>
+                            `;
+                            foundCount++;
+                        } else {
+                            row.innerHTML = `
+                                <td>${item.student_id}</td>
+                                <td>-</td>
+                                <td>-</td>
+                                <td>${item.new_seat}</td>
+                                <td><span class="badge bg-danger">학번 없음</span></td>
+                            `;
+                            notFoundCount++;
+                        }
+                        
+                        tbody.appendChild(row);
+                    });
+                    
+                    // 미리보기 섹션 표시 및 카운트 업데이트
+                    document.getElementById('resultSection').style.display = 'block';
+                    document.getElementById('recordCount').textContent = `총 ${data.length}개, 변경 가능 ${foundCount}개, 학번 없음 ${notFoundCount}개`;
+                    
+                    // 학생 데이터를 전역 변수에 저장 (저장 시 사용)
+                    window.bulkEditData = {
+                        changes: data,
+                        studentData: studentData
+                    };
+                })
+                .catch(error => {
+                    showLoading(false);
+                    showMessage('학생 데이터를 가져오는 중 오류가 발생했습니다: ' + error.message, 'danger');
+                });
+        }
+        
+        // 변경사항 저장 함수
+        function saveChanges() {
+            if (!window.bulkEditData || !window.bulkEditData.changes || !window.bulkEditData.changes.length) {
+                showMessage('저장할 데이터가 없습니다.', 'warning');
+                return;
+            }
+            
+            showLoading(true);
+            
+            // 서버로 데이터 전송
+            fetch('/api/bulk_update_seats', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    changes: window.bulkEditData.changes
+                })
+            })
+            .then(response => response.json())
+            .then(data => {
+                showLoading(false);
+                
+                if (data.success) {
+                    showMessage(data.message || '좌석번호가 성공적으로 업데이트되었습니다.', 'success');
+                    
+                    // 성공 후 UI 업데이트
+                    setTimeout(() => {
+                        document.getElementById('resultSection').style.display = 'none';
+                        document.getElementById('csvFile').value = '';
+                        document.getElementById('manualInput').value = '';
+                    }, 2000);
+                } else {
+                    showMessage(data.error || '좌석번호 업데이트 중 오류가 발생했습니다.', 'danger');
+                }
+            })
+            .catch(error => {
+                showLoading(false);
+                showMessage('좌석번호 업데이트 중 오류가 발생했습니다: ' + error.message, 'danger');
+            });
+        }
+        
+        // 로딩 상태 표시/숨김
+        function showLoading(show) {
+            document.getElementById('loadingIndicator').style.display = show ? 'block' : 'none';
+        }
+        
+        // 메시지 표시
+        function showMessage(message, type) {
+            const msgElement = document.getElementById('resultMessage');
+            msgElement.textContent = message;
+            msgElement.className = `alert mt-3 alert-${type}`;
+            msgElement.style.display = 'block';
+            
+            // 성공 메시지는 자동으로 사라지게
+            if (type === 'success') {
+                setTimeout(() => {
+                    msgElement.style.display = 'none';
+                }, 3000);
+            }
+        }
+    });
+</script>
+{% endblock %}

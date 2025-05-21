@@ -1173,6 +1173,14 @@ def edit_seat():
         return redirect(url_for('admin_login'))
     return send_from_directory('static', 'edit_seat.html')
 
+@app.route('/bulk_edit_seats')
+def bulk_edit_seats():
+    """학생 좌석번호 일괄 수정 페이지 (관리자 전용)"""
+    if not session.get('admin'):
+        flash('관리자 권한이 필요합니다.', 'danger')
+        return redirect(url_for('admin_login'))
+    return render_template('bulk_edit_seats.html')
+
 @app.route('/update_seat', methods=['POST'])
 def update_seat():
     """학생 좌석번호 업데이트 API (관리자 전용)"""
@@ -1240,6 +1248,111 @@ def update_seat():
         }), 200
     except Exception as e:
         return jsonify({"error": f"좌석번호 업데이트 중 오류가 발생했습니다: {str(e)}"}), 500
+
+@app.route('/api/students', methods=['GET'])
+def api_get_students():
+    """학생 정보 조회 API (학번 목록으로 학생 정보 반환)"""
+    if not session.get('admin'):
+        return jsonify({"error": "관리자 권한이 필요합니다."}), 403
+    
+    # 쿼리 파라미터에서 학번 목록 가져오기
+    student_ids = request.args.get('ids', '')
+    if not student_ids:
+        return jsonify([])
+    
+    student_id_list = student_ids.split(',')
+    
+    try:
+        # 학생 데이터 로드
+        students_data = load_student_data()
+        
+        # 요청한 학번에 해당하는 학생 정보만 필터링
+        result = []
+        for student_id in student_id_list:
+            if student_id in students_data:
+                name, seat = students_data[student_id]
+                result.append({
+                    "student_id": student_id,
+                    "name": name,
+                    "seat": seat
+                })
+        
+        return jsonify(result)
+    except Exception as e:
+        return jsonify({"error": f"학생 정보 조회 중 오류가 발생했습니다: {str(e)}"}), 500
+
+@app.route('/api/bulk_update_seats', methods=['POST'])
+def api_bulk_update_seats():
+    """학생 좌석번호 일괄 업데이트 API (관리자 전용)"""
+    if not session.get('admin'):
+        return jsonify({"error": "관리자 권한이 필요합니다."}), 403
+    
+    data = request.json
+    if not data or 'changes' not in data or not data['changes']:
+        return jsonify({"error": "유효한 데이터가 없습니다."}), 400
+    
+    try:
+        # Excel 파일 업데이트
+        import pandas as pd
+        from openpyxl import load_workbook
+        
+        excel_path = 'students.xlsx'
+        
+        # pandas로 열 이름 확인
+        df_preview = pd.read_excel(excel_path, nrows=1)
+        column_names = df_preview.columns.tolist()
+        
+        # 학번과 좌석번호 열 확인
+        id_column = [col for col in column_names if '학번' in col or 'ID' in col.upper()][0]
+        seat_column = [col for col in column_names if '좌석' in col or 'SEAT' in col.upper()][0]
+        
+        # openpyxl로 직접 셀 수정
+        wb = load_workbook(excel_path)
+        ws = wb.active
+        
+        # 학번 열 및 좌석번호 열의 인덱스 찾기
+        col_indices = {}
+        for idx, col in enumerate(ws[1]):
+            if col.value == id_column:
+                col_indices['id'] = idx + 1  # 1-based index
+            elif col.value == seat_column:
+                col_indices['seat'] = idx + 1  # 1-based index
+        
+        # 변경 사항 추적
+        changes_count = 0
+        not_found_count = 0
+        
+        # 학번별 새 좌석번호 매핑 생성
+        changes_map = {item['student_id']: item['new_seat'] for item in data['changes']}
+        
+        # 엑셀 파일 수정
+        for row_idx, row in enumerate(ws.iter_rows(min_row=2), start=2):  # 2행부터 시작 (헤더 제외)
+            cell_id = row[col_indices['id'] - 1].value  # 0-based index
+            if str(cell_id) in changes_map:
+                # 새 좌석번호로 업데이트
+                ws.cell(row=row_idx, column=col_indices['seat']).value = changes_map[str(cell_id)]
+                changes_count += 1
+                
+                # 처리한 항목 제거
+                del changes_map[str(cell_id)]
+        
+        # 미처리된 학번 수 계산
+        not_found_count = len(changes_map)
+        
+        # 변경 사항 저장
+        wb.save(excel_path)
+        
+        # 학생 데이터 캐시 초기화
+        global _student_data_cache, _student_data_timestamp
+        _student_data_cache = None
+        _student_data_timestamp = None
+        
+        return jsonify({
+            "success": True,
+            "message": f"총 {changes_count}개의 좌석번호가 성공적으로 업데이트되었습니다. {not_found_count}개의 학번은 찾을 수 없습니다."
+        })
+    except Exception as e:
+        return jsonify({"error": f"좌석번호 일괄 업데이트 중 오류가 발생했습니다: {str(e)}"}), 500
 
 @app.route('/delete_records', methods=['POST'])
 def delete_records():
