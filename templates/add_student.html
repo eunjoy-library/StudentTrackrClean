@@ -36,8 +36,8 @@
                 <button type="submit" class="btn btn-primary">
                     <i class="fas fa-save me-2"></i>학생 등록
                 </button>
-                <a href="{{ url_for('list_attendance') }}" class="btn btn-secondary">
-                    <i class="fas fa-arrow-left me-2"></i>관리자 페이지로 돌아가기
+                <a href="{{ url_for('by_period') }}" class="btn btn-secondary">
+                    <i class="fas fa-arrow-left me-2"></i>교시별 보기로 돌아가기
                 </a>
             </div>
         </form>
@@ -58,7 +58,7 @@
             <div class="modal-footer">
                 <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">닫기</button>
                 <button type="button" class="btn btn-primary" id="addAnotherBtn">다른 학생 추가</button>
-                <a href="{{ url_for('list_attendance') }}" class="btn btn-success">목록으로 돌아가기</a>
+                <a href="{{ url_for('by_period') }}" class="btn btn-success">교시별 보기로 돌아가기</a>
             </div>
         </div>
     </div>
