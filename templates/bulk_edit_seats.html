@@ -328,10 +328,21 @@
                 if (line) {
                     const parts = line.split(',');
                     if (parts.length >= 2) {
-                        data.push({
-                            student_id: parts[0].trim(),
-                            new_seat: parts[1].trim()
-                        });
+                        // 형식에 따라 처리 (학번,이름,좌석번호 또는 학번,좌석번호)
+                        if (parts.length >= 3) {
+                            // 학번,이름,좌석번호 형식
+                            data.push({
+                                student_id: parts[0].trim(),
+                                new_name: parts[1].trim(),
+                                new_seat: parts[2].trim()
+                            });
+                        } else {
+                            // 학번,좌석번호 형식 (이름은 업데이트하지 않음)
+                            data.push({
+                                student_id: parts[0].trim(),
+                                new_seat: parts[1].trim()
+                            });
+                        }
                     }
                 }
             }
@@ -447,6 +458,7 @@
                             row.innerHTML = `
                                 <td>${item.student_id}</td>
                                 <td>${student.name}</td>
+                                <td>${item.new_name || '-'}</td>
                                 <td>${student.seat}</td>
                                 <td>${item.new_seat}</td>
                                 <td><span class="badge bg-success">변경 가능</span></td>
