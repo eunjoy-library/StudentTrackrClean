@@ -106,48 +106,103 @@ def load_student_data(force_reload=False):
     global _student_data_cache, _last_student_data_load_time
     now = datetime.now()
     
-    # 새로고침 필요 없고, 캐시가 있는 경우 (시간 체크 제거)
-    if not force_reload and _student_data_cache:
+    # 캐시 완전 제거 (문제 해결을 위해)
+    if force_reload:
+        _student_data_cache = None
+        logging.debug("학생 데이터 캐시 강제 초기화")
+    
+    # 캐시가 없거나 5초 이상 지난 경우 새로 로드 (개선된 방식)
+    if (_student_data_cache is None or 
+            _last_student_data_load_time is None or 
+            (now - _last_student_data_load_time).seconds > 5):
+        logging.debug("학생 데이터 새로 로딩")
+        try:
+            # openpyxl을 직접 사용하여 엑셀 파일 읽기 (더 안정적인 방식)
+            try:
+                import openpyxl
+                wb = openpyxl.load_workbook('students.xlsx')
+                ws = wb.active
+                
+                student_data = {}
+                headers = []
+                seat_column = 2  # 기본 열 인덱스
+                
+                # 헤더 행 읽기 (첫 번째 행)
+                for cell in ws[1]:
+                    headers.append(cell.value)
+                
+                # 좌석번호 또는 공강좌석번호 열 찾기
+                for i, header in enumerate(headers):
+                    if header in ['좌석번호', '공강좌석번호']:
+                        seat_column = i
+                        break
+                
+                # 학생 데이터 읽기 (2번째 행부터)
+                for row in ws.iter_rows(min_row=2):
+                    student_id = row[0].value
+                    name = row[1].value
+                    seat = row[seat_column].value if len(row) > seat_column else ''
+                    
+                    # 값이 모두 있는 경우만 추가
+                    if student_id and name:
+                        student_id = str(student_id).strip()
+                        name = str(name).strip()
+                        seat = str(seat).strip() if seat else ''
+                        student_data[student_id] = (name, seat)
+                
+                logging.debug(f"로드된 학생 수: {len(student_data)}")
+                
+            except Exception as excel_error:
+                logging.error(f"엑셀 파일 직접 읽기 실패: {excel_error}")
+                
+                # pandas 방식으로 시도 (대체 방식)
+                try:
+                    df = pd.read_excel('students.xlsx', dtype={'학번': str})
+                    # 컬럼명 확인 (좌석번호 또는 공강좌석번호)
+                    seat_column = '공강좌석번호' if '공강좌석번호' in df.columns else '좌석번호'
+                    
+                    student_data = {}
+                    for _, row in df.iterrows():
+                        # 학번이 있는 경우만 처리
+                        if pd.notna(row['학번']) and pd.notna(row['이름']):
+                            student_id = str(row['학번']).strip()
+                            name = str(row['이름']).strip()
+                            # 좌석번호 가져오기 (없으면 빈 문자열)
+                            seat = str(row.get(seat_column, '')) if pd.notna(row.get(seat_column, '')) else ''
+                            student_data[student_id] = (name, seat)
+                    
+                    logging.debug(f"pandas로 로드된 학생 수: {len(student_data)}")
+                    
+                except Exception as pandas_error:
+                    logging.error(f"pandas 읽기 실패: {pandas_error}")
+                    # 임시 학생 데이터 제공 (테스트용)
+                    student_data = {
+                        "10307": ("박지호", "387"),
+                        "20101": ("강지훈", "331"),
+                        "30107": ("김리나", "175"),
+                        "30207": ("김유담", "281"),
+                        "20240101": ("홍길동", "A1"),
+                        "10701": ("한가람", "600"),  # 테스트 학생 추가
+                        # 추가 데이터...
+                    }
+            
+            _student_data_cache = student_data
+            _last_student_data_load_time = now
+            
+            # 디버깅을 위해 캐시에 10701 학번이 있는지 확인
+            if '10701' in _student_data_cache:
+                logging.debug(f"10701 학번 데이터 있음: {_student_data_cache.get('10701')}")
+            else:
+                logging.debug("10701 학번 데이터 없음")
+                
+            return student_data
+            
+        except Exception as e:
+            logging.error(f"학생 데이터 로딩 중 오류: {e}")
+            return {}
+    else:
         logging.debug("학생 데이터 캐시 사용")
         return _student_data_cache
-
-    logging.debug("학생 데이터 새로 로딩")
-    try:
-        # 엑셀 파일에서 학생 정보 읽기
-        try:
-            df = pd.read_excel('students.xlsx', dtype={'학번': str})
-            # 컬럼명 확인 (좌석번호 또는 공강좌석번호)
-            seat_column = '공강좌석번호' if '공강좌석번호' in df.columns else '좌석번호'
-            
-            student_data = {}
-            for _, row in df.iterrows():
-                # 학번이 있는 경우만 처리
-                if pd.notna(row['학번']) and pd.notna(row['이름']):
-                    student_id = str(row['학번']).strip()
-                    name = str(row['이름']).strip()
-                    # 좌석번호 가져오기 (없으면 빈 문자열)
-                    seat = str(row.get(seat_column, '')) if pd.notna(row.get(seat_column, '')) else ''
-                    student_data[student_id] = (name, seat)
-            
-            logging.debug(f"로드된 학생 수: {len(student_data)}")
-        except Exception as excel_error:
-            logging.error(f"엑셀 파일 읽기 실패: {excel_error}")
-            # 임시 학생 데이터 제공 (테스트용)
-            student_data = {
-                "10307": ("박지호", "387"),
-                "20101": ("강지훈", "331"),
-                "30107": ("김리나", "175"),
-                "30207": ("김유담", "281"),
-                "20240101": ("홍길동", "A1"),
-                # 추가 데이터...
-            }
-            
-        _student_data_cache = student_data
-        _last_student_data_load_time = now
-        return student_data
-    except Exception as e:
-        logging.error(f"학생 데이터 로딩 중 오류: {e}")
-        return {}
 
 def save_attendance(student_id, name, seat, period_text, admin_override=False):
     """
@@ -1275,6 +1330,15 @@ def add_student_form():
         return redirect(url_for('admin_login'))
     
     return render_template('add_student.html')
+    
+@app.route('/delete_student_form', methods=['GET'])
+def delete_student_form():
+    """학생 삭제 폼 페이지"""
+    if not session.get('admin'):
+        flash('관리자 권한이 필요합니다.', 'danger')
+        return redirect(url_for('admin_login'))
+    
+    return render_template('delete_student.html')
 
 @app.route('/api/add_direct_student', methods=['POST'])
 def add_direct_student():
@@ -1312,6 +1376,41 @@ def add_direct_student():
             
     except Exception as e:
         return jsonify({"error": f"학생 추가 중 오류 발생: {str(e)}"}), 500
+        
+@app.route('/api/delete_student', methods=['POST'])
+def delete_student_api():
+    """학생 삭제 API"""
+    if not session.get('admin'):
+        return jsonify({"error": "관리자 권한이 필요합니다."}), 403
+    
+    data = request.json
+    if not data or 'student_id' not in data:
+        return jsonify({"error": "학번이 필요합니다."}), 400
+    
+    student_id = data['student_id']
+    
+    try:
+        # 학생 삭제 모듈 사용
+        from delete_student import delete_student
+        success, message = delete_student(student_id)
+        
+        if success:
+            # 데이터를 강제로 새로 로딩하여 캐시 갱신
+            global _student_data_cache
+            _student_data_cache = None
+            load_student_data(force_reload=True)
+            
+            return jsonify({
+                "success": True,
+                "message": message
+            })
+        else:
+            return jsonify({
+                "warning": message
+            }), 200
+            
+    except Exception as e:
+        return jsonify({"error": f"학생 삭제 중 오류 발생: {str(e)}"}), 500
 
 @app.route('/api/students', methods=['GET'])
 def api_get_students():

@@ -1,0 +1,121 @@
+{% extends "layout.html" %}
+
+{% block title %}학생 삭제{% endblock %}
+
+{% block content %}
+<div class="card shadow">
+    <div class="card-header bg-danger text-white">
+        <h2><i class="fas fa-user-minus me-2"></i>학생 삭제</h2>
+    </div>
+    <div class="card-body">
+        <div class="alert alert-warning">
+            <i class="fas fa-exclamation-triangle me-2"></i>주의: 학생 삭제는 되돌릴 수 없습니다. 신중하게 진행해주세요.
+        </div>
+        
+        <form id="deleteStudentForm">
+            <div class="mb-3">
+                <label for="student_id" class="form-label">삭제할 학생 학번</label>
+                <input type="text" class="form-control" id="student_id" name="student_id" required 
+                       placeholder="학번을 입력하세요 (예: 10101)">
+                <div class="form-text text-danger">삭제 후에는 복구할 수 없습니다.</div>
+            </div>
+            
+            <div class="d-flex justify-content-between">
+                <button type="submit" class="btn btn-danger">
+                    <i class="fas fa-trash me-2"></i>학생 삭제
+                </button>
+                <a href="{{ url_for('list_attendance') }}" class="btn btn-secondary">
+                    <i class="fas fa-arrow-left me-2"></i>관리자 페이지로 돌아가기
+                </a>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- 결과 모달 -->
+<div class="modal fade" id="resultModal" tabindex="-1" aria-labelledby="resultModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="resultModalLabel">삭제 결과</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="닫기"></button>
+            </div>
+            <div class="modal-body" id="resultModalBody">
+                처리 중...
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">닫기</button>
+                <a href="{{ url_for('list_attendance') }}" class="btn btn-primary">목록으로 돌아가기</a>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const deleteStudentForm = document.getElementById('deleteStudentForm');
+    const resultModal = new bootstrap.Modal(document.getElementById('resultModal'));
+    const resultModalBody = document.getElementById('resultModalBody');
+    
+    deleteStudentForm.addEventListener('submit', function(e) {
+        e.preventDefault();
+        
+        const studentId = document.getElementById('student_id').value.trim();
+        
+        // 입력값 유효성 검사
+        if (!studentId) {
+            resultModalBody.innerHTML = '<div class="alert alert-danger">학번을 입력해주세요.</div>';
+            resultModal.show();
+            return;
+        }
+        
+        // 삭제 확인
+        if (!confirm(`학번 '${studentId}'의 학생을 삭제하시겠습니까? 이 작업은 되돌릴 수 없습니다.`)) {
+            return;
+        }
+        
+        // API 요청
+        fetch('/api/delete_student', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                student_id: studentId
+            })
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                resultModalBody.innerHTML = `
+                    <div class="alert alert-success">
+                        <i class="fas fa-check-circle me-2"></i>${data.message}
+                    </div>
+                `;
+            } else if (data.warning) {
+                resultModalBody.innerHTML = `
+                    <div class="alert alert-warning">
+                        <i class="fas fa-exclamation-triangle me-2"></i>${data.warning}
+                    </div>
+                `;
+            } else if (data.error) {
+                resultModalBody.innerHTML = `
+                    <div class="alert alert-danger">
+                        <i class="fas fa-times-circle me-2"></i>${data.error}
+                    </div>
+                `;
+            }
+            resultModal.show();
+        })
+        .catch(error => {
+            resultModalBody.innerHTML = `
+                <div class="alert alert-danger">
+                    <i class="fas fa-times-circle me-2"></i>오류가 발생했습니다: ${error.message}
+                </div>
+            `;
+            resultModal.show();
+        });
+    });
+});
+</script>
+{% endblock %}
