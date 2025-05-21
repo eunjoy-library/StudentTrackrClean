@@ -1165,6 +1165,82 @@ def delete_all_warnings():
     
     return redirect(url_for('admin_warnings'))
 
+@app.route('/edit_seat')
+def edit_seat():
+    """학생 좌석번호 수정 페이지 (관리자 전용)"""
+    if not session.get('admin'):
+        flash('관리자 권한이 필요합니다.', 'danger')
+        return redirect(url_for('admin_login'))
+    return send_from_directory('static', 'edit_seat.html')
+
+@app.route('/update_seat', methods=['POST'])
+def update_seat():
+    """학생 좌석번호 업데이트 API (관리자 전용)"""
+    if not session.get('admin'):
+        return jsonify({"error": "관리자 권한이 필요합니다."}), 403
+    
+    student_id = request.json.get('student_id')
+    new_seat = request.json.get('new_seat')
+    
+    if not student_id or not new_seat:
+        return jsonify({"error": "학번과 새 좌석번호를 모두 입력해주세요."}), 400
+    
+    try:
+        # Excel 파일 수정
+        import pandas as pd
+        from openpyxl import load_workbook
+        
+        excel_path = 'students.xlsx'
+        
+        # pandas 미리보기로 열 이름 확인
+        df_preview = pd.read_excel(excel_path, nrows=1)
+        column_names = df_preview.columns.tolist()
+        
+        # 학번과 좌석번호 열 확인
+        id_column = [col for col in column_names if '학번' in col or 'ID' in col.upper()][0]
+        seat_column = [col for col in column_names if '좌석' in col or 'SEAT' in col.upper()][0]
+        
+        # openpyxl로 직접 셀 수정
+        wb = load_workbook(excel_path)
+        ws = wb.active
+        
+        # 학번 열 및 좌석번호 열의 인덱스 찾기
+        col_indices = {}
+        for idx, col in enumerate(ws[1]):
+            if col.value == id_column:
+                col_indices['id'] = idx + 1  # 1-based index
+            elif col.value == seat_column:
+                col_indices['seat'] = idx + 1  # 1-based index
+        
+        # 학번으로 학생 찾아 좌석번호 수정
+        student_found = False
+        for row_idx, row in enumerate(ws.iter_rows(min_row=2), start=2):  # 2행부터 시작 (헤더 제외)
+            cell_id = row[col_indices['id'] - 1].value  # 0-based index
+            if str(cell_id) == student_id:
+                student_found = True
+                old_seat = row[col_indices['seat'] - 1].value
+                # 새 좌석번호로 업데이트
+                ws.cell(row=row_idx, column=col_indices['seat']).value = new_seat
+                break
+        
+        if not student_found:
+            return jsonify({"error": f"학번 {student_id}를 찾을 수 없습니다."}), 404
+        
+        # 변경 사항 저장
+        wb.save(excel_path)
+        
+        # 학생 데이터 캐시 초기화 (새로고침)
+        global _student_data_cache, _student_data_timestamp
+        _student_data_cache = None
+        _student_data_timestamp = None
+        
+        return jsonify({
+            "success": True, 
+            "message": f"학번 {student_id}의 좌석번호가 {old_seat}에서 {new_seat}로 업데이트되었습니다."
+        }), 200
+    except Exception as e:
+        return jsonify({"error": f"좌석번호 업데이트 중 오류가 발생했습니다: {str(e)}"}), 500
+
 @app.route('/delete_records', methods=['POST'])
 def delete_records():
     """Delete selected attendance records (admin only)"""
