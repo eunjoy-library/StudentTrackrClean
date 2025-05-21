@@ -1249,6 +1249,15 @@ def update_seat():
     except Exception as e:
         return jsonify({"error": f"좌석번호 업데이트 중 오류가 발생했습니다: {str(e)}"}), 500
 
+@app.route('/add_student_form', methods=['GET'])
+def add_student_form():
+    """학생 추가 폼 페이지"""
+    if not session.get('admin'):
+        flash('관리자 권한이 필요합니다.', 'danger')
+        return redirect(url_for('admin_login'))
+    
+    return render_template('add_student.html')
+
 @app.route('/api/add_direct_student', methods=['POST'])
 def add_direct_student():
     """새 학생을 직접 추가하는 API"""

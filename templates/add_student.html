@@ -1,0 +1,110 @@
+{% extends "layout.html" %}
+
+{% block title %}학생 추가{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="row justify-content-center">
+        <div class="col-md-8 col-lg-6">
+            <div class="card shadow-lg mt-5">
+                <div class="card-header bg-primary text-white">
+                    <h1 class="h3 mb-0">새 학생 등록</h1>
+                </div>
+                <div class="card-body">
+                    <div class="alert alert-info">
+                        <i class="fas fa-info-circle"></i> 새 학생을 등록하려면 아래 정보를 입력하세요.
+                    </div>
+
+                    <form id="addStudentForm">
+                        <div class="mb-3">
+                            <label for="student_id" class="form-label">학번</label>
+                            <input type="text" class="form-control" id="student_id" name="student_id" required>
+                        </div>
+                        <div class="mb-3">
+                            <label for="name" class="form-label">이름</label>
+                            <input type="text" class="form-control" id="name" name="name" required>
+                        </div>
+                        <div class="mb-3">
+                            <label for="seat" class="form-label">좌석번호</label>
+                            <input type="text" class="form-control" id="seat" name="seat" required>
+                        </div>
+                        <div class="d-grid gap-2">
+                            <button type="submit" class="btn btn-primary">
+                                <i class="fas fa-plus-circle me-2"></i>학생 추가
+                            </button>
+                            <a href="{{ url_for('list_attendance') }}" class="btn btn-secondary">
+                                <i class="fas fa-arrow-left me-2"></i>돌아가기
+                            </a>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+            <!-- 결과 메시지 영역 -->
+            <div id="resultAlert" class="alert mt-3" style="display: none;"></div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const form = document.getElementById('addStudentForm');
+    const resultAlert = document.getElementById('resultAlert');
+
+    form.addEventListener('submit', function(e) {
+        e.preventDefault();
+        
+        const studentId = document.getElementById('student_id').value.trim();
+        const name = document.getElementById('name').value.trim();
+        const seat = document.getElementById('seat').value.trim();
+        
+        if (!studentId || !name || !seat) {
+            showAlert('모든 필드를 입력해주세요.', 'danger');
+            return;
+        }
+        
+        // API 호출
+        fetch('/api/add_direct_student', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                student_id: studentId,
+                name: name,
+                seat: seat
+            })
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                showAlert(data.message, 'success');
+                form.reset(); // 폼 초기화
+            } else if (data.warning) {
+                showAlert(data.warning, 'warning');
+            } else if (data.error) {
+                showAlert(data.error, 'danger');
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            showAlert('서버 오류가 발생했습니다.', 'danger');
+        });
+    });
+    
+    // 결과 알림 표시 함수
+    function showAlert(message, type) {
+        resultAlert.textContent = message;
+        resultAlert.className = `alert mt-3 alert-${type}`;
+        resultAlert.style.display = 'block';
+        
+        // 5초 후 알림 숨기기
+        setTimeout(() => {
+            resultAlert.style.display = 'none';
+        }, 5000);
+    }
+});
+</script>
+{% endblock %}
