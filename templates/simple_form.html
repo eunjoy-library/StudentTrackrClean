@@ -564,7 +564,7 @@ document.addEventListener('DOMContentLoaded', function() {
                         
                         if (hasAttendance) {
                             // 이미 출석한 학생 - 경고 메시지와 함께 비활성화
-                            // 경고 사운드 바로 재생 (중요: 모달 표시 전에 먼저 재생)
+                            // 경고 사운드 한 번만 재생 (중요: 모달 표시 전에 재생)
                             playErrorSound();
                             
                             var formattedDate = attendData.formatted_date || attendDate;
@@ -589,11 +589,6 @@ document.addEventListener('DOMContentLoaded', function() {
                             modalConfirmBtn.disabled = true;
                             modalConfirmBtn.className = 'btn modal-button btn-secondary';
                             modalConfirmBtn.innerHTML = '<i class="fas fa-check me-2"></i>확인했습니다';
-                            
-                            // 모달 표시 후 3초 후에 한번 더 경고음
-                            setTimeout(function() {
-                                playErrorSound();
-                            }, 1000);
                         } else {
                             // 처음 출석하는 학생
                             content = '<div style="font-size: 20px; font-weight: bold; color: #fff; text-align: center;">' +
