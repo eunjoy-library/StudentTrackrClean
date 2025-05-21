@@ -157,15 +157,12 @@
     document.addEventListener('DOMContentLoaded', function() {
         // 체크박스 기능
         const checkboxes = document.querySelectorAll('.record-checkbox');
-        const deleteBtn = document.getElementById('deleteSelectedBtn');
+        // 전체 삭제 버튼은 이 페이지에서 사용하지 않음
         const periodDeleteBtns = document.querySelectorAll('.delete-period-btn');
         const periodSelectAllCheckboxes = document.querySelectorAll('.period-select-all');
         
         // 삭제 버튼 활성화 상태 업데이트
         function updateDeleteButtonState() {
-            const anyChecked = [...checkboxes].some(cb => cb.checked);
-            deleteBtn.disabled = !anyChecked;
-            
             // 각 교시별 삭제 버튼 상태 업데이트
             periodDeleteBtns.forEach(btn => {
                 const period = btn.dataset.period;
