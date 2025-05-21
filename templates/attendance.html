@@ -281,84 +281,11 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     }
     
-    // 오디오 초기화 함수
-    function initAudioContext() {
-        try {
-            if (audioContext) return; // 이미 초기화된 경우
-            
-            window.AudioContext = window.AudioContext || window.webkitAudioContext;
-            audioContext = new AudioContext();
-        } catch (e) {
-            console.error('AudioContext 초기화 실패:', e);
-        }
-    }
+    // 참고: 오디오 함수는 이제 static/audio_data.js에서 제공됩니다
+    // audio_data.js가 이미 전역에 playSuccessSound, playErrorSound 함수를 정의합니다
     
-    // 성공 소리 재생
-    function playSuccessSound() {
-        try {
-            if (!audioContext) {
-                initAudioContext();
-                if (!audioContext) return;
-            }
-            
-            const currentTime = audioContext.currentTime;
-            
-            const oscillator1 = audioContext.createOscillator();
-            oscillator1.type = 'sine';
-            oscillator1.frequency.value = 330;
-            
-            const oscillator2 = audioContext.createOscillator();
-            oscillator2.type = 'sine';
-            oscillator2.frequency.value = 494;
-            
-            const gainNode = audioContext.createGain();
-            gainNode.gain.value = 0.12;
-            
-            oscillator1.connect(gainNode);
-            oscillator2.connect(gainNode);
-            gainNode.connect(audioContext.destination);
-            
-            oscillator1.start(currentTime);
-            oscillator1.stop(currentTime + 0.2);
-            
-            oscillator2.start(currentTime + 0.25);
-            oscillator2.stop(currentTime + 0.45);
-        } catch (e) {
-            console.error('소리 재생 중 오류:', e);
-        }
-    }
-    
-    // 실패 소리 재생
-    function playErrorSound() {
-        try {
-            if (!audioContext) {
-                initAudioContext();
-                if (!audioContext) return;
-            }
-            
-            const currentTime = audioContext.currentTime;
-            
-            const oscillator = audioContext.createOscillator();
-            oscillator.type = 'sawtooth';
-            oscillator.frequency.value = 587;
-            
-            const gainNode = audioContext.createGain();
-            gainNode.gain.value = 0.08;
-            
-            oscillator.connect(gainNode);
-            gainNode.connect(audioContext.destination);
-            
-            oscillator.start(currentTime);
-            oscillator.stop(currentTime + 0.4);
-        } catch (e) {
-            console.error('소리 재생 중 오류:', e);
-        }
-    }
-    
-    // 초기 사용자 상호작용에서 오디오 초기화
-    document.addEventListener('click', function() {
-        initAudioContext();
-    }, { once: true });
+    // 오디오 초기화는 페이지 로드와 클릭에서 자동으로 수행됩니다
+    // 이미 layout.html에서 불러온 audio_data.js에 정의되어 있습니다
     
     // 폼 제출 이벤트
     if (form) {
