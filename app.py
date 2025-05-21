@@ -1322,16 +1322,36 @@ def api_bulk_update_seats():
         changes_count = 0
         not_found_count = 0
         
-        # 학번별 새 좌석번호 매핑 생성
-        changes_map = {item['student_id']: item['new_seat'] for item in data['changes']}
+        # 학번별 새 좌석번호와 이름 매핑 생성
+        changes_map = {}
+        for item in data['changes']:
+            student_id = item['student_id']
+            changes_map[student_id] = {
+                'new_seat': item['new_seat']
+            }
+            # 새 이름이 있는 경우만 추가
+            if 'new_name' in item and item['new_name']:
+                changes_map[student_id]['new_name'] = item['new_name']
         
         # 엑셀 파일 수정
+        seat_changes_count = 0
+        name_changes_count = 0
+        
         for row_idx, row in enumerate(ws.iter_rows(min_row=2), start=2):  # 2행부터 시작 (헤더 제외)
             cell_id = row[col_indices['id'] - 1].value  # 0-based index
             if str(cell_id) in changes_map:
-                # 새 좌석번호로 업데이트
-                ws.cell(row=row_idx, column=col_indices['seat']).value = changes_map[str(cell_id)]
-                changes_count += 1
+                change_item = changes_map[str(cell_id)]
+                
+                # 좌석번호 업데이트
+                ws.cell(row=row_idx, column=col_indices['seat']).value = change_item['new_seat']
+                seat_changes_count += 1
+                
+                # 이름 업데이트 (이름 칼럼이 존재하고 새 이름이 제공된 경우)
+                if 'name' in col_indices and 'new_name' in change_item:
+                    ws.cell(row=row_idx, column=col_indices['name']).value = change_item['new_name']
+                    name_changes_count += 1
+                
+                changes_count = seat_changes_count + name_changes_count
                 
                 # 처리한 항목 제거
                 del changes_map[str(cell_id)]
@@ -1349,10 +1369,10 @@ def api_bulk_update_seats():
         
         return jsonify({
             "success": True,
-            "message": f"총 {changes_count}개의 좌석번호가 성공적으로 업데이트되었습니다. {not_found_count}개의 학번은 찾을 수 없습니다."
+            "message": f"성공적으로 업데이트되었습니다: 좌석번호 {seat_changes_count}개, 이름 {name_changes_count}개 변경됨. {not_found_count}개의 학번은 찾을 수 없습니다."
         })
     except Exception as e:
-        return jsonify({"error": f"좌석번호 일괄 업데이트 중 오류가 발생했습니다: {str(e)}"}), 500
+        return jsonify({"error": f"학생 정보 일괄 업데이트 중 오류가 발생했습니다: {str(e)}"}), 500
 
 @app.route('/delete_records', methods=['POST'])
 def delete_records():
