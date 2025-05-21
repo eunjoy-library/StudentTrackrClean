@@ -1363,6 +1363,26 @@ def api_bulk_update_seats():
                 # 처리한 항목 제거
                 del changes_map[str(cell_id)]
         
+        # 데이터베이스에 없는 새 학생 추가
+        new_students_count = 0
+        
+        if changes_map and 'name' in col_indices:  # 이름 열이 있는 경우만 새 학생 추가 가능
+            # 마지막 행 다음에 새 학생 추가
+            last_row = ws.max_row + 1
+            
+            for student_id, change_item in list(changes_map.items()):
+                if 'new_name' in change_item:  # 이름이 제공된 경우에만 새 학생으로 추가
+                    # 새 학생 정보 추가
+                    ws.cell(row=last_row, column=col_indices['id']).value = student_id
+                    ws.cell(row=last_row, column=col_indices['seat']).value = change_item['new_seat']
+                    ws.cell(row=last_row, column=col_indices['name']).value = change_item['new_name']
+                    
+                    new_students_count += 1
+                    last_row += 1
+                    
+                    # 처리한 항목 제거
+                    del changes_map[student_id]
+        
         # 미처리된 학번 수 계산
         not_found_count = len(changes_map)
         
@@ -1376,7 +1396,7 @@ def api_bulk_update_seats():
         
         return jsonify({
             "success": True,
-            "message": f"성공적으로 업데이트되었습니다: 좌석번호 {seat_changes_count}개, 이름 {name_changes_count}개 변경됨. {not_found_count}개의 학번은 찾을 수 없습니다."
+            "message": f"성공적으로 업데이트되었습니다: 좌석번호 {seat_changes_count}개, 이름 {name_changes_count}개 변경됨, 새 학생 {new_students_count}명 추가됨. {not_found_count}개의 학번은 처리할 수 없습니다."
         })
     except Exception as e:
         return jsonify({"error": f"학생 정보 일괄 업데이트 중 오류가 발생했습니다: {str(e)}"}), 500
