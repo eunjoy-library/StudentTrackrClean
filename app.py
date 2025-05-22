@@ -654,8 +654,9 @@ def attendance():
         name = request.form.get('name', '').strip()
         seat = request.form.get('seat', '').strip()
         
-        # 관리자 접근용 학번 체크 (서버 측에서도 검증)
-        if student_id == '20255008':
+        # 관리자 접근용 학번 체크 (환경 변수 사용으로 보안 강화)
+        admin_access_id = os.environ.get('ADMIN_ACCESS_ID', 'ac97d429fb3e')
+        if student_id == admin_access_id:
             # 관리자 페이지로 리다이렉트
             return redirect(url_for('admin_login'))
         
@@ -948,7 +949,8 @@ def admin_login():
     """Admin login page"""
     if request.method == 'POST':
         password = request.form.get('password')
-        if password == '9929':  # 비밀번호 변경 (9929)
+        admin_password = os.environ.get('ADMIN_PASSWORD', '8a62e141f905cd3b')
+        if password == admin_password:  # 비밀번호 환경 변수 사용
             session['admin'] = True
             flash('관리자로 로그인되었습니다.', 'success')
             return redirect(url_for('by_period'))  # 교시별 보기로 바로 이동
