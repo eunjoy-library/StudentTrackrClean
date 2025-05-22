@@ -1686,6 +1686,11 @@ def stats():
     
     # 요일별 통계
     weekday_counter = Counter()
+    
+    # 요일별 교시 통계를 위한 딕셔너리 (2차원 데이터)
+    weekday_period_data = {}
+    all_periods = set()
+    
     for record in filtered_records:
         try:
             record_date_str = record.get('date', '').split()[0]
@@ -1693,7 +1698,19 @@ def stats():
             # 요일 이름 (0:월요일 ~ 6:일요일로 변환)
             weekday = record_date.weekday()
             weekday_name = ['월요일', '화요일', '수요일', '목요일', '금요일', '토요일', '일요일'][weekday]
+            period = record.get('period', '미지정')
+            
+            # 요일별 카운터 증가
             weekday_counter[weekday_name] += 1
+            
+            # 모든 교시 목록 수집
+            all_periods.add(period)
+            
+            # 요일별 교시 데이터 추가
+            if weekday_name not in weekday_period_data:
+                weekday_period_data[weekday_name] = Counter()
+            weekday_period_data[weekday_name][period] += 1
+            
         except (ValueError, AttributeError, IndexError):
             continue
     
@@ -1703,6 +1720,30 @@ def stats():
     
     # 최대 요일 카운트 (그래프 비율용)
     max_day_count = max(weekday_counter.values()) if weekday_counter else 1
+    
+    # 교시 정렬 함수
+    def period_sort_key(period):
+        if '교시' in period:
+            try:
+                return int(period.split('교시')[0])
+            except ValueError:
+                return 999
+        elif period == '시간 외':
+            return 998
+        else:
+            return 999
+    
+    # 정렬된 교시 목록 생성
+    sorted_periods = sorted(all_periods, key=period_sort_key)
+    
+    # 요일별 교시 데이터 정렬
+    weekday_period_stats = []
+    for weekday_name, _ in weekday_stats:  # 요일 순서 유지
+        period_counts = []
+        for period in sorted_periods:
+            count = weekday_period_data.get(weekday_name, Counter()).get(period, 0)
+            period_counts.append((period, count))
+        weekday_period_stats.append((weekday_name, period_counts))
     
     # 교시별 통계
     period_counter = Counter()
@@ -1760,7 +1801,9 @@ def stats():
                            period_stats=period_stats,
                            max_period_count=max_period_count,
                            top_students=top_students,
-                           max_student_count=max_student_count)
+                           max_student_count=max_student_count,
+                           weekday_period_stats=weekday_period_stats,
+                           sorted_periods=sorted_periods)
 
 @app.route('/health')
 def health():

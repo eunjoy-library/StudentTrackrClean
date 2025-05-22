@@ -113,6 +113,43 @@
                 </div>
             </div>
 
+            <!-- 요일별 교시별 통계 (크로스 테이블) -->
+            <div class="row mb-4">
+                <div class="col-md-12">
+                    <div class="card border-primary">
+                        <div class="card-header bg-primary text-white">
+                            <h4 class="mb-0">요일별 교시 방문자 수</h4>
+                        </div>
+                        <div class="card-body">
+                            <div class="table-responsive">
+                                <table class="table table-striped table-hover">
+                                    <thead>
+                                        <tr>
+                                            <th>요일</th>
+                                            {% for period in sorted_periods %}
+                                            <th>{{ period }}</th>
+                                            {% endfor %}
+                                            <th>총계</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {% for weekday_name, period_data in weekday_period_stats %}
+                                        <tr>
+                                            <td><strong>{{ weekday_name }}</strong></td>
+                                            {% for period, count in period_data %}
+                                            <td>{{ count }}</td>
+                                            {% endfor %}
+                                            <td><strong>{{ period_data | map(attribute=1) | sum }}</strong></td>
+                                        </tr>
+                                        {% endfor %}
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
             <!-- 교시별 통계 -->
             <div class="row mb-4">
                 <div class="col-md-12">
@@ -225,6 +262,29 @@
                 const dayCount{{ loop.index }} = "{{ count }}".padEnd(10, ' ');
                 const dayPercent{{ loop.index }} = "{{ '%0.1f' % (count / total_visitors * 100) if total_visitors else 0 }}%";
                 statsText += `${dayName{{ loop.index }}}${dayCount{{ loop.index }}}${dayPercent{{ loop.index }}}\n`;
+                {% endfor %}
+                
+                statsText += "\n";
+                
+                // 요일별 교시 통계
+                statsText += "◆ 요일별 교시 통계\n";
+                let headerLine = "요일        ";
+                
+                {% for period in sorted_periods %}
+                headerLine += "{{ period }}".padEnd(10, ' ');
+                {% endfor %}
+                
+                statsText += headerLine + "\n";
+                statsText += "-".repeat(headerLine.length) + "\n";
+                
+                {% for weekday_name, period_data in weekday_period_stats %}
+                let line{{ loop.index }} = "{{ weekday_name }}".padEnd(10, ' ');
+                
+                {% for period, count in period_data %}
+                line{{ loop.index }} += "{{ count }}".padEnd(10, ' ');
+                {% endfor %}
+                
+                statsText += line{{ loop.index }} + "\n";
                 {% endfor %}
                 
                 statsText += "\n";
