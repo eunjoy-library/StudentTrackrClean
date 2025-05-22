@@ -59,6 +59,9 @@
             <button type="submit" form="deleteForm" class="btn btn-warning" id="deleteBtn" disabled>
                 <i class="fas fa-trash me-1"></i> 선택 항목 삭제
             </button>
+            <button type="button" class="btn btn-info" id="copySelectedBtn" disabled>
+                <i class="fas fa-copy me-1"></i> 선택 항목 복사
+            </button>
         </div>
         
         <!-- 검색 기능 추가 -->
@@ -204,6 +207,7 @@
         const selectAllCheckbox = document.getElementById('selectAll');
         const recordCheckboxes = document.querySelectorAll('.record-checkbox');
         const deleteBtn = document.getElementById('deleteBtn');
+        const copySelectedBtn = document.getElementById('copySelectedBtn');
         
         // 전체 선택 체크박스 이벤트
         if (selectAllCheckbox) {
@@ -212,14 +216,14 @@
                     cb.checked = this.checked;
                 });
                 
-                updateDeleteButtonState();
+                updateButtonsState();
             });
         }
         
         // 개별 체크박스 이벤트
         recordCheckboxes.forEach(checkbox => {
             checkbox.addEventListener('change', function() {
-                updateDeleteButtonState();
+                updateButtonsState();
                 
                 // 모든 체크박스가 체크되어 있는지 확인
                 const allChecked = [...recordCheckboxes].every(cb => cb.checked);
@@ -229,12 +233,78 @@
             });
         });
         
-        // 삭제 버튼 활성화 상태 업데이트
-        function updateDeleteButtonState() {
+        // 버튼 활성화 상태 업데이트
+        function updateButtonsState() {
+            const anyChecked = [...recordCheckboxes].some(cb => cb.checked);
             if (deleteBtn) {
-                const anyChecked = [...recordCheckboxes].some(cb => cb.checked);
                 deleteBtn.disabled = !anyChecked;
             }
+            if (copySelectedBtn) {
+                copySelectedBtn.disabled = !anyChecked;
+            }
+        }
+        
+        // 복사 기능
+        if (copySelectedBtn) {
+            copySelectedBtn.addEventListener('click', function() {
+                // 체크된 항목만 수집
+                const checkedRows = [];
+                recordCheckboxes.forEach(checkbox => {
+                    if (checkbox.checked) {
+                        const row = checkbox.closest('tr');
+                        checkedRows.push({
+                            studentId: row.cells[1].textContent.trim(),
+                            name: row.cells[2].textContent.trim(),
+                            seat: row.cells[3].textContent.trim(),
+                            period: row.cells[4].textContent.trim(),
+                            date: row.cells[5].textContent.trim()
+                        });
+                    }
+                });
+                
+                if (checkedRows.length === 0) {
+                    alert('선택된 항목이 없습니다.');
+                    return;
+                }
+                
+                // 텍스트 생성
+                let text = `출석 목록 (${checkedRows.length}명)\n\n`;
+                
+                // 고정폭 표 형식 생성
+                text += "학번          이름        좌석번호     교시      날짜\n";
+                text += "--------------------------------------------------------------------------\n";
+                
+                // 체크된 행 추가
+                checkedRows.forEach(student => {
+                    const studentId = student.studentId.padEnd(12, ' '); // 고정 너비 12자리
+                    const name = student.name.padEnd(10, ' '); // 고정 너비 10자리
+                    const seat = student.seat.padEnd(10, ' '); // 고정 너비 10자리
+                    const period = student.period.padEnd(10, ' '); // 고정 너비 10자리
+                    const date = student.date;
+                    text += `${studentId}${name}${seat}${period}${date}\n`;
+                });
+                
+                // 클립보드에 복사
+                copyToClipboard(text);
+            });
+        }
+        
+        // 클립보드 복사 함수
+        function copyToClipboard(text) {
+            // 텍스트 영역 생성 및 텍스트 설정
+            const textarea = document.createElement('textarea');
+            textarea.value = text;
+            document.body.appendChild(textarea);
+            
+            // 선택 및 복사
+            textarea.select();
+            document.execCommand('copy');
+            
+            // 텍스트 영역 제거
+            document.body.removeChild(textarea);
+            
+            // 사용자에게 알림
+            alert('클립보드에 복사되었습니다.');
         }
     });
 </script>
