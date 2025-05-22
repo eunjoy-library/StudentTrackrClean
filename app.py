@@ -1656,9 +1656,10 @@ def stats():
     default_start_date = (today - timedelta(days=30)).strftime('%Y-%m-%d')
     default_end_date = today.strftime('%Y-%m-%d')
     
-    # URL 파라미터에서 날짜 가져오기
+    # URL 파라미터에서 날짜와 보기 모드 가져오기
     start_date = request.args.get('start_date', default_start_date)
     end_date = request.args.get('end_date', default_end_date)
+    view_mode = request.args.get('view_mode', 'total')  # 'total' 또는 'weekly'
     
     # 날짜 문자열을 datetime 객체로 변환
     start_date_obj = datetime.strptime(start_date, '%Y-%m-%d').date()
@@ -1680,6 +1681,97 @@ def stats():
                 filtered_records.append(record)
         except (ValueError, AttributeError, IndexError):
             continue
+            
+    # 주차별 데이터 구성 (view_mode가 'weekly'일 때 사용)
+    weekly_stats = []
+    
+    if view_mode == 'weekly':
+        # 시작일부터 종료일까지의 주차별 데이터 구성
+        current_week_start = start_date_obj - timedelta(days=start_date_obj.weekday())  # 해당 주의 월요일
+        
+        while current_week_start <= end_date_obj:
+            current_week_end = current_week_start + timedelta(days=6)  # 주의 일요일
+            
+            # 이번 주 레이블 (월/일 ~ 월/일)
+            week_label = f"{current_week_start.month}/{current_week_start.day} ~ {current_week_end.month}/{current_week_end.day}"
+            
+            # 이번 주 기록 필터링
+            weekly_records = []
+            for record in filtered_records:
+                try:
+                    record_date_str = record.get('date', '').split()[0]
+                    record_date = datetime.strptime(record_date_str, '%Y-%m-%d').date()
+                    if current_week_start <= record_date <= current_week_end:
+                        weekly_records.append(record)
+                except (ValueError, AttributeError):
+                    continue
+            
+            # 이번 주 요일별 교시 데이터 준비
+            week_data = {
+                'label': week_label,
+                'start_date': current_week_start,
+                'end_date': current_week_end,
+                'records_count': len(weekly_records),
+                'weekday_period_data': {}
+            }
+            
+            # 요일별 교시 카운팅
+            all_periods_week = set()
+            weekday_period_data_week = {}
+            
+            for record in weekly_records:
+                try:
+                    record_date_str = record.get('date', '').split()[0]
+                    record_date = datetime.strptime(record_date_str, '%Y-%m-%d').date()
+                    weekday = record_date.weekday()
+                    weekday_name = ['월요일', '화요일', '수요일', '목요일', '금요일', '토요일', '일요일'][weekday]
+                    period = record.get('period', '미지정')
+                    
+                    # 모든 교시 목록 수집
+                    all_periods_week.add(period)
+                    
+                    # 요일별 교시 데이터 추가
+                    if weekday_name not in weekday_period_data_week:
+                        weekday_period_data_week[weekday_name] = Counter()
+                    weekday_period_data_week[weekday_name][period] += 1
+                    
+                except (ValueError, AttributeError, IndexError):
+                    continue
+            
+            # 교시 정렬 함수
+            def period_sort_key_week(period):
+                if '교시' in period:
+                    try:
+                        return int(period.split('교시')[0])
+                    except ValueError:
+                        return 999
+                elif period == '시간 외':
+                    return 998
+                else:
+                    return 999
+            
+            # 정렬된 교시 목록
+            sorted_periods_week = sorted(all_periods_week, key=period_sort_key_week)
+            
+            # 요일 순서대로 정렬
+            weekday_order = {'월요일': 0, '화요일': 1, '수요일': 2, '목요일': 3, '금요일': 4, '토요일': 5, '일요일': 6}
+            
+            # 요일별 교시 데이터 정렬
+            weekday_period_stats_week = []
+            for weekday_name in sorted(weekday_period_data_week.keys(), key=lambda x: weekday_order.get(x, 7)):
+                period_counts = []
+                for period in sorted_periods_week:
+                    count = weekday_period_data_week.get(weekday_name, Counter()).get(period, 0)
+                    period_counts.append((period, count))
+                weekday_period_stats_week.append((weekday_name, period_counts))
+            
+            week_data['weekday_period_stats'] = weekday_period_stats_week
+            week_data['sorted_periods'] = sorted_periods_week
+            
+            weekly_stats.append(week_data)
+            
+            # 다음 주로 이동
+            current_week_start = current_week_end + timedelta(days=1)
     
     # 총 방문자 수
     total_visitors = len(filtered_records)
@@ -1803,7 +1895,9 @@ def stats():
                            top_students=top_students,
                            max_student_count=max_student_count,
                            weekday_period_stats=weekday_period_stats,
-                           sorted_periods=sorted_periods)
+                           sorted_periods=sorted_periods,
+                           view_mode=view_mode,
+                           weekly_stats=weekly_stats)
 
 @app.route('/health')
 def health():
