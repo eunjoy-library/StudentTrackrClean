@@ -189,31 +189,6 @@
     </script>
     {% block scripts %}{% endblock %}
 
-<!-- 키보드 단축키 설정 스크립트 -->
-<script>
-    document.addEventListener('keydown', function(e) {
-        // 입력 필드에서 타이핑 중일 때는 단축키 무시
-        if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') {
-            return;
-        }
-        
-        // Ctrl+Alt+H - 출석 페이지로 이동 (Home)
-        if (e.ctrlKey && e.altKey && e.code === 'KeyH') {
-            e.preventDefault();
-            window.location.href = '/attendance';
-        }
-        
-        // Ctrl+F - 출석 페이지로 이동 (기존 기능 유지)
-        if (e.ctrlKey && !e.shiftKey && e.code === 'KeyF') {
-            e.preventDefault();
-            window.location.href = '/';
-        }
-    });
-    
-    // 페이지 로드 시 단축키 안내 표시 (개발자 콘솔에서만)
-    console.log('키보드 단축키:');
-    console.log('- Ctrl+Alt+H : 출석 페이지로 이동');
-    console.log('- Ctrl+F : 출석 페이지로 이동');
-</script>
+
 </body>
 </html>
