@@ -1644,6 +1644,124 @@ def delete_records():
     
     return redirect(url_for('list_attendance'))
 
+@app.route('/stats')
+def stats():
+    """학생 통계 페이지 - 요일별, 교시별, 학생별 출석 통계"""
+    if not session.get('admin'):
+        flash('관리자 로그인이 필요합니다.', 'warning')
+        return redirect(url_for('admin_login'))
+    
+    # 기본 날짜 설정 (기본: 지난 30일)
+    today = datetime.now(KST).date()
+    default_start_date = (today - timedelta(days=30)).strftime('%Y-%m-%d')
+    default_end_date = today.strftime('%Y-%m-%d')
+    
+    # URL 파라미터에서 날짜 가져오기
+    start_date = request.args.get('start_date', default_start_date)
+    end_date = request.args.get('end_date', default_end_date)
+    
+    # 날짜 문자열을 datetime 객체로 변환
+    start_date_obj = datetime.strptime(start_date, '%Y-%m-%d').date()
+    end_date_obj = datetime.strptime(end_date, '%Y-%m-%d').date()
+    
+    # 출석 기록 불러오기
+    records = load_attendance()
+    
+    # 기간 내 출석 기록만 필터링
+    filtered_records = []
+    for record in records:
+        try:
+            # 문자열 날짜를 datetime 객체로 변환
+            record_date_str = record.get('date', '').split()[0]  # '2025-05-22' 형식으로 추출
+            record_date = datetime.strptime(record_date_str, '%Y-%m-%d').date()
+            
+            # 날짜 범위 확인
+            if start_date_obj <= record_date <= end_date_obj:
+                filtered_records.append(record)
+        except (ValueError, AttributeError, IndexError):
+            continue
+    
+    # 총 방문자 수
+    total_visitors = len(filtered_records)
+    
+    # 요일별 통계
+    weekday_counter = Counter()
+    for record in filtered_records:
+        try:
+            record_date_str = record.get('date', '').split()[0]
+            record_date = datetime.strptime(record_date_str, '%Y-%m-%d').date()
+            # 요일 이름 (0:월요일 ~ 6:일요일로 변환)
+            weekday = record_date.weekday()
+            weekday_name = ['월요일', '화요일', '수요일', '목요일', '금요일', '토요일', '일요일'][weekday]
+            weekday_counter[weekday_name] += 1
+        except (ValueError, AttributeError, IndexError):
+            continue
+    
+    # 요일 순서대로 정렬
+    weekday_order = {'월요일': 0, '화요일': 1, '수요일': 2, '목요일': 3, '금요일': 4, '토요일': 5, '일요일': 6}
+    weekday_stats = sorted(weekday_counter.items(), key=lambda x: weekday_order.get(x[0], 7))
+    
+    # 최대 요일 카운트 (그래프 비율용)
+    max_day_count = max(weekday_counter.values()) if weekday_counter else 1
+    
+    # 교시별 통계
+    period_counter = Counter()
+    for record in filtered_records:
+        period = record.get('period', '미지정')
+        period_counter[period] += 1
+    
+    # 교시 순서대로 정렬 (1교시부터 오름차순)
+    def period_sort_key(item):
+        period = item[0]
+        if '교시' in period:
+            try:
+                return int(period.split('교시')[0])
+            except ValueError:
+                return 999
+        elif period == '시간 외':
+            return 998
+        else:
+            return 999
+    
+    period_stats = sorted(period_counter.items(), key=period_sort_key)
+    
+    # 최대 교시 카운트 (그래프 비율용)
+    max_period_count = max(period_counter.values()) if period_counter else 1
+    
+    # 학생별 통계 (방문 빈도 상위 10명)
+    student_counter = Counter()
+    student_names = {}  # 학번별 이름 저장
+    
+    for record in filtered_records:
+        student_id = record.get('student_id', '')
+        name = record.get('name', '')
+        if student_id:
+            student_counter[student_id] += 1
+            student_names[student_id] = name
+    
+    # 상위 10명 학생 추출
+    top_students = []
+    for student_id, count in student_counter.most_common(10):
+        top_students.append({
+            'student_id': student_id,
+            'name': student_names.get(student_id, ''),
+            'count': count
+        })
+    
+    # 최대 학생 방문 횟수 (그래프 비율용)
+    max_student_count = max(student_counter.values()) if student_counter else 1
+    
+    return render_template('stats.html', 
+                           start_date=start_date,
+                           end_date=end_date,
+                           total_visitors=total_visitors,
+                           weekday_stats=weekday_stats,
+                           max_day_count=max_day_count,
+                           period_stats=period_stats,
+                           max_period_count=max_period_count,
+                           top_students=top_students,
+                           max_student_count=max_student_count)
+
 @app.route('/health')
 def health():
     return 'OK', 200

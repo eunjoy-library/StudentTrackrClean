@@ -1,121 +1,278 @@
 {% extends "layout.html" %}
 
-{% block title %}출석 통계 - 도서실 출석 시스템{% endblock %}
-
-{% block head %}
-<!-- Chart.js -->
-<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-{% endblock %}
+{% block title %}학생 통계{% endblock %}
 
 {% block content %}
-<div class="card shadow mb-4 mt-0">
-    <div class="card-header bg-secondary text-white d-flex justify-content-between align-items-center py-2">
-        <h2 class="h5 mb-0">
-            <i class="fas fa-chart-bar me-2"></i>출석 통계
-        </h2>
-        <div>
-            <a href="/by_period" class="btn btn-sm btn-light me-2">
-                <i class="fas fa-clock me-1"></i>교시별 보기
-            </a>
-            <a href="/list" class="btn btn-sm btn-light">
-                <i class="fas fa-list me-1"></i>전체 목록
-            </a>
+<div class="container mt-4">
+    <div class="card">
+        <div class="card-header bg-primary text-white">
+            <h2>학생 통계</h2>
         </div>
-    </div>
-    <div class="card-body">
-        <div class="row">
-            <div class="col-md-7">
-                <div class="chart-container" style="position: relative; height:400px;">
-                    <canvas id="attendanceChart"></canvas>
+        <!-- 상단 버튼 메뉴 추가 -->
+        <div class="card-body bg-light p-2 border-bottom">
+            <div class="d-flex flex-wrap justify-content-start gap-2">
+                <a href="{{ url_for('attendance') }}" class="btn btn-success">
+                    <i class="fas fa-home me-1"></i> 출석 페이지로 가기
+                </a>
+                <a href="{{ url_for('list_attendance') }}" class="btn btn-secondary">
+                    <i class="fas fa-list me-1"></i> 출석 목록
+                </a>
+                <a href="{{ url_for('by_period') }}" class="btn btn-info">
+                    <i class="fas fa-clock me-1"></i> 교시별 보기
+                </a>
+                <a href="{{ url_for('admin_add_attendance') }}" class="btn btn-primary">
+                    <i class="fas fa-user-plus me-1"></i> 추가 출석하기
+                </a>
+                <a href="{{ url_for('admin_warnings') }}" class="btn btn-warning">
+                    <i class="fas fa-exclamation-triangle me-1"></i> 경고 학생 관리
+                </a>
+                <a href="{{ url_for('edit_seat') }}" class="btn btn-dark">
+                    <i class="fas fa-chair me-1"></i> 좌석번호 수정
+                </a>
+                <a href="{{ url_for('add_student_form') }}" class="btn btn-secondary">
+                    <i class="fas fa-user-plus me-1"></i> 새 학생 추가
+                </a>
+                <a href="{{ url_for('delete_student_form') }}" class="btn btn-danger">
+                    <i class="fas fa-user-minus me-1"></i> 학생 삭제
+                </a>
+                <a href="{{ url_for('logout') }}" class="btn btn-danger">
+                    <i class="fas fa-sign-out-alt me-1"></i> 로그아웃
+                </a>
+            </div>
+        </div>
+        <div class="card-body">
+            <div class="row mb-4">
+                <div class="col-md-6">
+                    <h3>기간 선택</h3>
+                    <form method="get" class="d-flex mb-3 align-items-center">
+                        <div class="me-2">
+                            <label for="start_date" class="form-label mb-0">시작일:</label>
+                            <input type="date" id="start_date" name="start_date" class="form-control"
+                                   value="{{ request.args.get('start_date', start_date) }}">
+                        </div>
+                        <div class="me-2">
+                            <label for="end_date" class="form-label mb-0">종료일:</label>
+                            <input type="date" id="end_date" name="end_date" class="form-control"
+                                   value="{{ request.args.get('end_date', end_date) }}">
+                        </div>
+                        <div class="d-flex align-items-end">
+                            <button type="submit" class="btn btn-primary ms-2">조회</button>
+                        </div>
+                    </form>
+                    <p>
+                        <strong>총 방문자 수:</strong> {{ total_visitors }}명
+                    </p>
+                </div>
+                <div class="col-md-6">
+                    <div class="d-flex justify-content-end mb-2">
+                        <button id="copyStatsBtn" class="btn btn-info">
+                            <i class="fas fa-copy me-1"></i>통계 복사
+                        </button>
+                    </div>
                 </div>
             </div>
-            <div class="col-md-5">
-                <div class="card">
-                    <div class="card-header bg-light">
-                        <h3 class="h5 mb-0">학생별 출석 횟수</h3>
-                    </div>
-                    <div class="card-body p-0">
-                        <div class="table-responsive" style="max-height: 350px; overflow-y: auto;">
-                            <table class="table table-sm table-striped mb-0">
-                                <thead class="table-dark sticky-top">
-                                    <tr>
-                                        <th>이름</th>
-                                        <th class="text-center">출석 횟수</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    {% if attendance_counts %}
-                                        {% for name, count in attendance_counts %}
+
+            <!-- 요일별 통계 -->
+            <div class="row mb-4">
+                <div class="col-md-12">
+                    <div class="card border-primary">
+                        <div class="card-header bg-primary text-white">
+                            <h4 class="mb-0">요일별 방문자 수</h4>
+                        </div>
+                        <div class="card-body">
+                            <div class="table-responsive">
+                                <table class="table table-striped table-hover">
+                                    <thead>
                                         <tr>
-                                            <td>{{ name }}</td>
-                                            <td class="text-center">
-                                                <span class="badge bg-primary">{{ count }}회</span>
-                                            </td>
+                                            <th>요일</th>
+                                            <th>방문자 수</th>
+                                            <th>비율</th>
+                                            <th>그래프</th>
                                         </tr>
-                                        {% endfor %}
-                                    {% else %}
+                                    </thead>
+                                    <tbody>
+                                        {% for day_name, count in weekday_stats %}
                                         <tr>
-                                            <td colspan="2" class="text-center py-3">
-                                                <div class="alert alert-info mb-0">
-                                                    <i class="fas fa-info-circle me-2"></i>출석 기록이 없습니다.
+                                            <td>{{ day_name }}</td>
+                                            <td>{{ count }}</td>
+                                            <td>{{ '%0.1f' % (count / total_visitors * 100) if total_visitors else 0 }}%</td>
+                                            <td>
+                                                <div class="progress">
+                                                    <div class="progress-bar bg-info" role="progressbar" 
+                                                         style="width: {{ (count / max_day_count * 100) if max_day_count else 0 }}%">
+                                                    </div>
                                                 </div>
                                             </td>
                                         </tr>
-                                    {% endif %}
-                                </tbody>
-                            </table>
+                                        {% endfor %}
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 교시별 통계 -->
+            <div class="row mb-4">
+                <div class="col-md-12">
+                    <div class="card border-info">
+                        <div class="card-header bg-info text-white">
+                            <h4 class="mb-0">교시별 방문자 수</h4>
+                        </div>
+                        <div class="card-body">
+                            <div class="table-responsive">
+                                <table class="table table-striped table-hover">
+                                    <thead>
+                                        <tr>
+                                            <th>교시</th>
+                                            <th>방문자 수</th>
+                                            <th>비율</th>
+                                            <th>그래프</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {% for period, count in period_stats %}
+                                        <tr>
+                                            <td>{{ period }}</td>
+                                            <td>{{ count }}</td>
+                                            <td>{{ '%0.1f' % (count / total_visitors * 100) if total_visitors else 0 }}%</td>
+                                            <td>
+                                                <div class="progress">
+                                                    <div class="progress-bar bg-success" role="progressbar" 
+                                                         style="width: {{ (count / max_period_count * 100) if max_period_count else 0 }}%">
+                                                    </div>
+                                                </div>
+                                            </td>
+                                        </tr>
+                                        {% endfor %}
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 학생별 통계 -->
+            <div class="row">
+                <div class="col-md-12">
+                    <div class="card border-success">
+                        <div class="card-header bg-success text-white">
+                            <h4 class="mb-0">방문 빈도 상위 학생 (Top 10)</h4>
+                        </div>
+                        <div class="card-body">
+                            <div class="table-responsive">
+                                <table class="table table-striped table-hover">
+                                    <thead>
+                                        <tr>
+                                            <th>학번</th>
+                                            <th>이름</th>
+                                            <th>방문 횟수</th>
+                                            <th>비율</th>
+                                            <th>그래프</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {% for student in top_students %}
+                                        <tr>
+                                            <td>{{ student.student_id }}</td>
+                                            <td>{{ student.name }}</td>
+                                            <td>{{ student.count }}</td>
+                                            <td>{{ '%0.1f' % (student.count / total_visitors * 100) if total_visitors else 0 }}%</td>
+                                            <td>
+                                                <div class="progress">
+                                                    <div class="progress-bar bg-warning" role="progressbar" 
+                                                         style="width: {{ (student.count / max_student_count * 100) if max_student_count else 0 }}%">
+                                                    </div>
+                                                </div>
+                                            </td>
+                                        </tr>
+                                        {% endfor %}
+                                    </tbody>
+                                </table>
+                            </div>
                         </div>
                     </div>
                 </div>
             </div>
         </div>
     </div>
-    <div class="card-footer">
-        <a href="/list" class="btn btn-outline-secondary">
-            <i class="fas fa-arrow-left me-1"></i>출석 명단으로 돌아가기
-        </a>
-    </div>
 </div>
 {% endblock %}
 
 {% block scripts %}
 <script>
-document.addEventListener('DOMContentLoaded', function() {
-    // Get attendance data
-    const attendanceData = {
-        labels: [{% for name, _ in attendance_counts %}'{{ name }}',{% endfor %}],
-        counts: [{% for _, count in attendance_counts %}{{ count }},{% endfor %}]
-    };
-    
-    // Create chart
-    if (attendanceData.labels.length > 0) {
-        const ctx = document.getElementById('attendanceChart').getContext('2d');
-        new Chart(ctx, {
-            type: 'bar',
-            data: {
-                labels: attendanceData.labels,
-                datasets: [{
-                    label: '출석 횟수',
-                    data: attendanceData.counts,
-                    backgroundColor: 'rgba(54, 162, 235, 0.7)',
-                    borderColor: 'rgba(54, 162, 235, 1)',
-                    borderWidth: 1
-                }]
-            },
-            options: {
-                maintainAspectRatio: false,
-                responsive: true,
-                scales: {
-                    y: {
-                        beginAtZero: true,
-                        ticks: {
-                            stepSize: 1
-                        }
-                    }
-                }
-            }
-        });
-    }
-});
+    document.addEventListener('DOMContentLoaded', function() {
+        // 통계 복사 버튼
+        const copyStatsBtn = document.getElementById('copyStatsBtn');
+        if (copyStatsBtn) {
+            copyStatsBtn.addEventListener('click', function() {
+                const startDate = document.getElementById('start_date').value;
+                const endDate = document.getElementById('end_date').value;
+                
+                // 통계 텍스트 생성
+                let statsText = `학생 통계 (${startDate} ~ ${endDate})\n\n`;
+                statsText += `총 방문자 수: {{ total_visitors }}명\n\n`;
+                
+                // 요일별 통계
+                statsText += "◆ 요일별 방문자 수\n";
+                statsText += "요일        방문자 수    비율\n";
+                statsText += "---------------------------------------\n";
+                
+                {% for day_name, count in weekday_stats %}
+                const dayName{{ loop.index }} = "{{ day_name }}".padEnd(10, ' ');
+                const dayCount{{ loop.index }} = "{{ count }}".padEnd(10, ' ');
+                const dayPercent{{ loop.index }} = "{{ '%0.1f' % (count / total_visitors * 100) if total_visitors else 0 }}%";
+                statsText += `${dayName{{ loop.index }}}${dayCount{{ loop.index }}}${dayPercent{{ loop.index }}}\n`;
+                {% endfor %}
+                
+                statsText += "\n";
+                
+                // 교시별 통계
+                statsText += "◆ 교시별 방문자 수\n";
+                statsText += "교시        방문자 수    비율\n";
+                statsText += "---------------------------------------\n";
+                
+                {% for period, count in period_stats %}
+                const periodName{{ loop.index }} = "{{ period }}".padEnd(10, ' ');
+                const periodCount{{ loop.index }} = "{{ count }}".padEnd(10, ' ');
+                const periodPercent{{ loop.index }} = "{{ '%0.1f' % (count / total_visitors * 100) if total_visitors else 0 }}%";
+                statsText += `${periodName{{ loop.index }}}${periodCount{{ loop.index }}}${periodPercent{{ loop.index }}}\n`;
+                {% endfor %}
+                
+                statsText += "\n";
+                
+                // 학생별 통계
+                statsText += "◆ 방문 빈도 상위 학생 (Top 10)\n";
+                statsText += "학번          이름        방문 횟수   비율\n";
+                statsText += "-----------------------------------------------\n";
+                
+                {% for student in top_students %}
+                const studentId{{ loop.index }} = "{{ student.student_id }}".padEnd(12, ' ');
+                const studentName{{ loop.index }} = "{{ student.name }}".padEnd(10, ' ');
+                const studentCount{{ loop.index }} = "{{ student.count }}".padEnd(10, ' ');
+                const studentPercent{{ loop.index }} = "{{ '%0.1f' % (student.count / total_visitors * 100) if total_visitors else 0 }}%";
+                statsText += `${studentId{{ loop.index }}}${studentName{{ loop.index }}}${studentCount{{ loop.index }}}${studentPercent{{ loop.index }}}\n`;
+                {% endfor %}
+                
+                // 클립보드에 복사
+                copyToClipboard(statsText);
+            });
+        }
+        
+        // 클립보드 복사 함수
+        function copyToClipboard(text) {
+            const textarea = document.createElement('textarea');
+            textarea.value = text;
+            document.body.appendChild(textarea);
+            
+            textarea.select();
+            document.execCommand('copy');
+            
+            document.body.removeChild(textarea);
+            alert('통계 데이터가 클립보드에 복사되었습니다.');
+        }
+    });
 </script>
 {% endblock %}
