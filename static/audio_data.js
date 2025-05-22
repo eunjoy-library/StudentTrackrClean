@@ -84,7 +84,7 @@
             var gainNode = context.createGain();
             
             oscillator.type = 'sine'; // 사인파로 변경해 부드러운 소리로
-            oscillator.frequency.value = 380; // 음높이 조금 높임 (350 → 380)
+            oscillator.frequency.value = 450; // 음높이 더 높임 (380 → 450)
             
             gainNode.gain.setValueAtTime(0, context.currentTime);
             gainNode.gain.linearRampToValueAtTime(0.18, context.currentTime + 0.05); // 음량 더 높임 (0.12 → 0.18)
