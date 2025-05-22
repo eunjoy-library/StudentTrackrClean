@@ -42,7 +42,7 @@
             oscillator1.frequency.value = 400; // 낮은 주파수
             
             gainNode1.gain.setValueAtTime(0, context.currentTime);
-            gainNode1.gain.linearRampToValueAtTime(0.8, context.currentTime + 0.05); // 음량 증가 (0.6 → 0.8)
+            gainNode1.gain.linearRampToValueAtTime(1.0, context.currentTime + 0.05); // 음량 증가 (0.6 → 1.0)
             gainNode1.gain.linearRampToValueAtTime(0, context.currentTime + 0.3);
             
             oscillator1.connect(gainNode1);
@@ -59,7 +59,7 @@
             oscillator2.frequency.value = 600; // 첫 번째보다 높은 주파수
             
             gainNode2.gain.setValueAtTime(0, context.currentTime + 0.2);
-            gainNode2.gain.linearRampToValueAtTime(0.8, context.currentTime + 0.25); // 음량 증가 (0.6 → 0.8)
+            gainNode2.gain.linearRampToValueAtTime(1.0, context.currentTime + 0.25); // 음량 증가 (0.6 → 0.8)
             gainNode2.gain.linearRampToValueAtTime(0, context.currentTime + 0.5);
             
             oscillator2.connect(gainNode2);
@@ -87,7 +87,7 @@
             oscillator.frequency.value = 450; // 음높이 더 높임 (380 → 450)
             
             gainNode.gain.setValueAtTime(0, context.currentTime);
-            gainNode.gain.linearRampToValueAtTime(0.18, context.currentTime + 0.05); // 음량 더 높임 (0.12 → 0.18)
+            gainNode.gain.linearRampToValueAtTime(0.18, context.currentTime + 0.05); // 음량 더 높임 (0.12 → 0.25)
             gainNode.gain.linearRampToValueAtTime(0.18, context.currentTime + 0.3); 
             gainNode.gain.linearRampToValueAtTime(0, context.currentTime + 0.6); // 페이드 아웃 시간 늘림 (0.5 → 0.6)
             
