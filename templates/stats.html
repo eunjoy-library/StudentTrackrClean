@@ -109,87 +109,7 @@
                 </div>
             </div>
 
-            <!-- 요일별 통계 -->
-            <div class="row mb-4">
-                <div class="col-md-12">
-                    <div class="card border-info">
-                        <div class="card-header bg-info text-white">
-                            <h4 class="mb-0">요일별 방문자 수</h4>
-                        </div>
-                        <div class="card-body">
-                            <div class="table-responsive">
-                                <table class="table table-striped table-hover">
-                                    <thead>
-                                        <tr>
-                                            <th>요일</th>
-                                            <th>방문자 수</th>
-                                            <th>비율</th>
-                                            <th>그래프</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody>
-                                        {% for day_name, count in weekday_stats %}
-                                        <tr>
-                                            <td>{{ day_name }}</td>
-                                            <td>{{ count }}</td>
-                                            <td>{{ '%0.1f' % (count / total_visitors * 100) if total_visitors else 0 }}%</td>
-                                            <td>
-                                                <div class="progress">
-                                                    <div class="progress-bar bg-info" role="progressbar" 
-                                                         style="width: {{ (count / max_day_count * 100) if max_day_count else 0 }}%">
-                                                    </div>
-                                                </div>
-                                            </td>
-                                        </tr>
-                                        {% endfor %}
-                                    </tbody>
-                                </table>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
 
-            <!-- 교시별 통계 -->
-            <div class="row mb-4">
-                <div class="col-md-12">
-                    <div class="card border-info">
-                        <div class="card-header bg-info text-white">
-                            <h4 class="mb-0">교시별 방문자 수</h4>
-                        </div>
-                        <div class="card-body">
-                            <div class="table-responsive">
-                                <table class="table table-striped table-hover">
-                                    <thead>
-                                        <tr>
-                                            <th>교시</th>
-                                            <th>방문자 수</th>
-                                            <th>비율</th>
-                                            <th>그래프</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody>
-                                        {% for period, count in period_stats %}
-                                        <tr>
-                                            <td>{{ period }}</td>
-                                            <td>{{ count }}</td>
-                                            <td>{{ '%0.1f' % (count / total_visitors * 100) if total_visitors else 0 }}%</td>
-                                            <td>
-                                                <div class="progress">
-                                                    <div class="progress-bar bg-success" role="progressbar" 
-                                                         style="width: {{ (count / max_period_count * 100) if max_period_count else 0 }}%">
-                                                    </div>
-                                                </div>
-                                            </td>
-                                        </tr>
-                                        {% endfor %}
-                                    </tbody>
-                                </table>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
 
             <!-- 학생별 통계 -->
             <div class="row">
@@ -253,19 +173,6 @@
                 statsText += `총 방문자 수: {{ total_visitors }}명\n\n`;
                 
                 // 요일별 통계
-                statsText += "◆ 요일별 방문자 수\n";
-                statsText += "요일        방문자 수    비율\n";
-                statsText += "---------------------------------------\n";
-                
-                {% for day_name, count in weekday_stats %}
-                const dayName{{ loop.index }} = "{{ day_name }}".padEnd(10, ' ');
-                const dayCount{{ loop.index }} = "{{ count }}".padEnd(10, ' ');
-                const dayPercent{{ loop.index }} = "{{ '%0.1f' % (count / total_visitors * 100) if total_visitors else 0 }}%";
-                statsText += `${dayName{{ loop.index }}}${dayCount{{ loop.index }}}${dayPercent{{ loop.index }}}\n`;
-                {% endfor %}
-                
-                statsText += "\n";
-                
                 // 요일별 교시 통계
                 statsText += "◆ 요일별 교시 통계\n";
                 let headerLine = "요일        ";
@@ -274,31 +181,21 @@
                 headerLine += "{{ period }}".padEnd(10, ' ');
                 {% endfor %}
                 
+                headerLine += "총계".padEnd(10, ' ');
                 statsText += headerLine + "\n";
                 statsText += "-".repeat(headerLine.length) + "\n";
                 
                 {% for weekday_name, period_data in weekday_period_stats %}
                 let line{{ loop.index }} = "{{ weekday_name }}".padEnd(10, ' ');
+                let total{{ loop.index }} = 0;
                 
                 {% for period, count in period_data %}
                 line{{ loop.index }} += "{{ count }}".padEnd(10, ' ');
+                total{{ loop.index }} += {{ count }};
                 {% endfor %}
                 
+                line{{ loop.index }} += String(total{{ loop.index }}).padEnd(10, ' ');
                 statsText += line{{ loop.index }} + "\n";
-                {% endfor %}
-                
-                statsText += "\n";
-                
-                // 교시별 통계
-                statsText += "◆ 교시별 방문자 수\n";
-                statsText += "교시        방문자 수    비율\n";
-                statsText += "---------------------------------------\n";
-                
-                {% for period, count in period_stats %}
-                const periodName{{ loop.index }} = "{{ period }}".padEnd(10, ' ');
-                const periodCount{{ loop.index }} = "{{ count }}".padEnd(10, ' ');
-                const periodPercent{{ loop.index }} = "{{ '%0.1f' % (count / total_visitors * 100) if total_visitors else 0 }}%";
-                statsText += `${periodName{{ loop.index }}}${periodCount{{ loop.index }}}${periodPercent{{ loop.index }}}\n`;
                 {% endfor %}
                 
                 statsText += "\n";
