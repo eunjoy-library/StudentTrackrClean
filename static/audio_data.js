@@ -87,8 +87,8 @@
             oscillator.frequency.value = 380; // 음높이 조금 높임 (350 → 380)
             
             gainNode.gain.setValueAtTime(0, context.currentTime);
-            gainNode.gain.linearRampToValueAtTime(0.12, context.currentTime + 0.05); // 음량 조금 높임 (0.08 → 0.12)
-            gainNode.gain.linearRampToValueAtTime(0.12, context.currentTime + 0.3); 
+            gainNode.gain.linearRampToValueAtTime(0.18, context.currentTime + 0.05); // 음량 더 높임 (0.12 → 0.18)
+            gainNode.gain.linearRampToValueAtTime(0.18, context.currentTime + 0.3); 
             gainNode.gain.linearRampToValueAtTime(0, context.currentTime + 0.6); // 페이드 아웃 시간 늘림 (0.5 → 0.6)
             
             oscillator.connect(gainNode);
