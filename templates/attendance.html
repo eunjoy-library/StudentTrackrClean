@@ -57,19 +57,19 @@
             <div class="card-body">
                 <form id="attendanceForm" method="post" class="needs-validation" novalidate>
                     <div class="mb-4">
-                        <label for="student_id" class="form-label fs-5">학번</label>
+                        <label for="student_id" class="form-label" style="font-size: 1.5rem; font-weight: 600;">학번</label>
                         <div class="input-group input-group-lg">
-                            <span class="input-group-text"><i class="fas fa-id-card"></i></span>
-                            <input type="text" id="student_id" name="student_id" class="form-control form-control-lg py-3"
+                            <span class="input-group-text" style="font-size: 1.3rem; padding: 1.2rem;"><i class="fas fa-id-card"></i></span>
+                            <input type="text" id="student_id" name="student_id" class="form-control form-control-lg"
                                    placeholder="학번을 입력하세요 예)10101" required autocomplete="off" 
-                                   inputmode="numeric" pattern="[0-9]*" style="font-size: 1.2rem;">
+                                   inputmode="numeric" pattern="[0-9]*" style="font-size: 1.8rem; padding: 1.5rem; height: 80px; text-align: center; font-weight: 600;">
                             <div class="invalid-feedback">학번을 입력해주세요.</div>
                         </div>
                     </div>
                     <!-- 이름 입력 필드 (숨김) -->
                     <input type="hidden" id="name" name="name" required>
-                    <div class="d-grid mt-4">
-                        <button type="submit" id="submitBtn" class="btn btn-primary btn-lg py-3" style="font-size: 1.25rem; font-weight: bold;" disabled>
+                    <div class="d-grid mt-5">
+                        <button type="submit" id="submitBtn" class="btn btn-primary btn-lg" style="font-size: 1.6rem; font-weight: bold; padding: 1.5rem; height: 80px;" disabled>
                             <i class="fas fa-check-circle me-2"></i><span id="submitBtnText">출석하기</span>
                         </button>
                     </div>
