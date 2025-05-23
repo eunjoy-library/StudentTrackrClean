@@ -2,7 +2,9 @@
 <html lang="ko" data-bs-theme="dark">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <title>{% block title %}도서실 출석 시스템{% endblock %}</title>
     <!-- 파비콘 설정 -->
     <link rel="icon" href="{{ url_for('static', filename='favicon.ico') }}?v=2">
@@ -22,6 +24,82 @@
     
     {% block head_extra %}{% endblock %}
     <style>
+        /* 아이패드 및 태블릿 최적화 */
+        @media screen and (min-width: 768px) and (max-width: 1024px) {
+            body {
+                font-size: 1.2rem !important;
+            }
+            
+            .container, .container-fluid {
+                max-width: 95% !important;
+                padding: 0 2rem !important;
+            }
+            
+            .card {
+                font-size: 1.1rem;
+            }
+            
+            .btn {
+                font-size: 1.2rem !important;
+                padding: 0.8rem 1.5rem !important;
+                min-height: 50px;
+            }
+            
+            .form-control {
+                font-size: 1.3rem !important;
+                padding: 1rem !important;
+                min-height: 60px;
+            }
+            
+            .card-header h1, .card-header h2, .card-header h3 {
+                font-size: 1.8rem !important;
+            }
+            
+            .alert {
+                font-size: 1.2rem !important;
+                padding: 1.5rem !important;
+            }
+            
+            /* 시간 표시 영역 확대 */
+            .time-display {
+                min-width: 400px !important;
+                font-size: 1.3rem !important;
+            }
+            
+            .period-time-info {
+                min-width: 300px !important;
+                font-size: 1.2rem !important;
+            }
+            
+            /* 테이블 최적화 */
+            .table {
+                font-size: 1.1rem !important;
+            }
+            
+            .table th, .table td {
+                padding: 1rem !important;
+            }
+        }
+        
+        /* 아이패드 Pro 및 대형 태블릿 */
+        @media screen and (min-width: 1024px) and (max-width: 1366px) {
+            body {
+                font-size: 1.3rem !important;
+            }
+            
+            .btn {
+                font-size: 1.3rem !important;
+                padding: 1rem 2rem !important;
+                min-height: 55px;
+            }
+            
+            .form-control {
+                font-size: 1.4rem !important;
+                padding: 1.2rem !important;
+                min-height: 65px;
+            }
+        }
+        
         /* 시계 애니메이션 관련 스타일 */
         .time-display {
             transition: all 0.3s ease;
