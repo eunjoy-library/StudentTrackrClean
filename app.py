@@ -248,8 +248,8 @@ def save_attendance(student_id, name, seat, period_text, admin_override=False):
             saturday = sunday + timedelta(days=6)
             saturday_str = saturday.strftime('%Y-%m-%d')
             
-            # 학번별 출석 기록에서 이번 주 기록만 확인 (매우 효율적)
-            student_ref = db.collection('students').document(student_id).collection('attendance')
+            # 새 구조에서 학번별 출석 기록만 확인 (매우 효율적)
+            student_ref = db.collection('attendance').document(student_id).collection('records')
             
             # 이번 주 범위의 출석 기록만 조회
             week_records = student_ref.where('date_only', '>=', sunday_str).where('date_only', '<=', saturday_str).get()
@@ -260,7 +260,7 @@ def save_attendance(student_id, name, seat, period_text, admin_override=False):
                 flash(f'이미 이번 주에 출석 기록이 있습니다. (출석일: {attendance_date})', 'warning')
                 return False
         
-        # 새로운 구조로 출석 기록 저장
+        # 새로운 이중 구조로 출석 기록 저장
         attendance_data = {
             'student_id': student_id,
             'name': name,
@@ -271,11 +271,24 @@ def save_attendance(student_id, name, seat, period_text, admin_override=False):
             'timestamp': firestore.SERVER_TIMESTAMP
         }
         
-        # 학번별 하위 컬렉션에 저장 (날짜를 문서 ID로 사용)
-        student_attendance_ref = db.collection('students').document(student_id).collection('attendance').document(date_str)
+        # 1. 학생별 출석 기록 저장 (학생 중복 체크용)
+        student_attendance_ref = db.collection('attendance').document(student_id).collection('records').document(date_str)
         student_attendance_ref.set(attendance_data)
         
-        # 기존 전체 attendance 컬렉션에도 저장 (하위 호환성)
+        # 2. 관리자용 날짜+교시별 출석 기록 저장 (관리자 현황 파악용)
+        date_period_key = f"{date_str}_{period_text}"
+        admin_ref = db.collection('admin').document(date_period_key).collection('students').document(student_id)
+        admin_ref.set({
+            'student_id': student_id,
+            'name': name,
+            'seat': seat,
+            'date': datetime_str,
+            'date_only': date_str,
+            'period': period_text,
+            'timestamp': firestore.SERVER_TIMESTAMP
+        })
+        
+        # 3. 기존 전체 attendance 컬렉션에도 저장 (하위 호환성)
         db.collection('attendances').add(attendance_data)
         
         logging.info(f"학생 {student_id}({name})의 출석이 성공적으로 등록되었습니다. 좌석: {seat}, 날짜: {date_str}")
@@ -323,16 +336,16 @@ def load_attendance():
         except Exception as legacy_error:
             logging.warning(f"기존 출석 기록 로드 실패: {legacy_error}")
         
-        # 2. 새로운 학번별 구조에서 로드 (최적화된 방식)
+        # 2. 새로운 attendance 구조에서 로드 (최적화된 방식)
         try:
             # 모든 학생 문서 가져오기
-            students_refs = db.collection('students').get()
+            students_refs = db.collection('attendance').get()
             
             for student_doc in students_refs:
                 student_id = student_doc.id
                 
                 # 각 학생의 출석 기록 가져오기 (최근 100개)
-                attendance_refs = student_doc.reference.collection('attendance').order_by('timestamp', direction=firestore.Query.DESCENDING).limit(100).get()
+                attendance_refs = student_doc.reference.collection('records').order_by('timestamp', direction=firestore.Query.DESCENDING).limit(100).get()
                 
                 for attendance_doc in attendance_refs:
                     data = attendance_doc.to_dict()
@@ -342,6 +355,26 @@ def load_attendance():
                     
         except Exception as optimized_error:
             logging.warning(f"최적화된 출석 기록 로드 실패: {optimized_error}")
+        
+        # 3. 관리자용 구조에서도 로드 (날짜별 조회용)
+        try:
+            # 최근 30일간의 admin 문서 가져오기 (관리자 현황용)
+            admin_refs = db.collection('admin').order_by(firestore.FieldPath.document_id(), direction=firestore.Query.DESCENDING).limit(100).get()
+            
+            for admin_doc in admin_refs:
+                date_period = admin_doc.id
+                
+                # 해당 날짜+교시의 모든 학생 출석 기록
+                student_refs = admin_doc.reference.collection('students').get()
+                
+                for student_doc in student_refs:
+                    data = student_doc.to_dict()
+                    data['id'] = f"admin_{date_period}_{student_doc.id}"
+                    data['source'] = 'admin'  # 구분용 태그
+                    attendance_records.append(data)
+                    
+        except Exception as admin_error:
+            logging.warning(f"관리자 구조 출석 기록 로드 실패: {admin_error}")
         
         # 중복 제거 (같은 학생, 같은 날짜)
         unique_records = {}
@@ -455,8 +488,8 @@ def check_weekly_attendance_limit(student_id):
         
         logging.debug(f"학생 {student_id}의 이번 주({sunday_str} ~ {saturday_str}) 출석 기록 확인 중")
         
-        # 학번별 출석 기록만 조회 (매우 효율적)
-        student_ref = db.collection('students').document(student_id).collection('attendance')
+        # 새 구조에서 학번별 출석 기록만 조회 (매우 효율적)
+        student_ref = db.collection('attendance').document(student_id).collection('records')
         week_records = student_ref.where('date_only', '>=', sunday_str).where('date_only', '<=', saturday_str).get()
         
         # 결과 처리
