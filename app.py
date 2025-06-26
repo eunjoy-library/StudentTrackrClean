@@ -219,72 +219,49 @@ def load_student_data(force_reload=False):
 
 def save_attendance(student_id, name, seat, period_text, admin_override=False):
     """
-    출석 기록을 데이터베이스에 저장 (한국 시간 기준)
-    - DB에서 직접 중복 출석 여부 확인
-    - 안전한 트랜잭션 방식으로 처리
-    - admin_override: 관리자 권한으로 중복 출석 허용 여부 (True이면 중복 체크 건너뜀)
+    출석 기록을 학번별로 조직화하여 저장 (한국 시간 기준)
+    구조: students/{student_id}/attendance/{date}
+    - 읽기 횟수 대폭 감소
+    - admin_override: 관리자 권한으로 중복 출석 허용 여부
     """
-    # 전역 변수에 이미 출석 처리 여부 저장
-    attendance_status = False
-    
     try:
         # Firebase 연결 확인
         if not db:
             flash("Firebase 설정이 완료되지 않았습니다.", "danger")
             return False
         
-        # 관리자 모드이고 중복 확인 무시 설정인 경우, 중복 체크 건너뜀
-        if not admin_override:
-            # 현재 주 범위 계산 (일~토)
-            now = datetime.now(KST)
-            
-            # 이번 주 일요일(주 시작) 계산
-            days_to_sunday = now.weekday() + 1  # 월=0, 일=6이므로 역으로 계산
-            if days_to_sunday == 7:  # 일요일인 경우
-                days_to_sunday = 0
-                
-            sunday = now - timedelta(days=days_to_sunday)
-            sunday = sunday.replace(hour=0, minute=0, second=0, microsecond=0)
-            
-            # 토요일(주 마지막) 계산
-            days_to_saturday = (5 - now.weekday()) % 7  # 토요일까지 남은 일수
-            saturday = now + timedelta(days=days_to_saturday)
-            saturday = saturday.replace(hour=23, minute=59, second=59, microsecond=999999)
-            
-            sunday_str = sunday.strftime('%Y-%m-%d')
-            saturday_str = saturday.strftime('%Y-%m-%d')
-                
-            # 이번 주 출석 기록을 직접 확인 (캐시 없이)
-            attendance_query = db.collection('attendances').where('student_id', '==', student_id)
-            attendance_docs = attendance_query.get()
-                
-            # 학생이 이번 주에 이미 출석했는지 직접 확인
-            already_attended = False
-            attendance_date = ""
-                
-            for doc in attendance_docs:
-                doc_data = doc.to_dict()
-                doc_date = doc_data.get('date_only', '')
-                    
-                # 이번 주 날짜 범위 내에 있는 출석인지 확인
-                if sunday_str <= doc_date <= saturday_str:
-                    already_attended = True
-                    attendance_date = doc_date
-                    logging.warning(f"학생 {student_id}는 이미 이번 주에 출석했습니다. 날짜: {doc_date}")
-                    break
-                    
-            # 이미 출석한 경우 처리 중단
-            if already_attended:
-                flash(f'이미 이번 주에 출석 기록이 있습니다. (출석일: {attendance_date})', 'warning')
-                return False
-            
         # 현재 시간으로 출석 기록 생성
         now_kst = datetime.now(KST)
         date_str = now_kst.strftime('%Y-%m-%d')
         datetime_str = now_kst.strftime('%Y-%m-%d %H:%M:%S')
+        
+        # 관리자 모드가 아닌 경우 중복 체크
+        if not admin_override:
+            # 현재 주 범위 계산 (일~토)
+            days_to_sunday = now_kst.weekday() + 1
+            if days_to_sunday == 7:
+                days_to_sunday = 0
+                
+            sunday = now_kst - timedelta(days=days_to_sunday)
+            sunday_str = sunday.strftime('%Y-%m-%d')
             
-        # 새 문서 추가
-        new_attendance = {
+            saturday = sunday + timedelta(days=6)
+            saturday_str = saturday.strftime('%Y-%m-%d')
+            
+            # 학번별 출석 기록에서 이번 주 기록만 확인 (매우 효율적)
+            student_ref = db.collection('students').document(student_id).collection('attendance')
+            
+            # 이번 주 범위의 출석 기록만 조회
+            week_records = student_ref.where('date_only', '>=', sunday_str).where('date_only', '<=', saturday_str).get()
+            
+            if len(week_records) > 0:
+                # 이미 출석한 날짜 찾기
+                attendance_date = week_records[0].to_dict().get('date_only', '')
+                flash(f'이미 이번 주에 출석 기록이 있습니다. (출석일: {attendance_date})', 'warning')
+                return False
+        
+        # 새로운 구조로 출석 기록 저장
+        attendance_data = {
             'student_id': student_id,
             'name': name,
             'seat': seat,
@@ -293,14 +270,17 @@ def save_attendance(student_id, name, seat, period_text, admin_override=False):
             'date_only': date_str,
             'timestamp': firestore.SERVER_TIMESTAMP
         }
-            
-        # 출석 데이터 저장
-        db.collection('attendances').add(new_attendance)
         
-        # 성공 로그 기록
+        # 학번별 하위 컬렉션에 저장 (날짜를 문서 ID로 사용)
+        student_attendance_ref = db.collection('students').document(student_id).collection('attendance').document(date_str)
+        student_attendance_ref.set(attendance_data)
+        
+        # 기존 전체 attendance 컬렉션에도 저장 (하위 호환성)
+        db.collection('attendances').add(attendance_data)
+        
         logging.info(f"학생 {student_id}({name})의 출석이 성공적으로 등록되었습니다. 좌석: {seat}, 날짜: {date_str}")
         
-        # 모든 캐시 즉시 초기화
+        # 캐시 초기화
         global attendance_status_cache
         attendance_status_cache.clear()
         
@@ -312,35 +292,72 @@ def save_attendance(student_id, name, seat, period_text, admin_override=False):
 
 def load_attendance():
     """
-    Load all attendance records from Firebase
-    Returns a list of dictionaries containing attendance records
+    하이브리드 방식으로 출석 기록 로드
+    - 새 구조(students/{id}/attendance)가 있으면 우선 사용
+    - 기존 구조(attendances)도 병합하여 완전성 보장
     """
     try:
         if not db:
             return []
         
-        # Firebase에서 모든 출석 데이터 가져오기
         attendance_records = []
-        attendance_refs = db.collection('attendances').order_by('timestamp', direction=firestore.Query.DESCENDING).get()
         
-        for doc in attendance_refs:
-            data = doc.to_dict()
-            data['id'] = doc.id  # document ID 추가
+        # 1. 기존 attendances 컬렉션에서 로드 (하위 호환성)
+        try:
+            attendance_refs = db.collection('attendances').order_by('timestamp', direction=firestore.Query.DESCENDING).limit(500).get()
             
-            # 날짜 문자열 처리 (필요한 경우)
-            if 'date' in data and data['date']:
-                date_str = data['date']
-                if isinstance(date_str, str):
-                    # 이미 문자열이면 그대로 사용
-                    pass
-                else:
-                    # Firestore Timestamp 객체인 경우 변환
-                    date_str = data['date'].strftime('%Y-%m-%d %H:%M:%S')
-                data['date'] = date_str
-            
-            attendance_records.append(data)
+            for doc in attendance_refs:
+                data = doc.to_dict()
+                data['id'] = doc.id
+                data['source'] = 'legacy'  # 구분용 태그
+                
+                # 날짜 문자열 처리
+                if 'date' in data and data['date']:
+                    date_str = data['date']
+                    if not isinstance(date_str, str):
+                        date_str = data['date'].strftime('%Y-%m-%d %H:%M:%S')
+                    data['date'] = date_str
+                
+                attendance_records.append(data)
+                
+        except Exception as legacy_error:
+            logging.warning(f"기존 출석 기록 로드 실패: {legacy_error}")
         
-        return attendance_records
+        # 2. 새로운 학번별 구조에서 로드 (최적화된 방식)
+        try:
+            # 모든 학생 문서 가져오기
+            students_refs = db.collection('students').get()
+            
+            for student_doc in students_refs:
+                student_id = student_doc.id
+                
+                # 각 학생의 출석 기록 가져오기 (최근 100개)
+                attendance_refs = student_doc.reference.collection('attendance').order_by('timestamp', direction=firestore.Query.DESCENDING).limit(100).get()
+                
+                for attendance_doc in attendance_refs:
+                    data = attendance_doc.to_dict()
+                    data['id'] = f"{student_id}_{attendance_doc.id}"
+                    data['source'] = 'optimized'  # 구분용 태그
+                    attendance_records.append(data)
+                    
+        except Exception as optimized_error:
+            logging.warning(f"최적화된 출석 기록 로드 실패: {optimized_error}")
+        
+        # 중복 제거 (같은 학생, 같은 날짜)
+        unique_records = {}
+        for record in attendance_records:
+            key = f"{record.get('student_id', '')}_{record.get('date_only', '')}"
+            if key not in unique_records or record.get('source') == 'optimized':
+                unique_records[key] = record
+        
+        # 최종 결과를 리스트로 변환하고 시간순 정렬
+        final_records = list(unique_records.values())
+        final_records.sort(key=lambda x: x.get('date', ''), reverse=True)
+        
+        logging.info(f"출석 기록 로드 완료: {len(final_records)}개 (레거시: {sum(1 for r in final_records if r.get('source') == 'legacy')}, 최적화: {sum(1 for r in final_records if r.get('source') == 'optimized')})")
+        
+        return final_records
+        
     except Exception as e:
         logging.error(f"출석 기록 로딩 중 오류: {e}")
         return []
@@ -399,19 +416,19 @@ def get_current_week_range():
 
 def check_weekly_attendance_limit(student_id):
     """
-    학생이 이번 주(일~토)에 1회 이상 출석했는지 확인
-    캐싱 기능 추가: 같은 학생 ID에 대해 반복 쿼리 최소화
-    메모리 캐싱으로 Firebase 쿼리 최소화
+    학번별 구조에서 학생의 이번 주 출석 확인 (초고속)
+    구조: students/{student_id}/attendance/{date}
+    - Firebase 읽기 횟수 최소화 (해당 학생만 조회)
     
     Returns:
         (exceeded, count, recent_dates): 
-        - exceeded: 주 1회 초과 여부 (True/False) - 1회 이미 있으면 True
+        - exceeded: 주 1회 초과 여부 (True/False)
         - count: 이번 주 출석 횟수
         - recent_dates: 최근 출석 날짜 목록
     """
     global attendance_status_cache
     
-    # 캐시에 있고 만료되지 않았으면 캐시된 결과 반환
+    # 캐시 확인
     cache_key = f"weekly_limit_{student_id}"
     if cache_key in attendance_status_cache:
         cache_entry = attendance_status_cache[cache_key]
@@ -424,48 +441,47 @@ def check_weekly_attendance_limit(student_id):
             logging.error("Firebase DB 연결이 설정되지 않았습니다.")
             return False, 0, []
         
-        # 현재 주 범위 얻기 (캐싱됨)
-        sunday_str, saturday_str = get_current_week_range()
+        # 현재 주 범위 계산
+        now = datetime.now(KST)
+        days_to_sunday = now.weekday() + 1
+        if days_to_sunday == 7:
+            days_to_sunday = 0
+            
+        sunday = now - timedelta(days=days_to_sunday)
+        sunday_str = sunday.strftime('%Y-%m-%d')
+        
+        saturday = sunday + timedelta(days=6)
+        saturday_str = saturday.strftime('%Y-%m-%d')
+        
         logging.debug(f"학생 {student_id}의 이번 주({sunday_str} ~ {saturday_str}) 출석 기록 확인 중")
         
-        try:
-            # 일반 쿼리 실행 (인덱스 없이도 작동) - 학생 ID로 제한
-            records = db.collection('attendances').where('student_id', '==', student_id).get()
-            
-            # 이번 주 출석 횟수 카운트
-            count = 0
-            recent_dates = []
-            
-            for record in records:
-                data = record.to_dict()
-                date_only = data.get('date_only', '')
-                
-                if sunday_str <= date_only <= saturday_str:
-                    count += 1
-                    recent_dates.append(date_only)
-                    logging.debug(f"학생 {student_id}의 출석일: {date_only}")
-            
-            # 결과 정리 및 캐싱
-            recent_dates = sorted(recent_dates, reverse=True)  # 최신 날짜 먼저
-            unique_dates = sorted(list(set(recent_dates)))
-            
-            # 주간 출석 제한 (일주일에 1번만 허용)
-            exceeded = len(unique_dates) >= 1  # 이미 1회 출석했으면 제한
-            
-            # 결과 캐싱 (자주 조회하는 학생은 캐시에서 빠르게 반환)
-            attendance_status_cache[cache_key] = {
-                'exceeded': exceeded,
-                'count': count,
-                'recent_dates': recent_dates,
-                'timestamp': time.time()
-            }
-            
-            logging.debug(f"학생 {student_id}의 이번 주 출석 횟수: {count}, 초과 여부: {exceeded}")
-            return exceeded, count, recent_dates
-            
-        except Exception as db_error:
-            logging.error(f"Firebase 쿼리 실행 중 오류: {db_error}")
-            raise
+        # 학번별 출석 기록만 조회 (매우 효율적)
+        student_ref = db.collection('students').document(student_id).collection('attendance')
+        week_records = student_ref.where('date_only', '>=', sunday_str).where('date_only', '<=', saturday_str).get()
+        
+        # 결과 처리
+        count = len(week_records)
+        recent_dates = []
+        
+        for record in week_records:
+            data = record.to_dict()
+            date_only = data.get('date_only', '')
+            recent_dates.append(date_only)
+        
+        # 결과 정리
+        recent_dates = sorted(recent_dates, reverse=True)
+        exceeded = count >= 1  # 1회 이상 출석했으면 제한
+        
+        # 캐시 저장
+        attendance_status_cache[cache_key] = {
+            'exceeded': exceeded,
+            'count': count,
+            'recent_dates': recent_dates,
+            'timestamp': time.time()
+        }
+        
+        logging.debug(f"학생 {student_id}의 이번 주 출석 횟수: {count}, 초과 여부: {exceeded}")
+        return exceeded, count, recent_dates
         
     except Exception as e:
         logging.error(f"주간 출석 제한 확인 중 오류: {e}")
