@@ -12,6 +12,10 @@
             <div class="card-body">
                 <form action="{{ url_for('admin_login') }}" method="post">
                     <div class="form-group mb-3">
+                        <label for="access_id" class="form-label">접근 ID</label>
+                        <input type="text" class="form-control" id="access_id" name="access_id" required>
+                    </div>
+                    <div class="form-group mb-3">
                         <label for="password" class="form-label">관리자 비밀번호</label>
                         <input type="password" class="form-control" id="password" name="password" required>
                     </div>
