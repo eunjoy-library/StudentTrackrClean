@@ -741,9 +741,9 @@ def check_attendance_status():
                     'show_twice_weekly_popup': False
                 })
         else:
-            # 일반 학생 (주 1회만)
+            # 일반 학생 (주 1회만) - 이미 출석한 경우 즉시 차단
             return jsonify({
-                'already_attended': exceeded,
+                'already_attended': exceeded,  # 1회 출석 후 True가 됨
                 'attendance_count': count,
                 'last_attendance_date': last_attendance_date,
                 'is_twice_weekly': False,

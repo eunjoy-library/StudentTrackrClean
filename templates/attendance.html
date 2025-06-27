@@ -420,8 +420,23 @@ document.addEventListener('DOMContentLoaded', function() {
                     let btnDisabled = false;
                     let btnClass = 'btn-primary';
                     
-                    // 일주일에 두 번 오는 학생의 두 번째 출석일 때 특별 팝업
-                    if (showTwiceWeeklyPopup) {
+                    // 이미 출석한 학생이면 버튼 비활성화 (이전 동작 복원)
+                    if (alreadyAttended) {
+                        // 모든 경우에 동일한 "이미 출석했습니다" 메시지 표시
+                        modalContent = `
+                            <div style="color: #dc3545; font-weight: bold; margin-bottom: 15px; text-align: center; font-size: 18px;">
+                                이번주에 이미 도서실에 출석하셨습니다.<br>
+                                4층 공강실로 올라가주세요~!
+                                ${attendanceDate ? `<div style="font-size: 16px; margin-top: 5px;">${attendanceDate}</div>` : ''}
+                            </div>
+                            ${baseContent}
+                        `;
+                        btnDisabled = true;
+                        btnClass = 'btn-secondary';
+                        playErrorSound();
+                    }
+                    // 두 번 출석 가능한 학생의 두 번째 출석만 특별 처리
+                    else if (showTwiceWeeklyPopup) {
                         modalContent = `
                             <div style="color: #ffc107; font-weight: bold; margin-bottom: 15px; text-align: center; font-size: 18px;">
                                 🌟 이번주 두 번째 출석입니다! 🌟<br>
@@ -432,34 +447,6 @@ document.addEventListener('DOMContentLoaded', function() {
                         `;
                         btnDisabled = false;
                         btnClass = 'btn-warning';
-                        // 특별 소리는 재생하지 않음 (성공 소리는 출석 완료 후 재생)
-                    }
-                    // 이미 출석한 학생이면 버튼 비활성화
-                    else if (alreadyAttended) {
-                        if (isTwiceWeekly) {
-                            // 두 번 다 출석한 경우
-                            modalContent = `
-                                <div style="color: #dc3545; font-weight: bold; margin-bottom: 15px; text-align: center; font-size: 18px;">
-                                    이번주에 이미 두 번 모두 출석하셨습니다.<br>
-                                    4층 공강실로 올라가주세요~!
-                                    ${attendanceDate ? `<div style="font-size: 16px; margin-top: 5px;">${attendanceDate}</div>` : ''}
-                                </div>
-                                ${baseContent}
-                            `;
-                        } else {
-                            // 일반 학생이 이미 출석한 경우
-                            modalContent = `
-                                <div style="color: #dc3545; font-weight: bold; margin-bottom: 15px; text-align: center; font-size: 18px;">
-                                    이번주에 이미 출석하셨습니다.<br>
-                                    4층 공강실로 올라가주세요~!
-                                    ${attendanceDate ? `<div style="font-size: 16px; margin-top: 5px;">${attendanceDate}</div>` : ''}
-                                </div>
-                                ${baseContent}
-                            `;
-                        }
-                        btnDisabled = true;
-                        btnClass = 'btn-secondary';
-                        playErrorSound();
                     }
                         const isAdmin = {{ 'true' if session.get('admin') else 'false' }};
                         const isAdminAddPage = window.location.pathname.includes('/admin_add_attendance');
