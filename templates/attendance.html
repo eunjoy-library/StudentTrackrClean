@@ -402,32 +402,61 @@ document.addEventListener('DOMContentLoaded', function() {
                     // 이미 출석한 학생인지 여부 설정
                     studentAlreadyAttended = data.already_attended || false;
                     const attendanceDate = data.last_attendance_date || '';
+                    const isTwiceWeekly = data.is_twice_weekly || false;
+                    const showTwiceWeeklyPopup = data.show_twice_weekly_popup || false;
                     
                     // 내용과 버튼 상태 업데이트
-                    updateModalContent(studentAlreadyAttended, attendanceDate, baseContent);
+                    updateModalContent(studentAlreadyAttended, attendanceDate, baseContent, isTwiceWeekly, showTwiceWeeklyPopup);
                 })
                 .catch(err => {
                     console.error('출석 상태 확인 중 오류:', err);
                     // 오류 발생 시 그냥 진행
-                    updateModalContent(false, '', baseContent);
+                    updateModalContent(false, '', baseContent, false, false);
                 });
                 
                 // 모달 내용과 버튼 상태 업데이트 함수
-                function updateModalContent(alreadyAttended, attendanceDate, baseContent) {
+                function updateModalContent(alreadyAttended, attendanceDate, baseContent, isTwiceWeekly = false, showTwiceWeeklyPopup = false) {
                     let modalContent = baseContent;
                     let btnDisabled = false;
                     let btnClass = 'btn-primary';
                     
-                    // 이미 출석한 학생이면 버튼 비활성화
-                    if (alreadyAttended) {
+                    // 일주일에 두 번 오는 학생의 두 번째 출석일 때 특별 팝업
+                    if (showTwiceWeeklyPopup) {
                         modalContent = `
-                            <div style="color: #dc3545; font-weight: bold; margin-bottom: 15px; text-align: center; font-size: 18px;">
-                                이번주에 이미 출석하셨습니다.<br>
-                                4층 공강실로 올라가주세요~!
-                                ${attendanceDate ? `<div style="font-size: 16px; margin-top: 5px;">${attendanceDate}</div>` : ''}
+                            <div style="color: #ffc107; font-weight: bold; margin-bottom: 15px; text-align: center; font-size: 18px;">
+                                🌟 이번주 두 번째 출석입니다! 🌟<br>
+                                열심히 공부하는 모습이 보기 좋네요!
+                                ${attendanceDate ? `<div style="font-size: 16px; margin-top: 5px;">첫 번째 출석: ${attendanceDate}</div>` : ''}
                             </div>
                             ${baseContent}
                         `;
+                        btnDisabled = false;
+                        btnClass = 'btn-warning';
+                        // 특별 소리는 재생하지 않음 (성공 소리는 출석 완료 후 재생)
+                    }
+                    // 이미 출석한 학생이면 버튼 비활성화
+                    else if (alreadyAttended) {
+                        if (isTwiceWeekly) {
+                            // 두 번 다 출석한 경우
+                            modalContent = `
+                                <div style="color: #dc3545; font-weight: bold; margin-bottom: 15px; text-align: center; font-size: 18px;">
+                                    이번주에 이미 두 번 모두 출석하셨습니다.<br>
+                                    4층 공강실로 올라가주세요~!
+                                    ${attendanceDate ? `<div style="font-size: 16px; margin-top: 5px;">${attendanceDate}</div>` : ''}
+                                </div>
+                                ${baseContent}
+                            `;
+                        } else {
+                            // 일반 학생이 이미 출석한 경우
+                            modalContent = `
+                                <div style="color: #dc3545; font-weight: bold; margin-bottom: 15px; text-align: center; font-size: 18px;">
+                                    이번주에 이미 출석하셨습니다.<br>
+                                    4층 공강실로 올라가주세요~!
+                                    ${attendanceDate ? `<div style="font-size: 16px; margin-top: 5px;">${attendanceDate}</div>` : ''}
+                                </div>
+                                ${baseContent}
+                            `;
+                        }
                         btnDisabled = true;
                         btnClass = 'btn-secondary';
                         playErrorSound();

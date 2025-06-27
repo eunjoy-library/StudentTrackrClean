@@ -302,28 +302,17 @@ def save_attendance(student_id, name, seat, period_text, admin_override=False):
         try:
             csv_path = 'attendance.csv'
             
-            # 새로운 출석 데이터
-            new_record = {
-                'student_id': student_id,
-                'name': name,
-                'seat': seat,
-                'date': datetime_str,
-                'period': period_text
-            }
-            
-            # 기존 CSV 파일이 있으면 읽어서 추가, 없으면 새로 생성
+            # 기존 CSV 파일이 있으면 읽어서 추가
             if os.path.exists(csv_path):
-                df = pd.read_csv(csv_path, encoding='utf-8')
-                # 중복 체크 (같은 학생, 같은 날짜)
-                duplicate = df[(df['student_id'] == student_id) & (df['date'].str.startswith(date_str))]
-                if duplicate.empty:
-                    df = pd.concat([df, pd.DataFrame([new_record])], ignore_index=True)
-                    df.to_csv(csv_path, index=False, encoding='utf-8')
-                    logging.info(f"CSV 파일에 출석 기록 추가: {name}")
+                # 기존 CSV 파일에 새 행 추가 (한글 헤더 사용)
+                with open(csv_path, 'a', encoding='utf-8', newline='') as f:
+                    f.write(f'"{datetime_str}","{period_text}","{student_id}","{name}","{seat}"\n')
+                logging.info(f"CSV 파일에 출석 기록 추가: {name}")
             else:
-                # 새 CSV 파일 생성
-                df = pd.DataFrame([new_record])
-                df.to_csv(csv_path, index=False, encoding='utf-8')
+                # 새 CSV 파일 생성 (한글 헤더 포함)
+                with open(csv_path, 'w', encoding='utf-8', newline='') as f:
+                    f.write('출석일,교시,학번,이름,공강좌석번호\n')
+                    f.write(f'"{datetime_str}","{period_text}","{student_id}","{name}","{seat}"\n')
                 logging.info(f"새 CSV 파일 생성 및 출석 기록 추가: {name}")
                 
         except Exception as csv_error:
@@ -711,11 +700,48 @@ def check_attendance_status():
         if recent_dates:
             last_attendance_date = recent_dates[0]  # 가장 최근 출석일
         
-        return jsonify({
-            'already_attended': exceeded,
-            'attendance_count': count,
-            'last_attendance_date': last_attendance_date
-        })
+        # 일주일에 두 번 오는 학생들을 위한 특별 처리
+        twice_weekly_students = ['30530', '30606', '30607', '30608', '30609', '30610']  # 예시 학번들
+        is_twice_weekly = student_id in twice_weekly_students
+        
+        # 두 번 출석 가능한 학생의 경우 처리 방식 변경
+        if is_twice_weekly:
+            if count == 0:
+                # 첫 번째 출석
+                return jsonify({
+                    'already_attended': False,
+                    'attendance_count': count,
+                    'last_attendance_date': last_attendance_date,
+                    'is_twice_weekly': True,
+                    'show_twice_weekly_popup': False
+                })
+            elif count == 1:
+                # 두 번째 출석 - 특별 팝업 표시
+                return jsonify({
+                    'already_attended': False,  # 아직 출석 가능
+                    'attendance_count': count,
+                    'last_attendance_date': last_attendance_date,
+                    'is_twice_weekly': True,
+                    'show_twice_weekly_popup': True
+                })
+            else:
+                # 이미 두 번 출석함
+                return jsonify({
+                    'already_attended': True,
+                    'attendance_count': count,
+                    'last_attendance_date': last_attendance_date,
+                    'is_twice_weekly': True,
+                    'show_twice_weekly_popup': False
+                })
+        else:
+            # 일반 학생 (주 1회만)
+            return jsonify({
+                'already_attended': exceeded,
+                'attendance_count': count,
+                'last_attendance_date': last_attendance_date,
+                'is_twice_weekly': False,
+                'show_twice_weekly_popup': False
+            })
     except Exception as e:
         logging.error(f"출석 상태 확인 중 오류: {e}")
         return jsonify({'error': str(e), 'already_attended': False})
