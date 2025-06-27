@@ -351,6 +351,7 @@ def load_attendance():
                 admin_docs = list(db.collection('admin').limit(50).get())
                 logging.info(f"Firebase admin 컬렉션: {len(admin_docs)}개 문서")
                 
+                # admin 컬렉션에서 데이터 추가
                 for admin_doc in admin_docs:
                     date_period = admin_doc.id
                     students = list(admin_doc.reference.collection('students').get())
@@ -366,7 +367,41 @@ def load_attendance():
                                 data['id'] = f"firebase_{date_period}_{student_doc.id}"
                                 data['source'] = 'firebase'
                                 attendance_records.append(data)
-                                logging.debug(f"Firebase에서 추가: {data.get('name')}")
+                                logging.debug(f"Firebase admin에서 추가: {data.get('name')}")
+                
+                # students 컬렉션에서 최신 출석 데이터 확인
+                try:
+                    students_collection = db.collection('students')
+                    # 최근 활동한 학생들의 데이터만 조회 (성능 최적화)
+                    today = datetime.now(KST).strftime('%Y-%m-%d')
+                    yesterday = (datetime.now(KST) - timedelta(days=1)).strftime('%Y-%m-%d')
+                    
+                    # 오늘과 어제 출석 기록만 조회
+                    for check_date in [today, yesterday]:
+                        # 학생별 출석 기록 조회 - 모든 학생 ID 리스트에서 확인
+                        try:
+                            # 이미 출석한 학생들의 ID를 가져와서 해당 학생들만 조회
+                            attendance_query = db.collection_group('attendance').where('date_only', '==', check_date)
+                            attendance_docs = list(attendance_query.get())
+                            
+                            for doc in attendance_docs:
+                                data = doc.to_dict()
+                                if data:
+                                    # CSV에 동일한 기록이 없는 경우만 추가
+                                    record_id = f"{data.get('student_id')}_{check_date}"
+                                    existing = any(record_id in r['id'] for r in attendance_records)
+                                    
+                                    if not existing:
+                                        data['id'] = f"firebase_attendance_{doc.id}"
+                                        data['source'] = 'firebase_attendance'
+                                        attendance_records.append(data)
+                                        logging.debug(f"Firebase attendance에서 추가: {data.get('name')} ({check_date})")
+                        
+                        except Exception as date_error:
+                            logging.warning(f"Firebase {check_date} 데이터 로드 실패: {date_error}")
+                            
+                except Exception as student_error:
+                    logging.warning(f"Firebase students 컬렉션 로드 실패: {student_error}")
                                 
             except Exception as firebase_error:
                 logging.warning(f"Firebase 로드 실패 (CSV 백업 사용): {firebase_error}")
