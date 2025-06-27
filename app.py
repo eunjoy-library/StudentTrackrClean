@@ -1776,24 +1776,45 @@ def delete_records():
         # CSV 파일에서 삭제
         df = pd.read_csv('attendance.csv', encoding='utf-8')
         
-        # record_ids는 "학번|날짜|교시" 형식으로 전달됨
+        # record_ids는 두 가지 형식으로 전달됨
+        # 1. "학번|날짜|교시" (교시별 출석현황에서)
+        # 2. "csv_학번_날짜시간" (출석목록에서)
         records_to_delete = []
+        csv_indices_to_delete = []  # CSV 직접 삭제용
+        
         for record_id in record_ids:
             try:
-                # record_id 파싱: "20240001|2025-06-27|1교시" 형식
-                parts = record_id.split('|')
-                if len(parts) == 3:
-                    student_id = parts[0]
-                    date_part = parts[1]
-                    period = parts[2]
-                    records_to_delete.append((student_id, date_part, period))
+                if '|' in record_id:
+                    # 교시별 출석현황에서의 형식: "20240001|2025-06-27|1교시"
+                    parts = record_id.split('|')
+                    if len(parts) == 3:
+                        student_id = parts[0]
+                        date_part = parts[1]
+                        period = parts[2]
+                        records_to_delete.append((student_id, date_part, period))
+                elif record_id.startswith('csv_'):
+                    # 출석목록에서의 형식: "csv_30101_2025-05-14 08:41:37"
+                    parts = record_id[4:].split('_', 1)  # "csv_" 제거 후 첫 번째 '_'로만 분할
+                    if len(parts) == 2:
+                        student_id = parts[0]
+                        full_date = parts[1]
+                        date_part = full_date[:10]  # 날짜 부분만 추출
+                        
+                        # CSV에서 정확한 행 찾기 (전체 시간까지 매칭)
+                        for csv_idx, (_, row) in enumerate(df.iterrows()):
+                            if (str(row.get('학번', '')) == student_id and
+                                str(row.get('출석일', '')) == full_date):
+                                csv_indices_to_delete.append(csv_idx)
+                                break
             except (ValueError, IndexError):
                 continue
         
+        # 변수 초기화
+        indices_to_delete = []
+        firebase_records_to_delete = []
+        
+        # 교시별 출석현황에서의 삭제 처리
         if records_to_delete:
-            indices_to_delete = []
-            firebase_records_to_delete = []
-            
             for student_id, date_part, period in records_to_delete:
                 logging.info(f"삭제할 기록 찾는 중: 학번={student_id}, 날짜={date_part}, 교시={period}")
                 
@@ -1803,8 +1824,6 @@ def delete_records():
                     row_student_id = str(row.get('학번', ''))
                     row_date = str(row.get('출석일', ''))[:10]  # '출석일' 컬럼 사용
                     row_period = str(row.get('교시', ''))
-                    
-                    logging.info(f"CSV 행 {csv_idx}: 학번={row_student_id}, 날짜={row_date}, 교시={row_period}")
                     
                     if (row_student_id == student_id and
                         row_date == date_part and
@@ -1821,26 +1840,29 @@ def delete_records():
                 
                 if not found:
                     logging.warning(f"매칭되는 기록을 찾을 수 없음: {student_id}|{date_part}|{period}")
+        
+        # 출석목록에서의 삭제 처리 (이미 csv_indices_to_delete에 추가됨)
+        indices_to_delete.extend(csv_indices_to_delete)
+        
+        # 중복 제거
+        indices_to_delete = list(set(indices_to_delete))
+        
+        if indices_to_delete:
+            # CSV에서 삭제
+            df = df.drop(indices_to_delete)
+            df.to_csv('attendance.csv', index=False, encoding='utf-8')
             
-            # 중복 제거
-            indices_to_delete = list(set(indices_to_delete))
-            
-            if indices_to_delete:
-                # CSV에서 삭제
-                df = df.drop(indices_to_delete)
-                df.to_csv('attendance.csv', index=False, encoding='utf-8')
-                
-                # Firebase에서도 삭제
-                if db:
-                    for record in firebase_records_to_delete:
-                        try:
-                            student_id = str(record.get('student_id', ''))
-                            date_str = record.get('date_only', '')
-                            
-                            # Firebase에서 삭제
-                            db.collection('attendance').document(student_id).collection('records').document(date_str).delete()
-                        except Exception as firebase_error:
-                            logging.error(f"Firebase 삭제 중 오류: {firebase_error}")
+            # Firebase에서도 삭제
+            if db:
+                for record in firebase_records_to_delete:
+                    try:
+                        student_id = str(record.get('student_id', ''))
+                        date_str = record.get('date_only', '')
+                        
+                        # Firebase에서 삭제
+                        db.collection('attendance').document(student_id).collection('records').document(date_str).delete()
+                    except Exception as firebase_error:
+                        logging.error(f"Firebase 삭제 중 오류: {firebase_error}")
         
         flash(f'{len(indices_to_delete)}개의 기록이 삭제되었습니다.', 'success')
     except Exception as e:
