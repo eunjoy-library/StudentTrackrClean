@@ -247,7 +247,8 @@ document.addEventListener('DOMContentLoaded', function() {
         })
         .then(response => response.json())
         .then(data => {
-            if (data.already_attended || data.is_warned) {
+            console.log('출석 상태 확인 응답:', data);
+            if (data.already_attended || data.is_warned || data.exceeded) {
                 // 즉시 팝업 표시
                 let message = '';
                 let buttonText = '확인';
