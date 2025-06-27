@@ -205,10 +205,13 @@ document.addEventListener('DOMContentLoaded', function() {
             const currentPeriodText = currentPeriod ? currentPeriod.textContent : '';
             const is4thPeriod = currentPeriodText === '4교시';
             
-            // 학번 입력하면 이름 필드 자동 설정
+            // 학번 입력하면 이름 필드 자동 설정 및 출석 상태 확인
             if (this.value.trim().length >= 5) {
                 // 항상 홍길동으로 설정
                 nameInput.value = "홍길동";
+                
+                // 출석 상태 즉시 확인
+                checkAttendanceStatus(this.value.trim());
             } else {
                 nameInput.value = "";
             }
@@ -229,6 +232,59 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
     
+    // 출석 상태 즉시 확인 함수
+    function checkAttendanceStatus(studentId) {
+        if (!studentId || studentId.length < 5) return;
+        
+        fetch('/api/check_attendance', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                student_id: studentId
+            })
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.already_attended || data.is_warned) {
+                // 즉시 팝업 표시
+                let message = '';
+                let buttonText = '확인';
+                
+                if (data.is_warned) {
+                    message = `⚠️ 경고받은 학생입니다\n출석이 제한됩니다.\n\n사유: ${data.warning_reason || '규칙 위반'}`;
+                } else if (data.exceeded) {
+                    message = `⚠️ 이미 이번 주에 출석했습니다!\n\n최근 출석: ${data.recent_dates ? data.recent_dates.join(', ') : '날짜 정보 없음'}\n\n주 1회만 출석 가능합니다.`;
+                } else {
+                    message = `⚠️ 이미 출석했습니다!\n\n마지막 출석: ${data.last_attendance_date || '날짜 정보 없음'}`;
+                }
+                
+                // 모달 내용 설정
+                modalTitle.textContent = '출석 불가';
+                modalMessage.textContent = message;
+                modalConfirmBtn.textContent = buttonText;
+                modalCancelBtn.style.display = 'none'; // 취소 버튼 숨기기
+                
+                // studentAlreadyAttended 플래그 설정
+                studentAlreadyAttended = true;
+                
+                // 모달 표시
+                customModal.style.display = 'flex';
+                
+                // 버튼 비활성화
+                submitBtn.disabled = true;
+                submitBtn.innerHTML = '<i class="fas fa-times-circle me-2"></i>출석 불가';
+            } else {
+                // 정상 출석 가능한 경우 - 특별한 처리 없음
+                studentAlreadyAttended = false;
+            }
+        })
+        .catch(error => {
+            console.error('출석 상태 확인 오류:', error);
+        });
+    }
+
     // 모달 닫기 함수
     function closeModal() {
         if (customModal) {
@@ -244,9 +300,15 @@ document.addEventListener('DOMContentLoaded', function() {
     // 모달 확인 버튼 이벤트
     if (modalConfirmBtn) {
         modalConfirmBtn.addEventListener('click', function() {
-            // 이미 출석한 학생이면 모달만 닫기
+            // 이미 출석한 학생이면 모달 닫기 및 폼 초기화
             if (studentAlreadyAttended) {
                 closeModal();
+                // 폼 초기화
+                studentIdInput.value = '';
+                nameInput.value = '';
+                submitBtn.disabled = true;
+                submitBtn.innerHTML = '<i class="fas fa-search me-2"></i>출석 정보 확인';
+                studentAlreadyAttended = false;
                 return;
             }
             
