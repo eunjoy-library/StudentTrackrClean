@@ -115,6 +115,8 @@ This is a Flask-based library attendance system designed for student check-ins d
   - Fixed attendance record display in admin panel by correcting CSV parsing
   - Restored twice-weekly student popup notification feature with special messaging
   - Implemented dual CSV+Firebase saving for immediate reflection in admin dashboard
+  - **MAJOR FIX**: Resolved delete functionality in admin panel by correcting CSV column name mapping ('날짜' → '출석일')
+  - Delete function now properly removes records from both CSV and Firebase with accurate matching
 - June 26, 2025: Initial setup
 
 ## User Preferences
