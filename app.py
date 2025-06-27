@@ -298,6 +298,37 @@ def save_attendance(student_id, name, seat, period_text, admin_override=False):
             logging.error(f"admin 저장 실패: {e}")
             return False
         
+        # CSV 파일에도 즉시 저장 (교시별 출석 현황 즉시 반영용)
+        try:
+            csv_path = 'attendance.csv'
+            
+            # 새로운 출석 데이터
+            new_record = {
+                'student_id': student_id,
+                'name': name,
+                'seat': seat,
+                'date': datetime_str,
+                'period': period_text
+            }
+            
+            # 기존 CSV 파일이 있으면 읽어서 추가, 없으면 새로 생성
+            if os.path.exists(csv_path):
+                df = pd.read_csv(csv_path, encoding='utf-8')
+                # 중복 체크 (같은 학생, 같은 날짜)
+                duplicate = df[(df['student_id'] == student_id) & (df['date'].str.startswith(date_str))]
+                if duplicate.empty:
+                    df = pd.concat([df, pd.DataFrame([new_record])], ignore_index=True)
+                    df.to_csv(csv_path, index=False, encoding='utf-8')
+                    logging.info(f"CSV 파일에 출석 기록 추가: {name}")
+            else:
+                # 새 CSV 파일 생성
+                df = pd.DataFrame([new_record])
+                df.to_csv(csv_path, index=False, encoding='utf-8')
+                logging.info(f"새 CSV 파일 생성 및 출석 기록 추가: {name}")
+                
+        except Exception as csv_error:
+            logging.warning(f"CSV 저장 실패 (Firebase 저장은 성공): {csv_error}")
+        
         # 저장 완료
         logging.info(f"출석 기록 저장 완료: {student_id} ({name}) - {period_text}")
         
@@ -369,39 +400,39 @@ def load_attendance():
                                 attendance_records.append(data)
                                 logging.debug(f"Firebase admin에서 추가: {data.get('name')}")
                 
-                # students 컬렉션에서 최신 출석 데이터 확인
+                # attendance CSV 파일에서 누락된 최신 기록을 Firebase admin 컬렉션에서 직접 추가
                 try:
-                    students_collection = db.collection('students')
-                    # 최근 활동한 학생들의 데이터만 조회 (성능 최적화)
+                    # 오늘 날짜의 모든 교시별 기록을 admin 컬렉션에서 직접 조회
                     today = datetime.now(KST).strftime('%Y-%m-%d')
-                    yesterday = (datetime.now(KST) - timedelta(days=1)).strftime('%Y-%m-%d')
+                    periods = ['1교시', '2교시', '3교시', '4교시', '5교시', '6교시', '7교시', '8교시', '9교시', '10교시', '시간 외']
                     
-                    # 오늘과 어제 출석 기록만 조회
-                    for check_date in [today, yesterday]:
-                        # 학생별 출석 기록 조회 - 모든 학생 ID 리스트에서 확인
+                    for period in periods:
+                        date_period_key = f"{today}_{period}"
                         try:
-                            # 이미 출석한 학생들의 ID를 가져와서 해당 학생들만 조회
-                            attendance_query = db.collection_group('attendance').where('date_only', '==', check_date)
-                            attendance_docs = list(attendance_query.get())
-                            
-                            for doc in attendance_docs:
-                                data = doc.to_dict()
-                                if data:
-                                    # CSV에 동일한 기록이 없는 경우만 추가
-                                    record_id = f"{data.get('student_id')}_{check_date}"
-                                    existing = any(record_id in r['id'] for r in attendance_records)
-                                    
-                                    if not existing:
-                                        data['id'] = f"firebase_attendance_{doc.id}"
-                                        data['source'] = 'firebase_attendance'
-                                        attendance_records.append(data)
-                                        logging.debug(f"Firebase attendance에서 추가: {data.get('name')} ({check_date})")
+                            admin_doc = db.collection('admin').document(date_period_key).get()
+                            if admin_doc.exists:
+                                # 해당 교시의 모든 학생 조회
+                                students_collection = admin_doc.reference.collection('students')
+                                students_docs = list(students_collection.get())
+                                
+                                for student_doc in students_docs:
+                                    data = student_doc.to_dict()
+                                    if data:
+                                        # CSV에 동일한 기록이 없는 경우만 추가
+                                        record_id = f"{data.get('student_id')}_{today}"
+                                        existing = any(record_id in r.get('id', '') for r in attendance_records)
+                                        
+                                        if not existing:
+                                            data['id'] = f"firebase_admin_{date_period_key}_{student_doc.id}"
+                                            data['source'] = 'firebase_admin'
+                                            attendance_records.append(data)
+                                            logging.info(f"Firebase admin에서 {period} 추가: {data.get('name')}")
                         
-                        except Exception as date_error:
-                            logging.warning(f"Firebase {check_date} 데이터 로드 실패: {date_error}")
+                        except Exception as period_error:
+                            logging.debug(f"Firebase {date_period_key} 조회 실패: {period_error}")
                             
-                except Exception as student_error:
-                    logging.warning(f"Firebase students 컬렉션 로드 실패: {student_error}")
+                except Exception as admin_error:
+                    logging.warning(f"Firebase admin 세부 조회 실패: {admin_error}")
                                 
             except Exception as firebase_error:
                 logging.warning(f"Firebase 로드 실패 (CSV 백업 사용): {firebase_error}")
