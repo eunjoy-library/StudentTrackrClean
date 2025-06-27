@@ -1769,16 +1769,41 @@ def delete_records():
         return redirect(url_for('list_attendance'))
     
     try:
-        if not db:
-            flash("Firebase 설정이 완료되지 않았습니다.", "danger")
-            if redirect_to_period_view:
-                return redirect(url_for('by_period'))
-            return redirect(url_for('list_attendance'))
+        # CSV 파일에서 삭제
+        df = pd.read_csv('attendance.csv', encoding='utf-8')
         
+        # record_ids는 실제로는 인덱스 번호들
+        indices_to_delete = []
         for record_id in record_ids:
-            db.collection('attendances').document(record_id).delete()
+            try:
+                idx = int(record_id)
+                if 0 <= idx < len(df):
+                    indices_to_delete.append(idx)
+            except ValueError:
+                continue
         
-        flash(f'{len(record_ids)}개의 기록이 삭제되었습니다.', 'success')
+        if indices_to_delete:
+            # 인덱스 기준으로 행 삭제
+            df = df.drop(indices_to_delete)
+            # CSV 파일 다시 저장
+            df.to_csv('attendance.csv', index=False, encoding='utf-8')
+            
+            # Firebase에서도 삭제 (해당 기록이 있는 경우)
+            if db:
+                for idx in indices_to_delete:
+                    try:
+                        # 원본 데이터에서 학번과 날짜 정보 추출하여 Firebase에서도 삭제
+                        original_df = pd.read_csv('attendance.csv', encoding='utf-8')
+                        if idx < len(original_df):
+                            student_id = str(original_df.iloc[idx]['학번'])
+                            date_str = original_df.iloc[idx]['날짜']
+                            
+                            # Firebase에서 삭제
+                            db.collection('attendance').document(student_id).collection('records').document(date_str).delete()
+                    except Exception as firebase_error:
+                        logging.error(f"Firebase 삭제 중 오류: {firebase_error}")
+        
+        flash(f'{len(indices_to_delete)}개의 기록이 삭제되었습니다.', 'success')
     except Exception as e:
         flash(f'기록 삭제 중 오류가 발생했습니다: {e}', 'danger')
     
