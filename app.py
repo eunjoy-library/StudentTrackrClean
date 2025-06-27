@@ -288,8 +288,8 @@ def save_attendance(student_id, name, seat, period_text, admin_override=False):
             'timestamp': firestore.SERVER_TIMESTAMP
         })
         
-        # 3. 기존 전체 attendance 컬렉션에도 저장 (하위 호환성)
-        db.collection('attendances').add(attendance_data)
+        # 저장 완료
+        logging.info(f"출석 기록 저장 완료: {student_id} ({name}) - {period_text}")
         
         logging.info(f"학생 {student_id}({name})의 출석이 성공적으로 등록되었습니다. 좌석: {seat}, 날짜: {date_str}")
         
@@ -305,9 +305,9 @@ def save_attendance(student_id, name, seat, period_text, admin_override=False):
 
 def load_attendance():
     """
-    하이브리드 방식으로 출석 기록 로드
-    - 새 구조(students/{id}/attendance)가 있으면 우선 사용
-    - 기존 구조(attendances)도 병합하여 완전성 보장
+    새로운 이중 구조에서 출석 기록 로드
+    - attendance/{student_id}/records 구조 우선 사용
+    - admin/{date_period}/students 구조도 활용
     """
     try:
         if not db:
@@ -315,51 +315,28 @@ def load_attendance():
         
         attendance_records = []
         
-        # 1. 기존 attendances 컬렉션에서 로드 (하위 호환성)
+        # 1. 새로운 attendance 구조에서 로드 (학생별)
         try:
-            attendance_refs = db.collection('attendances').order_by('timestamp', direction=firestore.Query.DESCENDING).limit(500).get()
-            
-            for doc in attendance_refs:
-                data = doc.to_dict()
-                data['id'] = doc.id
-                data['source'] = 'legacy'  # 구분용 태그
-                
-                # 날짜 문자열 처리
-                if 'date' in data and data['date']:
-                    date_str = data['date']
-                    if not isinstance(date_str, str):
-                        date_str = data['date'].strftime('%Y-%m-%d %H:%M:%S')
-                    data['date'] = date_str
-                
-                attendance_records.append(data)
-                
-        except Exception as legacy_error:
-            logging.warning(f"기존 출석 기록 로드 실패: {legacy_error}")
-        
-        # 2. 새로운 attendance 구조에서 로드 (최적화된 방식)
-        try:
-            # 모든 학생 문서 가져오기
             students_refs = db.collection('attendance').get()
             
             for student_doc in students_refs:
                 student_id = student_doc.id
                 
-                # 각 학생의 출석 기록 가져오기 (최근 100개)
-                attendance_refs = student_doc.reference.collection('records').order_by('timestamp', direction=firestore.Query.DESCENDING).limit(100).get()
+                # 각 학생의 출석 기록 가져오기 (최근 200개)
+                attendance_refs = student_doc.reference.collection('records').order_by('timestamp', direction=firestore.Query.DESCENDING).limit(200).get()
                 
                 for attendance_doc in attendance_refs:
                     data = attendance_doc.to_dict()
                     data['id'] = f"{student_id}_{attendance_doc.id}"
-                    data['source'] = 'optimized'  # 구분용 태그
+                    data['source'] = 'attendance'
                     attendance_records.append(data)
                     
-        except Exception as optimized_error:
-            logging.warning(f"최적화된 출석 기록 로드 실패: {optimized_error}")
+        except Exception as attendance_error:
+            logging.warning(f"attendance 구조 출석 기록 로드 실패: {attendance_error}")
         
-        # 3. 관리자용 구조에서도 로드 (날짜별 조회용)
+        # 2. 관리자용 구조에서도 로드 (날짜+교시별)
         try:
-            # 최근 30일간의 admin 문서 가져오기 (관리자 현황용)
-            admin_refs = db.collection('admin').order_by(firestore.FieldPath.document_id(), direction=firestore.Query.DESCENDING).limit(100).get()
+            admin_refs = db.collection('admin').order_by(firestore.FieldPath.document_id(), direction=firestore.Query.DESCENDING).limit(200).get()
             
             for admin_doc in admin_refs:
                 date_period = admin_doc.id
@@ -370,24 +347,24 @@ def load_attendance():
                 for student_doc in student_refs:
                     data = student_doc.to_dict()
                     data['id'] = f"admin_{date_period}_{student_doc.id}"
-                    data['source'] = 'admin'  # 구분용 태그
+                    data['source'] = 'admin'
                     attendance_records.append(data)
                     
         except Exception as admin_error:
-            logging.warning(f"관리자 구조 출석 기록 로드 실패: {admin_error}")
+            logging.warning(f"admin 구조 출석 기록 로드 실패: {admin_error}")
         
-        # 중복 제거 (같은 학생, 같은 날짜)
+        # 중복 제거 (같은 학생, 같은 날짜 - attendance 구조 우선)
         unique_records = {}
         for record in attendance_records:
             key = f"{record.get('student_id', '')}_{record.get('date_only', '')}"
-            if key not in unique_records or record.get('source') == 'optimized':
+            if key not in unique_records or record.get('source') == 'attendance':
                 unique_records[key] = record
         
         # 최종 결과를 리스트로 변환하고 시간순 정렬
         final_records = list(unique_records.values())
         final_records.sort(key=lambda x: x.get('date', ''), reverse=True)
         
-        logging.info(f"출석 기록 로드 완료: {len(final_records)}개 (레거시: {sum(1 for r in final_records if r.get('source') == 'legacy')}, 최적화: {sum(1 for r in final_records if r.get('source') == 'optimized')})")
+        logging.info(f"출석 기록 로드 완료: {len(final_records)}개 (attendance: {sum(1 for r in final_records if r.get('source') == 'attendance')}, admin: {sum(1 for r in final_records if r.get('source') == 'admin')})")
         
         return final_records
         
