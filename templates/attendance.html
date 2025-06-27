@@ -395,7 +395,12 @@ document.addEventListener('DOMContentLoaded', function() {
                 fetch(`/check_attendance_status?student_id=${studentId}`, {
                     cache: 'no-store'
                 })
-                .then(response => response.json())
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error(`HTTP error! status: ${response.status}`);
+                    }
+                    return response.json();
+                })
                 .then(data => {
                     console.log('출석 상태 확인 결과:', data); // 디버깅용
                     
@@ -407,11 +412,21 @@ document.addEventListener('DOMContentLoaded', function() {
                     
                     // 내용과 버튼 상태 업데이트
                     updateModalContent(studentAlreadyAttended, attendanceDate, baseContent, isTwiceWeekly, showTwiceWeeklyPopup);
+                    
+                    // 모달 즉시 표시
+                    if (customModal) {
+                        customModal.style.display = 'block';
+                    }
                 })
                 .catch(err => {
                     console.error('출석 상태 확인 중 오류:', err);
                     // 오류 발생 시 그냥 진행
                     updateModalContent(false, '', baseContent, false, false);
+                    
+                    // 모달 표시
+                    if (customModal) {
+                        customModal.style.display = 'block';
+                    }
                 });
                 
                 // 모달 내용과 버튼 상태 업데이트 함수
@@ -498,11 +513,6 @@ document.addEventListener('DOMContentLoaded', function() {
                     if (modalConfirmBtn) {
                         modalConfirmBtn.disabled = btnDisabled;
                         modalConfirmBtn.className = `btn ${btnClass} btn-lg`;
-                    }
-                    
-                    // 모달 표시
-                    if (customModal) {
-                        customModal.style.display = 'block';
                     }
                 } else {
                     // 학생 정보를 찾을 수 없는 경우
