@@ -109,7 +109,8 @@ This is a Flask-based library attendance system designed for student check-ins d
 
 ## Changelog
 
-- June 26, 2025. Initial setup
+- June 27, 2025: Fixed admin login credentials mismatch - updated ADMIN_ACCESS_ID from 20250107 to 20255008
+- June 26, 2025: Initial setup
 
 ## User Preferences
 
