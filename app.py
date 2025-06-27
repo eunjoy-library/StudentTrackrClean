@@ -349,14 +349,21 @@ def load_attendance():
                 logging.info(f"CSV에서 {len(df)}개 출석 기록 로드")
                 
                 for _, row in df.iterrows():
+                    # 한글 헤더로 접근
+                    student_id = str(row.get('학번', ''))
+                    name = str(row.get('이름', ''))
+                    seat = str(row.get('공강좌석번호', ''))
+                    period = str(row.get('교시', ''))
+                    date = str(row.get('출석일', ''))
+                    
                     record = {
-                        'id': f"csv_{row.get('student_id', '')}_{row.get('date', '')}",
-                        'student_id': str(row.get('student_id', '')),
-                        'name': str(row.get('name', '')),
-                        'seat': str(row.get('seat', '')),
-                        'period': str(row.get('period', '')),
-                        'date': str(row.get('date', '')),
-                        'date_only': str(row.get('date', ''))[:10] if pd.notna(row.get('date')) else '',
+                        'id': f"csv_{student_id}_{date}",
+                        'student_id': student_id,
+                        'name': name,
+                        'seat': seat,
+                        'period': period,
+                        'date': date,
+                        'date_only': date[:10] if pd.notna(row.get('출석일')) else '',
                         'source': 'csv'
                     }
                     attendance_records.append(record)
