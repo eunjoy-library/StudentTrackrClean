@@ -109,7 +109,12 @@ This is a Flask-based library attendance system designed for student check-ins d
 
 ## Changelog
 
-- June 27, 2025: Fixed admin login credentials mismatch - updated ADMIN_ACCESS_ID from 20250107 to 20255008
+- June 27, 2025: 
+  - Fixed admin login credentials mismatch - updated ADMIN_ACCESS_ID from 20250107 to 20255008
+  - Resolved CSV header compatibility issue for Korean language headers in attendance records
+  - Fixed attendance record display in admin panel by correcting CSV parsing
+  - Restored twice-weekly student popup notification feature with special messaging
+  - Implemented dual CSV+Firebase saving for immediate reflection in admin dashboard
 - June 26, 2025: Initial setup
 
 ## User Preferences
