@@ -403,12 +403,20 @@ document.addEventListener('DOMContentLoaded', function() {
                 })
                 .then(data => {
                     console.log('출석 상태 확인 결과:', data); // 디버깅용
+                    console.log('API 응답 상세:', JSON.stringify(data, null, 2)); // 상세 디버깅
                     
                     // 이미 출석한 학생인지 여부 설정
                     studentAlreadyAttended = data.already_attended || false;
                     const attendanceDate = data.last_attendance_date || '';
                     const isTwiceWeekly = data.is_twice_weekly || false;
                     const showTwiceWeeklyPopup = data.show_twice_weekly_popup || false;
+                    
+                    console.log('처리된 값들:', {
+                        studentAlreadyAttended,
+                        attendanceDate,
+                        isTwiceWeekly,
+                        showTwiceWeeklyPopup
+                    });
                     
                     // 내용과 버튼 상태 업데이트
                     updateModalContent(studentAlreadyAttended, attendanceDate, baseContent, isTwiceWeekly, showTwiceWeeklyPopup);
