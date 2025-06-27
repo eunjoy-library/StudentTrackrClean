@@ -1764,6 +1764,8 @@ def delete_records():
             query = parsed_uri.query
     
     record_ids = request.form.getlist('record_ids[]')
+    logging.info(f"삭제 요청 받은 record_ids: {record_ids}")
+    
     if not record_ids:
         flash('삭제할 기록을 선택해주세요.', 'warning')
         if redirect_to_period_view:
@@ -1774,39 +1776,51 @@ def delete_records():
         # CSV 파일에서 삭제
         df = pd.read_csv('attendance.csv', encoding='utf-8')
         
-        # record_ids는 "날짜_인덱스" 형식으로 전달됨
+        # record_ids는 "학번|날짜|교시" 형식으로 전달됨
         records_to_delete = []
         for record_id in record_ids:
             try:
-                # delete_id 파싱: "2025-06-27_0" 형식
-                parts = record_id.split('_')
-                if len(parts) == 2:
-                    date_part = parts[0]
-                    idx = int(parts[1])
-                    records_to_delete.append((date_part, idx))
+                # record_id 파싱: "20240001|2025-06-27|1교시" 형식
+                parts = record_id.split('|')
+                if len(parts) == 3:
+                    student_id = parts[0]
+                    date_part = parts[1]
+                    period = parts[2]
+                    records_to_delete.append((student_id, date_part, period))
             except (ValueError, IndexError):
                 continue
         
         if records_to_delete:
-            # 삭제할 행들 찾기 (날짜와 인덱스 매칭)
-            all_records = load_attendance()
             indices_to_delete = []
             firebase_records_to_delete = []
             
-            for date_part, day_idx in records_to_delete:
-                # 해당 날짜의 기록들만 필터링
-                day_records = [r for r in all_records if r.get('date_only') == date_part]
+            for student_id, date_part, period in records_to_delete:
+                logging.info(f"삭제할 기록 찾는 중: 학번={student_id}, 날짜={date_part}, 교시={period}")
                 
-                if day_idx < len(day_records):
-                    target_record = day_records[day_idx]
+                # CSV에서 해당 기록 찾기
+                found = False
+                for csv_idx, (_, row) in enumerate(df.iterrows()):
+                    row_student_id = str(row.get('학번', ''))
+                    row_date = str(row.get('날짜', ''))[:10]
+                    row_period = str(row.get('교시', ''))
                     
-                    # CSV에서 실제 인덱스 찾기
-                    for csv_idx, (_, row) in enumerate(df.iterrows()):
-                        if (str(row.get('학번', '')) == str(target_record.get('student_id', '')) and
-                            str(row.get('날짜', ''))[:10] == date_part):
-                            indices_to_delete.append(csv_idx)
-                            firebase_records_to_delete.append(target_record)
-                            break
+                    logging.info(f"CSV 행 {csv_idx}: 학번={row_student_id}, 날짜={row_date}, 교시={row_period}")
+                    
+                    if (row_student_id == student_id and
+                        row_date == date_part and
+                        row_period == period):
+                        indices_to_delete.append(csv_idx)
+                        firebase_records_to_delete.append({
+                            'student_id': student_id,
+                            'date_only': date_part,
+                            'period': period
+                        })
+                        found = True
+                        logging.info(f"매칭된 기록 발견: 인덱스 {csv_idx}")
+                        break
+                
+                if not found:
+                    logging.warning(f"매칭되는 기록을 찾을 수 없음: {student_id}|{date_part}|{period}")
             
             # 중복 제거
             indices_to_delete = list(set(indices_to_delete))
@@ -1828,7 +1842,7 @@ def delete_records():
                         except Exception as firebase_error:
                             logging.error(f"Firebase 삭제 중 오류: {firebase_error}")
         
-        flash(f'{len(records_to_delete)}개의 기록이 삭제되었습니다.', 'success')
+        flash(f'{len(indices_to_delete)}개의 기록이 삭제되었습니다.', 'success')
     except Exception as e:
         flash(f'기록 삭제 중 오류가 발생했습니다: {e}', 'danger')
     
