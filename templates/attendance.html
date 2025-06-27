@@ -420,8 +420,21 @@ document.addEventListener('DOMContentLoaded', function() {
                     let btnDisabled = false;
                     let btnClass = 'btn-primary';
                     
+                    // 두 번 출석 가능한 학생의 두 번째 출석 특별 처리
+                    if (showTwiceWeeklyPopup) {
+                        modalContent = `
+                            <div style="color: #ffc107; font-weight: bold; margin-bottom: 15px; text-align: center; font-size: 18px;">
+                                🌟 이번주 두 번째 출석입니다! 🌟<br>
+                                열심히 공부하는 모습이 보기 좋네요!
+                                ${attendanceDate ? `<div style="font-size: 16px; margin-top: 5px;">첫 번째 출석: ${attendanceDate}</div>` : ''}
+                            </div>
+                            ${baseContent}
+                        `;
+                        btnDisabled = false;
+                        btnClass = 'btn-warning';
+                    }
                     // 이미 출석한 학생이면 버튼 비활성화 (이전 동작 복원)
-                    if (alreadyAttended) {
+                    else if (alreadyAttended) {
                         // 모든 경우에 동일한 "이미 출석했습니다" 메시지 표시
                         modalContent = `
                             <div style="color: #dc3545; font-weight: bold; margin-bottom: 15px; text-align: center; font-size: 18px;">
@@ -434,19 +447,6 @@ document.addEventListener('DOMContentLoaded', function() {
                         btnDisabled = true;
                         btnClass = 'btn-secondary';
                         playErrorSound();
-                    }
-                    // 두 번 출석 가능한 학생의 두 번째 출석만 특별 처리
-                    else if (showTwiceWeeklyPopup) {
-                        modalContent = `
-                            <div style="color: #ffc107; font-weight: bold; margin-bottom: 15px; text-align: center; font-size: 18px;">
-                                🌟 이번주 두 번째 출석입니다! 🌟<br>
-                                열심히 공부하는 모습이 보기 좋네요!
-                                ${attendanceDate ? `<div style="font-size: 16px; margin-top: 5px;">첫 번째 출석: ${attendanceDate}</div>` : ''}
-                            </div>
-                            ${baseContent}
-                        `;
-                        btnDisabled = false;
-                        btnClass = 'btn-warning';
                     }
                         const isAdmin = {{ 'true' if session.get('admin') else 'false' }};
                         const isAdminAddPage = window.location.pathname.includes('/admin_add_attendance');
