@@ -989,8 +989,12 @@ def admin_login():
         access_id = request.form.get('access_id')
         password = request.form.get('password')
         
-        admin_access_id = os.environ.get('ADMIN_ACCESS_ID', '20250107')
-        admin_password = os.environ.get('ADMIN_PASSWORD', '9929')
+        admin_access_id = os.environ.get('ADMIN_ACCESS_ID', '20255008')
+        admin_password = os.environ.get('ADMIN_PASSWORD', '1234')
+        
+        # 디버깅 로그
+        logging.info(f"로그인 시도 - 입력 ID: {access_id}, 입력 PW: {password}")
+        logging.info(f"설정된 ID: {admin_access_id}, 설정된 PW: {admin_password}")
         
         if access_id == admin_access_id and password == admin_password:
             session['admin'] = True
