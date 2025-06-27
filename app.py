@@ -702,6 +702,9 @@ def check_attendance_status():
         # 주간 출석 상태 확인
         exceeded, count, recent_dates = check_weekly_attendance_limit(student_id)
         
+        # 디버깅용 로그 추가
+        logging.info(f"check_attendance_status: 학생 {student_id} - exceeded: {exceeded}, count: {count}, recent_dates: {recent_dates}")
+        
         # 최근 출석일 포맷팅
         last_attendance_date = ""
         if recent_dates:
