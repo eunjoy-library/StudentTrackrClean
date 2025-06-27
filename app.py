@@ -272,21 +272,31 @@ def save_attendance(student_id, name, seat, period_text, admin_override=False):
         }
         
         # 1. 학생별 출석 기록 저장 (학생 중복 체크용)
-        student_attendance_ref = db.collection('attendance').document(student_id).collection('records').document(date_str)
-        student_attendance_ref.set(attendance_data)
+        try:
+            student_attendance_ref = db.collection('attendance').document(student_id).collection('records').document(date_str)
+            student_attendance_ref.set(attendance_data)
+            logging.info(f"attendance/{student_id}/records/{date_str} 저장 성공")
+        except Exception as e:
+            logging.error(f"attendance 저장 실패: {e}")
+            return False
         
         # 2. 관리자용 날짜+교시별 출석 기록 저장 (관리자 현황 파악용)
-        date_period_key = f"{date_str}_{period_text}"
-        admin_ref = db.collection('admin').document(date_period_key).collection('students').document(student_id)
-        admin_ref.set({
-            'student_id': student_id,
-            'name': name,
-            'seat': seat,
-            'date': datetime_str,
-            'date_only': date_str,
-            'period': period_text,
-            'timestamp': firestore.SERVER_TIMESTAMP
-        })
+        try:
+            date_period_key = f"{date_str}_{period_text}"
+            admin_ref = db.collection('admin').document(date_period_key).collection('students').document(student_id)
+            admin_ref.set({
+                'student_id': student_id,
+                'name': name,
+                'seat': seat,
+                'date': datetime_str,
+                'date_only': date_str,
+                'period': period_text,
+                'timestamp': firestore.SERVER_TIMESTAMP
+            })
+            logging.info(f"admin/{date_period_key}/students/{student_id} 저장 성공")
+        except Exception as e:
+            logging.error(f"admin 저장 실패: {e}")
+            return False
         
         # 저장 완료
         logging.info(f"출석 기록 저장 완료: {student_id} ({name}) - {period_text}")
@@ -305,71 +315,70 @@ def save_attendance(student_id, name, seat, period_text, admin_override=False):
 
 def load_attendance():
     """
-    새로운 이중 구조에서 출석 기록 로드
-    - attendance/{student_id}/records 구조 우선 사용
-    - admin/{date_period}/students 구조도 활용
+    출석 기록을 CSV 파일과 Firebase에서 로드하는 통합 방식
+    Firebase가 실패하는 경우 CSV를 백업으로 사용
     """
     try:
-        if not db:
-            return []
-        
         attendance_records = []
         
-        # 1. 새로운 attendance 구조에서 로드 (학생별)
-        try:
-            students_refs = db.collection('attendance').get()
-            
-            for student_doc in students_refs:
-                student_id = student_doc.id
+        # 1. CSV 파일에서 출석 기록 로드 (백업 시스템)
+        csv_path = 'attendance.csv'
+        if os.path.exists(csv_path):
+            try:
+                df = pd.read_csv(csv_path, encoding='utf-8')
+                logging.info(f"CSV에서 {len(df)}개 출석 기록 로드")
                 
-                # 각 학생의 출석 기록 가져오기 (최근 200개)
-                attendance_refs = student_doc.reference.collection('records').order_by('timestamp', direction=firestore.Query.DESCENDING).limit(200).get()
-                
-                for attendance_doc in attendance_refs:
-                    data = attendance_doc.to_dict()
-                    data['id'] = f"{student_id}_{attendance_doc.id}"
-                    data['source'] = 'attendance'
-                    attendance_records.append(data)
+                for _, row in df.iterrows():
+                    record = {
+                        'id': f"csv_{row.get('student_id', '')}_{row.get('date', '')}",
+                        'student_id': str(row.get('student_id', '')),
+                        'name': str(row.get('name', '')),
+                        'seat': str(row.get('seat', '')),
+                        'period': str(row.get('period', '')),
+                        'date': str(row.get('date', '')),
+                        'date_only': str(row.get('date', ''))[:10] if pd.notna(row.get('date')) else '',
+                        'source': 'csv'
+                    }
+                    attendance_records.append(record)
                     
-        except Exception as attendance_error:
-            logging.warning(f"attendance 구조 출석 기록 로드 실패: {attendance_error}")
+            except Exception as csv_error:
+                logging.error(f"CSV 로드 실패: {csv_error}")
         
-        # 2. 관리자용 구조에서도 로드 (날짜+교시별)
-        try:
-            admin_refs = db.collection('admin').order_by(firestore.FieldPath.document_id(), direction=firestore.Query.DESCENDING).limit(200).get()
-            
-            for admin_doc in admin_refs:
-                date_period = admin_doc.id
+        # 2. Firebase에서 추가 데이터 로드 (가능한 경우)
+        if db:
+            try:
+                # admin 컬렉션에서 최신 데이터 확인
+                admin_docs = list(db.collection('admin').limit(50).get())
+                logging.info(f"Firebase admin 컬렉션: {len(admin_docs)}개 문서")
                 
-                # 해당 날짜+교시의 모든 학생 출석 기록
-                student_refs = admin_doc.reference.collection('students').get()
-                
-                for student_doc in student_refs:
-                    data = student_doc.to_dict()
-                    data['id'] = f"admin_{date_period}_{student_doc.id}"
-                    data['source'] = 'admin'
-                    attendance_records.append(data)
+                for admin_doc in admin_docs:
+                    date_period = admin_doc.id
+                    students = list(admin_doc.reference.collection('students').get())
                     
-        except Exception as admin_error:
-            logging.warning(f"admin 구조 출석 기록 로드 실패: {admin_error}")
+                    for student_doc in students:
+                        data = student_doc.to_dict()
+                        if data:
+                            # CSV에 동일한 기록이 없는 경우만 추가
+                            record_id = f"{data.get('student_id')}_{data.get('date_only')}"
+                            existing = any(r['id'].endswith(record_id) for r in attendance_records)
+                            
+                            if not existing:
+                                data['id'] = f"firebase_{date_period}_{student_doc.id}"
+                                data['source'] = 'firebase'
+                                attendance_records.append(data)
+                                logging.debug(f"Firebase에서 추가: {data.get('name')}")
+                                
+            except Exception as firebase_error:
+                logging.warning(f"Firebase 로드 실패 (CSV 백업 사용): {firebase_error}")
         
-        # 중복 제거 (같은 학생, 같은 날짜 - attendance 구조 우선)
-        unique_records = {}
-        for record in attendance_records:
-            key = f"{record.get('student_id', '')}_{record.get('date_only', '')}"
-            if key not in unique_records or record.get('source') == 'attendance':
-                unique_records[key] = record
-        
-        # 최종 결과를 리스트로 변환하고 시간순 정렬
-        final_records = list(unique_records.values())
-        final_records.sort(key=lambda x: x.get('date', ''), reverse=True)
-        
-        logging.info(f"출석 기록 로드 완료: {len(final_records)}개 (attendance: {sum(1 for r in final_records if r.get('source') == 'attendance')}, admin: {sum(1 for r in final_records if r.get('source') == 'admin')})")
+        # 최종 정렬 및 반환
+        final_records = sorted(attendance_records, key=lambda x: x.get('date', ''), reverse=True)
+        logging.info(f"최종 출석 기록: {len(final_records)}개 (CSV: {sum(1 for r in final_records if r.get('source') == 'csv')}, Firebase: {sum(1 for r in final_records if r.get('source') == 'firebase')})")
         
         return final_records
         
     except Exception as e:
-        logging.error(f"출석 기록 로딩 중 오류: {e}")
+        logging.error(f"출석 기록 로딩 중 치명적 오류: {e}")
         return []
 
 # 출석 상태 캐싱을 위한 딕셔너리와 캐시 만료 시간 (초)
@@ -828,6 +837,9 @@ def list_attendance():
         all_records = load_attendance()
         total_count = len(all_records)
         
+        # 디버깅: 로드된 기록 수 로그
+        logging.info(f"관리자 페이지 - 로드된 출석 기록: {total_count}개")
+        
         # 검색 기능 적용
         if search_query:
             filtered_records = []
@@ -974,17 +986,21 @@ def by_period():
 def admin_login():
     """Admin login page"""
     if request.method == 'POST':
+        access_id = request.form.get('access_id')
         password = request.form.get('password')
-        admin_password = os.environ.get('ADMIN_PASSWORD', '8a62e141f905cd3b')
-        if password == admin_password:  # 비밀번호 환경 변수 사용
+        
+        admin_access_id = os.environ.get('ADMIN_ACCESS_ID', '20250107')
+        admin_password = os.environ.get('ADMIN_PASSWORD', '9929')
+        
+        if access_id == admin_access_id and password == admin_password:
             session['admin'] = True
             flash('관리자로 로그인되었습니다.', 'success')
-            return redirect(url_for('by_period'))  # 교시별 보기로 바로 이동
+            return redirect(url_for('list_attendance'))  # 출석 목록으로 이동
         else:
-            flash('비밀번호가 올바르지 않습니다.', 'danger')
+            flash('접근 ID 또는 비밀번호가 올바르지 않습니다.', 'danger')
     
     if session.get('admin'):
-        return redirect(url_for('by_period'))  # 교시별 보기로 바로 이동
+        return redirect(url_for('list_attendance'))  # 출석 목록으로 이동
     
     return render_template('admin.html')
 
@@ -1930,6 +1946,165 @@ def stats():
 @app.route('/health')
 def health():
     return 'OK', 200
+
+@app.route('/debug_firebase')
+def debug_firebase():
+    """Firebase 디버그 페이지 (관리자만)"""
+    if not session.get('admin'):
+        return redirect(url_for('admin_login'))
+    
+    if not db:
+        return "<h1>Firebase 연결이 없습니다</h1>"
+    
+    results = []
+    kst = pytz.timezone('Asia/Seoul')
+    now = datetime.now(kst)
+    date_str = now.strftime('%Y-%m-%d')
+    
+    # 1. Test write operation
+    try:
+        test_data = {
+            'student_id': 'DEBUG001',
+            'name': '디버그테스트',
+            'seat': 'D01',
+            'period': '디버그교시',
+            'date': now.strftime('%Y-%m-%d %H:%M:%S'),
+            'date_only': date_str,
+            'timestamp': firestore.SERVER_TIMESTAMP
+        }
+        
+        # Write to admin collection
+        admin_ref = db.collection('admin').document(f"{date_str}_디버그교시").collection('students').document('DEBUG001')
+        admin_ref.set(test_data)
+        results.append("✅ admin 컬렉션 저장 성공")
+        
+        # Write to attendance collection
+        attendance_ref = db.collection('attendance').document('DEBUG001').collection('records').document(date_str)
+        attendance_ref.set(test_data)
+        results.append("✅ attendance 컬렉션 저장 성공")
+        
+    except Exception as e:
+        results.append(f"❌ 저장 실패: {e}")
+    
+    # 2. Test read operations
+    try:
+        # Read from admin
+        admin_docs = list(db.collection('admin').stream())
+        results.append(f"📂 admin 컬렉션: {len(admin_docs)}개 문서")
+        
+        for doc in admin_docs[:3]:
+            students = list(doc.reference.collection('students').stream())
+            results.append(f"  - {doc.id}: {len(students)}명")
+            for student in students[:2]:
+                data = student.to_dict()
+                results.append(f"    └─ {student.id}: {data.get('name')}")
+            
+        # Read from attendance
+        attendance_docs = list(db.collection('attendance').stream())
+        results.append(f"📂 attendance 컬렉션: {len(attendance_docs)}개 학생")
+        
+        for doc in attendance_docs[:3]:
+            records = list(doc.reference.collection('records').stream())
+            results.append(f"  - 학생 {doc.id}: {len(records)}개 기록")
+            for record in records[:2]:
+                data = record.to_dict()
+                results.append(f"    └─ {record.id}: {data.get('name')} - {data.get('period')}")
+            
+    except Exception as e:
+        results.append(f"❌ 읽기 실패: {e}")
+    
+    # 3. All collections
+    try:
+        all_collections = list(db.collections())
+        results.append(f"📚 전체 컬렉션: {[c.id for c in all_collections]}")
+    except Exception as e:
+        results.append(f"❌ 컬렉션 목록 실패: {e}")
+    
+    html = f"""
+    <!DOCTYPE html>
+    <html>
+    <head>
+        <title>Firebase 디버그</title>
+        <style>
+            body {{ font-family: monospace; background: #1a1a1a; color: #fff; padding: 20px; }}
+            pre {{ background: #2d2d2d; padding: 15px; border-radius: 5px; }}
+        </style>
+    </head>
+    <body>
+        <h1>Firebase 디버그 결과</h1>
+        <pre>{'<br>'.join(results)}</pre>
+        <p><a href="/list">← 출석 목록으로 돌아가기</a></p>
+    </body>
+    </html>
+    """
+    
+    return html
+
+@app.route('/add_sample_data')
+def add_sample_data():
+    """샘플 출석 데이터 추가 (관리자만)"""
+    if not session.get('admin'):
+        flash('관리자 로그인이 필요합니다.', 'warning')
+        return redirect(url_for('admin_login'))
+    
+    try:
+        if not db:
+            flash('Firebase 연결 실패', 'danger')
+            return redirect(url_for('list_attendance'))
+        
+        # 한국 시간대 설정
+        kst = pytz.timezone('Asia/Seoul')
+        now = datetime.now(kst)
+        
+        # 오늘 날짜 문자열
+        date_str = now.strftime('%Y-%m-%d')
+        datetime_str = now.strftime('%Y-%m-%d %H:%M:%S')
+        
+        # 샘플 학생 데이터
+        sample_students = [
+            {"student_id": "10307", "name": "박지호", "seat": "387", "period": "1교시"},
+            {"student_id": "20101", "name": "강지훈", "seat": "331", "period": "2교시"},
+            {"student_id": "30107", "name": "김리나", "seat": "175", "period": "3교시"},
+            {"student_id": "30207", "name": "김유담", "seat": "281", "period": "1교시"},
+            {"student_id": "20240101", "name": "홍길동", "seat": "A1", "period": "시간 외"}
+        ]
+        
+        count = 0
+        for student in sample_students:
+            try:
+                # 출석 데이터 구조
+                attendance_data = {
+                    'student_id': student['student_id'],
+                    'name': student['name'],
+                    'seat': student['seat'],
+                    'period': student['period'],
+                    'date': datetime_str,
+                    'date_only': date_str,
+                    'timestamp': firestore.SERVER_TIMESTAMP
+                }
+                
+                # 1. attendance/{student_id}/records/{date} 구조에 저장
+                student_ref = db.collection('attendance').document(student['student_id']).collection('records').document(date_str)
+                student_ref.set(attendance_data)
+                
+                # 2. admin/{date_period}/students/{student_id} 구조에 저장
+                date_period_key = f"{date_str}_{student['period']}"
+                admin_ref = db.collection('admin').document(date_period_key).collection('students').document(student['student_id'])
+                admin_ref.set(attendance_data)
+                
+                count += 1
+                logging.info(f"샘플 데이터 추가: {student['name']} ({student['student_id']}) - {student['period']}")
+                
+            except Exception as e:
+                logging.error(f"데이터 추가 실패 - {student['name']}: {e}")
+        
+        flash(f'샘플 데이터 {count}개를 성공적으로 추가했습니다.', 'success')
+        
+    except Exception as e:
+        flash(f'샘플 데이터 추가 실패: {str(e)}', 'danger')
+        logging.error(f"샘플 데이터 추가 중 오류: {e}")
+    
+    return redirect(url_for('list_attendance'))
 
 if __name__ == '__main__':
     app.run(debug=True, host='0.0.0.0')
