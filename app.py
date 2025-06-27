@@ -1801,7 +1801,7 @@ def delete_records():
                 found = False
                 for csv_idx, (_, row) in enumerate(df.iterrows()):
                     row_student_id = str(row.get('학번', ''))
-                    row_date = str(row.get('날짜', ''))[:10]
+                    row_date = str(row.get('출석일', ''))[:10]  # '출석일' 컬럼 사용
                     row_period = str(row.get('교시', ''))
                     
                     logging.info(f"CSV 행 {csv_idx}: 학번={row_student_id}, 날짜={row_date}, 교시={row_period}")
