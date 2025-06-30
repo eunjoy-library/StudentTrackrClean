@@ -382,12 +382,15 @@ document.addEventListener('DOMContentLoaded', function() {
                         </div>`;
                     
                     // 서버에 학생이 이번주에 이미 출석했는지 확인
-                    console.log(`API 호출: /check_attendance_status?student_id=${studentId}`);
-                    fetch(`/check_attendance_status?student_id=${studentId}`, {
-                        cache: 'no-store',
+                    const apiUrl = `/check_attendance_status?student_id=${studentId}&_=${Date.now()}`;
+                    console.log(`API 호출: ${apiUrl}`);
+                    fetch(apiUrl, {
+                        method: 'GET',
+                        cache: 'no-cache',
                         headers: {
                             'Accept': 'application/json',
-                            'Content-Type': 'application/json'
+                            'Cache-Control': 'no-cache',
+                            'Pragma': 'no-cache'
                         }
                     })
                     .then(response => {
