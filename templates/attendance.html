@@ -456,21 +456,8 @@ document.addEventListener('DOMContentLoaded', function() {
                         btnDisabled = false;
                         btnClass = 'btn-warning';
                     }
-                    // 이미 출석한 학생이면 버튼 비활성화 (이전 동작 복원)
+                    // 이미 출석한 학생이면 버튼 비활성화
                     else if (alreadyAttended) {
-                        // 모든 경우에 동일한 "이미 출석했습니다" 메시지 표시
-                        modalContent = `
-                            <div style="color: #dc3545; font-weight: bold; margin-bottom: 15px; text-align: center; font-size: 18px;">
-                                이번주에 이미 도서실에 출석하셨습니다.<br>
-                                4층 공강실로 올라가주세요~!
-                                ${attendanceDate ? `<div style="font-size: 16px; margin-top: 5px;">${attendanceDate}</div>` : ''}
-                            </div>
-                            ${baseContent}
-                        `;
-                        btnDisabled = true;
-                        btnClass = 'btn-secondary';
-                        playErrorSound();
-                    }
                         const isAdmin = {{ 'true' if session.get('admin') else 'false' }};
                         const isAdminAddPage = window.location.pathname.includes('/admin_add_attendance');
                         
@@ -486,10 +473,10 @@ document.addEventListener('DOMContentLoaded', function() {
                             btnDisabled = false;
                             btnClass = 'btn-warning';
                         } else {
-                            // 일반 학생
+                            // 일반 학생 - 중복출석 경고 표시
                             modalContent = `
                                 <div style="color: #dc3545; font-weight: bold; margin-bottom: 15px; text-align: center; font-size: 18px;">
-                                    이번주에 이미 출석하셨습니다.<br>
+                                    이번주에 이미 도서실에 출석하셨습니다.<br>
                                     4층 공강실로 올라가주세요~!
                                     ${attendanceDate ? `<div style="font-size: 16px; margin-top: 5px;">${attendanceDate}</div>` : ''}
                                 </div>
