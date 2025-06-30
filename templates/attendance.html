@@ -382,10 +382,16 @@ document.addEventListener('DOMContentLoaded', function() {
                         </div>`;
                     
                     // 서버에 학생이 이번주에 이미 출석했는지 확인
+                    console.log(`API 호출: /check_attendance_status?student_id=${studentId}`);
                     fetch(`/check_attendance_status?student_id=${studentId}`, {
-                        cache: 'no-store'
+                        cache: 'no-store',
+                        headers: {
+                            'Accept': 'application/json',
+                            'Content-Type': 'application/json'
+                        }
                     })
                     .then(response => {
+                        console.log('API 응답 상태:', response.status, response.statusText);
                         if (!response.ok) {
                             throw new Error(`HTTP error! status: ${response.status}`);
                         }
@@ -394,9 +400,10 @@ document.addEventListener('DOMContentLoaded', function() {
                     .then(data => {
                         console.log('출석 상태 확인 결과:', data);
                         console.log('API 응답 상세:', JSON.stringify(data, null, 2));
+                        console.log('data.already_attended 값:', data.already_attended, '타입:', typeof data.already_attended);
                         
                         // 이미 출석한 학생인지 여부 설정
-                        studentAlreadyAttended = data.already_attended || false;
+                        studentAlreadyAttended = data.already_attended === true;
                         const attendanceDate = data.last_attendance_date || '';
                         const isTwiceWeekly = data.is_twice_weekly || false;
                         const showTwiceWeeklyPopup = data.show_twice_weekly_popup || false;
