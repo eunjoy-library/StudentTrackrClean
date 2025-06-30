@@ -2232,6 +2232,43 @@ def debug_firebase():
     
     return html
 
+@app.route('/add_test_attendance')
+def add_test_attendance():
+    """테스트용 학번 20202 출석 데이터 추가"""
+    try:
+        if not db:
+            return "Firebase 연결 실패", 500
+            
+        # 현재 한국 시간
+        now = datetime.now(KST)
+        date_str = now.strftime('%Y-%m-%d')
+        datetime_str = now.strftime('%Y-%m-%d %H:%M:%S')
+        
+        # 출석 데이터
+        attendance_data = {
+            'student_id': '20202',
+            'name': '곽환준',
+            'seat': '346',
+            'period': '1교시',
+            'date': datetime_str,
+            'date_only': date_str,
+            'timestamp': firestore.SERVER_TIMESTAMP
+        }
+        
+        # attendance/{student_id}/records/{date} 구조에 저장
+        student_ref = db.collection('attendance').document('20202').collection('records').document(date_str)
+        student_ref.set(attendance_data)
+        
+        # admin/{date_period}/students/{student_id} 구조에 저장
+        date_period_key = f"{date_str}_1교시"
+        admin_ref = db.collection('admin').document(date_period_key).collection('students').document('20202')
+        admin_ref.set(attendance_data)
+        
+        return f"학번 20202 테스트 데이터 추가 완료: {date_str}", 200
+        
+    except Exception as e:
+        return f"데이터 추가 실패: {str(e)}", 500
+
 @app.route('/add_sample_data')
 def add_sample_data():
     """샘플 출석 데이터 추가 (관리자만)"""
