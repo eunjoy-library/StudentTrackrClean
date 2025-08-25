@@ -2335,5 +2335,152 @@ def add_sample_data():
     
     return redirect(url_for('list_attendance'))
 
+# ================== [데이터 영구 보존 시스템] ==================
+
+def backup_students_to_firebase():
+    """현재 students.xlsx를 Firebase에 백업"""
+    try:
+        if not db:
+            return False, "Firebase 연결 오류"
+            
+        if not os.path.exists('students.xlsx'):
+            return False, "students.xlsx 파일이 없습니다"
+            
+        # Excel 파일 읽기
+        import openpyxl
+        wb = openpyxl.load_workbook('students.xlsx')
+        ws = wb.active
+        
+        # 헤더 읽기
+        headers = []
+        for cell in ws[1]:
+            headers.append(cell.value)
+        
+        # 학생 데이터 수집
+        students_data = []
+        student_count = 0
+        
+        for row in ws.iter_rows(min_row=2, values_only=True):
+            if row[0] is not None:  # 첫 번째 컬럼이 있는 경우만
+                student_dict = {}
+                for i, header in enumerate(headers):
+                    if i < len(row):
+                        student_dict[header] = str(row[i]) if row[i] is not None else ''
+                students_data.append(student_dict)
+                student_count += 1
+        
+        # Firebase에 백업
+        backup_doc = {
+            'backup_date': firestore.SERVER_TIMESTAMP,
+            'student_count': student_count,
+            'headers': headers,
+            'students': students_data,
+            'file_name': 'students.xlsx'
+        }
+        
+        # 백업 저장
+        backup_ref = db.collection('backups').document('students_backup')
+        backup_ref.set(backup_doc)
+        
+        logging.info(f"학생 데이터 {student_count}명 Firebase 백업 완료")
+        return True, f"✅ 학생 데이터 {student_count}명 백업 완료"
+        
+    except Exception as e:
+        logging.error(f"학생 데이터 백업 실패: {e}")
+        return False, f"❌ 백업 실패: {str(e)}"
+
+def restore_students_from_firebase():
+    """Firebase에서 학생 데이터를 복원하여 students.xlsx 생성"""
+    try:
+        if not db:
+            return False, "Firebase 연결 오류"
+            
+        # 백업 데이터 가져오기
+        backup_ref = db.collection('backups').document('students_backup')
+        backup_doc = backup_ref.get()
+        
+        if not backup_doc.exists:
+            return False, "Firebase에 백업된 학생 데이터가 없습니다"
+        
+        backup_data = backup_doc.to_dict()
+        students = backup_data.get('students', [])
+        headers = backup_data.get('headers', [])
+        
+        if not students:
+            return False, "백업된 학생 데이터가 비어있습니다"
+        
+        # 새 Excel 파일 생성
+        import openpyxl
+        from openpyxl import Workbook
+        wb = Workbook()
+        ws = wb.active
+        
+        # 헤더 추가
+        for col, header in enumerate(headers, 1):
+            ws.cell(row=1, column=col, value=header)
+        
+        # 학생 데이터 추가
+        for row, student in enumerate(students, 2):
+            for col, header in enumerate(headers, 1):
+                value = student.get(header, '')
+                ws.cell(row=row, column=col, value=value)
+        
+        # 파일 저장
+        wb.save('students.xlsx')
+        
+        # 캐시 초기화
+        global _student_data_cache
+        _student_data_cache = None
+        
+        logging.info(f"Firebase에서 학생 데이터 {len(students)}명 복원 완료")
+        return True, f"✅ 학생 데이터 {len(students)}명 복원 완료"
+        
+    except Exception as e:
+        logging.error(f"학생 데이터 복원 실패: {e}")
+        return False, f"❌ 복원 실패: {str(e)}"
+
+def auto_restore_on_startup():
+    """앱 시작 시 자동 복원 (students.xlsx가 없는 경우)"""
+    if not os.path.exists('students.xlsx'):
+        logging.info("students.xlsx 파일 없음 - Firebase에서 자동 복원 시도")
+        success, message = restore_students_from_firebase()
+        if success:
+            logging.info("자동 복원 성공")
+        else:
+            logging.warning(f"자동 복원 실패: {message}")
+
+@app.route('/admin/backup_students')
+def backup_students():
+    """관리자용 학생 데이터 백업"""
+    if not session.get('admin'):
+        flash('관리자 로그인이 필요합니다.', 'warning')
+        return redirect(url_for('admin_login'))
+    
+    success, message = backup_students_to_firebase()
+    if success:
+        flash(message, 'success')
+    else:
+        flash(message, 'danger')
+    
+    return redirect(url_for('list_attendance'))
+
+@app.route('/admin/restore_students')
+def restore_students():
+    """관리자용 학생 데이터 복원"""
+    if not session.get('admin'):
+        flash('관리자 로그인이 필요합니다.', 'warning')
+        return redirect(url_for('admin_login'))
+    
+    success, message = restore_students_from_firebase()
+    if success:
+        flash(message, 'success')
+    else:
+        flash(message, 'danger')
+    
+    return redirect(url_for('list_attendance'))
+
+# 앱 시작 시 자동 복원 실행
+auto_restore_on_startup()
+
 if __name__ == '__main__':
     app.run(debug=True, host='0.0.0.0')
