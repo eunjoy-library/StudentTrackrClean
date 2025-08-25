@@ -1646,31 +1646,41 @@ def api_bulk_update_seats():
         return jsonify({"error": "유효한 데이터가 없습니다."}), 400
     
     try:
-        # Excel 파일 업데이트
+        # Excel 파일 업데이트 (헤더 없는 구조 대응)
         import pandas as pd
         from openpyxl import load_workbook
         
         excel_path = 'students.xlsx'
         
-        # pandas로 열 이름 확인
-        df_preview = pd.read_excel(excel_path, nrows=1)
-        column_names = df_preview.columns.tolist()
-        
-        # 학번과 좌석번호 열 확인
-        id_column = [col for col in column_names if '학번' in col or 'ID' in col.upper()][0]
-        seat_column = [col for col in column_names if '좌석' in col or 'SEAT' in col.upper()][0]
-        
-        # openpyxl로 직접 셀 수정
+        # openpyxl로 파일 구조 확인
         wb = load_workbook(excel_path)
         ws = wb.active
         
-        # 학번 열 및 좌석번호 열의 인덱스 찾기
-        col_indices = {}
-        for idx, col in enumerate(ws[1]):
-            if col.value == id_column:
-                col_indices['id'] = idx + 1  # 1-based index
-            elif col.value == seat_column:
-                col_indices['seat'] = idx + 1  # 1-based index
+        # 첫 번째 행 확인하여 헤더 유무 판단
+        first_row = [cell.value for cell in ws[1]]
+        has_header = False
+        
+        # 첫 번째 행이 숫자(학번)로 시작하면 헤더 없음
+        if first_row[0] and str(first_row[0]).isdigit():
+            has_header = False
+            start_row = 1
+            # 고정 구조: 학번(0), 이름(1), 좌석번호(2)
+            col_indices = {'id': 1, 'name': 2, 'seat': 3}
+            logging.info("일괄 업데이트: 헤더 없는 구조 감지")
+        else:
+            has_header = True
+            start_row = 2
+            # 헤더에서 열 인덱스 찾기
+            col_indices = {}
+            for idx, col in enumerate(ws[1]):
+                col_value = str(col.value) if col.value else ""
+                if '학번' in col_value or 'ID' in col_value.upper():
+                    col_indices['id'] = idx + 1  # 1-based index
+                elif '이름' in col_value or 'NAME' in col_value.upper():
+                    col_indices['name'] = idx + 1
+                elif '좌석' in col_value or 'SEAT' in col_value.upper():
+                    col_indices['seat'] = idx + 1
+            logging.info("일괄 업데이트: 헤더 있는 구조 감지")
         
         # 변경 사항 추적
         changes_count = 0
@@ -1691,7 +1701,7 @@ def api_bulk_update_seats():
         seat_changes_count = 0
         name_changes_count = 0
         
-        for row_idx, row in enumerate(ws.iter_rows(min_row=2), start=2):  # 2행부터 시작 (헤더 제외)
+        for row_idx, row in enumerate(ws.iter_rows(min_row=start_row), start=start_row):
             cell_id = row[col_indices['id'] - 1].value  # 0-based index
             if str(cell_id) in changes_map:
                 change_item = changes_map[str(cell_id)]
@@ -1713,22 +1723,24 @@ def api_bulk_update_seats():
         # 데이터베이스에 없는 새 학생 추가
         new_students_count = 0
         
-        if changes_map and 'name' in col_indices:  # 이름 열이 있는 경우만 새 학생 추가 가능
+        if changes_map:  # 남은 학번들은 새 학생으로 추가
             # 마지막 행 다음에 새 학생 추가
             last_row = ws.max_row + 1
             
             for student_id, change_item in list(changes_map.items()):
                 if 'new_name' in change_item:  # 이름이 제공된 경우에만 새 학생으로 추가
-                    # 새 학생 정보 추가
+                    # 새 학생 정보 추가 (구조: 학번, 이름, 좌석번호)
                     ws.cell(row=last_row, column=col_indices['id']).value = student_id
-                    ws.cell(row=last_row, column=col_indices['seat']).value = change_item['new_seat']
                     ws.cell(row=last_row, column=col_indices['name']).value = change_item['new_name']
+                    ws.cell(row=last_row, column=col_indices['seat']).value = change_item['new_seat']
                     
                     new_students_count += 1
                     last_row += 1
                     
                     # 처리한 항목 제거
                     del changes_map[student_id]
+                    
+                    logging.info(f"새 학생 추가: {student_id}, {change_item['new_name']}, {change_item['new_seat']}")
         
         # 미처리된 학번 수 계산
         not_found_count = len(changes_map)
@@ -1736,14 +1748,44 @@ def api_bulk_update_seats():
         # 변경 사항 저장
         wb.save(excel_path)
         
-        # 학생 데이터 캐시 초기화
-        global _student_data_cache, _student_data_timestamp
+        # 학생 데이터 캐시 강제 새로고침
+        global _student_data_cache
         _student_data_cache = None
-        _student_data_timestamp = None
+        load_student_data(force_reload=True)
+        
+        # Firebase에도 즉시 백업
+        try:
+            backup_success, backup_message = backup_students_to_firebase()
+            if backup_success:
+                logging.info("일괄 업데이트 후 Firebase 자동 백업 성공")
+            else:
+                logging.warning(f"일괄 업데이트 후 Firebase 백업 실패: {backup_message}")
+        except Exception as e:
+            logging.error(f"Firebase 백업 중 오류: {e}")
+        
+        # 결과 메시지 생성
+        total_changes = seat_changes_count + name_changes_count + new_students_count
+        message_parts = []
+        
+        if seat_changes_count > 0:
+            message_parts.append(f"좌석번호 수정: {seat_changes_count}명")
+        if name_changes_count > 0:
+            message_parts.append(f"이름 수정: {name_changes_count}명")
+        if new_students_count > 0:
+            message_parts.append(f"새 학생 추가: {new_students_count}명")
+        if not_found_count > 0:
+            message_parts.append(f"찾을 수 없는 학번: {not_found_count}개")
+            
+        success_message = f"✅ 일괄 업데이트 완료!\n" + "\n".join(message_parts)
         
         return jsonify({
             "success": True,
-            "message": f"성공적으로 업데이트되었습니다: 좌석번호 {seat_changes_count}개, 이름 {name_changes_count}개 변경됨, 새 학생 {new_students_count}명 추가됨. {not_found_count}개의 학번은 처리할 수 없습니다."
+            "message": success_message,
+            "changes_count": total_changes,
+            "seat_changes": seat_changes_count,
+            "name_changes": name_changes_count,
+            "new_students": new_students_count,
+            "not_found": not_found_count
         })
     except Exception as e:
         return jsonify({"error": f"학생 정보 일괄 업데이트 중 오류가 발생했습니다: {str(e)}"}), 500
