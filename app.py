@@ -1530,6 +1530,16 @@ def add_direct_student():
             _student_data_cache = None
             load_student_data(force_reload=True)
             
+            # Firebase에도 즉시 백업
+            try:
+                backup_success, backup_message = backup_students_to_firebase()
+                if backup_success:
+                    logging.info("학생 추가 후 Firebase 자동 백업 성공")
+                else:
+                    logging.warning(f"학생 추가 후 Firebase 백업 실패: {backup_message}")
+            except Exception as e:
+                logging.error(f"Firebase 백업 중 오류: {e}")
+            
             return jsonify({
                 "success": True,
                 "message": message
