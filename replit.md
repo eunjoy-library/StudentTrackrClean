@@ -109,6 +109,18 @@ This is a Flask-based library attendance system designed for student check-ins d
 
 ## Changelog
 
+- August 25, 2025:
+  - **NEW FEATURE**: 3학년 학생 중복 출석 허용 기능 추가
+    - 학번이 3으로 시작하는 3학년 학생들은 일주일에 여러 번 출석 가능
+    - 3학년 학생 중복 출석시 특별 격려 메시지 표시 ("📚 3학년 중복 출석 가능 📚 입시 준비 화이팅!")
+    - 백엔드와 프론트엔드 모두에서 3학년 학생 특별 처리 로직 구현
+  - **ENHANCEMENT**: 관리자 자동 로그인 기능 추가
+    - /admin 접속시 비밀번호 입력 없이 바로 관리자 페이지로 이동
+    - 수동 로그인은 /admin_manual_login에서 여전히 사용 가능
+  - **BUG FIX**: 새 학생 추가 후 즉시 출석 불가 문제 해결
+    - Excel 파일 구조 자동 감지 (헤더 유무 판단)
+    - 학생 추가 후 캐시 강제 새로고침으로 즉시 인식
+    - Firebase 자동 백업으로 데이터 영구 보존
 - June 27, 2025: 
   - Fixed admin login credentials mismatch - updated ADMIN_ACCESS_ID from 20250107 to 20255008
   - Resolved CSV header compatibility issue for Korean language headers in attendance records

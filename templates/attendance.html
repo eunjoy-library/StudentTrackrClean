@@ -400,21 +400,21 @@ document.addEventListener('DOMContentLoaded', function() {
                                 // 중복출석 여부 확인
                                 const isAlreadyAttended = data.already_attended === true;
                                 const attendanceDate = data.last_attendance_date || '';
-                                const isTwiceWeekly = data.is_twice_weekly || false;
-                                const showTwiceWeeklyPopup = data.show_twice_weekly_popup || false;
+                                const isThirdGrade = data.is_third_grade || false;
+                                const showThirdGradePopup = data.show_third_grade_popup || false;
                                 
                                 console.log('=== 처리된 중복출석 상태 ===', {
                                     isAlreadyAttended,
                                     attendanceDate,
-                                    isTwiceWeekly,
-                                    showTwiceWeeklyPopup
+                                    isThirdGrade,
+                                    showThirdGradePopup
                                 });
                                 
                                 // 전역 변수 설정
                                 studentAlreadyAttended = isAlreadyAttended;
                                 
                                 // 모달 내용 업데이트 및 표시
-                                updateModalContent(isAlreadyAttended, attendanceDate, baseContent, isTwiceWeekly, showTwiceWeeklyPopup);
+                                updateModalContent(isAlreadyAttended, attendanceDate, baseContent, isThirdGrade, showThirdGradePopup);
                                 
                                 // 모달 표시
                                 if (customModal) {
@@ -444,23 +444,23 @@ document.addEventListener('DOMContentLoaded', function() {
             });
                 
                 // 모달 내용과 버튼 상태 업데이트 함수
-                function updateModalContent(alreadyAttended, attendanceDate, baseContent, isTwiceWeekly = false, showTwiceWeeklyPopup = false) {
+                function updateModalContent(alreadyAttended, attendanceDate, baseContent, isThirdGrade = false, showThirdGradePopup = false) {
                     let modalContent = baseContent;
                     let btnDisabled = false;
                     let btnClass = 'btn-primary';
                     
-                    // 두 번 출석 가능한 학생의 두 번째 출석 특별 처리
-                    if (showTwiceWeeklyPopup) {
+                    // 3학년 학생의 중복 출석 특별 처리
+                    if (showThirdGradePopup) {
                         modalContent = `
-                            <div style="color: #ffc107; font-weight: bold; margin-bottom: 15px; text-align: center; font-size: 18px;">
-                                🌟 이번주 두 번째 출석입니다! 🌟<br>
-                                열심히 공부하는 모습이 보기 좋네요!
-                                ${attendanceDate ? `<div style="font-size: 16px; margin-top: 5px;">첫 번째 출석: ${attendanceDate}</div>` : ''}
+                            <div style="color: #28a745; font-weight: bold; margin-bottom: 15px; text-align: center; font-size: 18px;">
+                                📚 3학년 중복 출석 가능 📚<br>
+                                입시 준비 화이팅! 언제든 다시 출석하세요!
+                                ${attendanceDate ? `<div style="font-size: 16px; margin-top: 5px;">이전 출석: ${attendanceDate}</div>` : ''}
                             </div>
                             ${baseContent}
                         `;
                         btnDisabled = false;
-                        btnClass = 'btn-warning';
+                        btnClass = 'btn-success';
                     }
                     // 이미 출석한 학생이면 버튼 비활성화
                     else if (alreadyAttended) {
@@ -479,7 +479,7 @@ document.addEventListener('DOMContentLoaded', function() {
                             btnDisabled = false;
                             btnClass = 'btn-warning';
                         } else {
-                            // 일반 학생 - 중복출석 경고 표시
+                            // 1-2학년 학생 - 중복출석 경고 표시 (3학년은 이 경우에 해당하지 않음)
                             modalContent = `
                                 <div style="color: #dc3545; font-weight: bold; margin-bottom: 15px; text-align: center; font-size: 18px;">
                                     이번주에 이미 도서실에 출석하셨습니다.<br>

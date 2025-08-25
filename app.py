@@ -235,8 +235,11 @@ def save_attendance(student_id, name, seat, period_text, admin_override=False):
         date_str = now_kst.strftime('%Y-%m-%d')
         datetime_str = now_kst.strftime('%Y-%m-%d %H:%M:%S')
         
-        # 관리자 모드가 아닌 경우 중복 체크
-        if not admin_override:
+        # 3학년 학생 확인 (학번 첫 자리가 3인 경우)
+        is_third_grade = str(student_id).startswith('3')
+        
+        # 관리자 모드가 아니고, 3학년이 아닌 경우에만 중복 체크
+        if not admin_override and not is_third_grade:
             # 현재 주 범위 계산 (일~토)
             days_to_sunday = now_kst.weekday() + 1
             if days_to_sunday == 7:
@@ -259,6 +262,8 @@ def save_attendance(student_id, name, seat, period_text, admin_override=False):
                 attendance_date = week_records[0].to_dict().get('date_only', '')
                 flash(f'이미 이번 주에 출석 기록이 있습니다. (출석일: {attendance_date})', 'warning')
                 return False
+        elif is_third_grade and not admin_override:
+            logging.info(f"3학년 학생 {student_id} 중복 출석 허용")
         
         # 새로운 이중 구조로 출석 기록 저장
         attendance_data = {
@@ -710,47 +715,27 @@ def check_attendance_status():
         if recent_dates:
             last_attendance_date = recent_dates[0]  # 가장 최근 출석일
         
-        # 일주일에 두 번 오는 학생들을 위한 특별 처리
-        twice_weekly_students = ['30530', '30606', '30607', '30608', '30609', '30610']  # 예시 학번들
-        is_twice_weekly = student_id in twice_weekly_students
+        # 3학년 학생들은 중복 출석 가능 (학번이 3으로 시작)
+        is_third_grade = str(student_id).startswith('3')
         
-        # 두 번 출석 가능한 학생의 경우 처리 방식 변경
-        if is_twice_weekly:
-            if count == 0:
-                # 첫 번째 출석
-                return jsonify({
-                    'already_attended': False,
-                    'attendance_count': count,
-                    'last_attendance_date': last_attendance_date,
-                    'is_twice_weekly': True,
-                    'show_twice_weekly_popup': False
-                })
-            elif count == 1:
-                # 두 번째 출석 - 특별 팝업 표시
-                return jsonify({
-                    'already_attended': False,  # 아직 출석 가능
-                    'attendance_count': count,
-                    'last_attendance_date': last_attendance_date,
-                    'is_twice_weekly': True,
-                    'show_twice_weekly_popup': True
-                })
-            else:
-                # 이미 두 번 출석함
-                return jsonify({
-                    'already_attended': True,
-                    'attendance_count': count,
-                    'last_attendance_date': last_attendance_date,
-                    'is_twice_weekly': True,
-                    'show_twice_weekly_popup': False
-                })
+        # 3학년 학생의 경우 중복 출석 허용
+        if is_third_grade:
+            # 3학년 학생은 항상 출석 가능 (중복 출석 무제한)
+            return jsonify({
+                'already_attended': False,  # 항상 출석 가능
+                'attendance_count': count,
+                'last_attendance_date': last_attendance_date,
+                'is_third_grade': True,
+                'show_third_grade_popup': count > 0  # 이미 출석한 적이 있으면 알림 표시
+            })
         else:
-            # 일반 학생 (주 1회만) - 이미 출석한 경우 즉시 차단
+            # 1-2학년 학생 (주 1회만) - 이미 출석한 경우 즉시 차단
             return jsonify({
                 'already_attended': exceeded,  # 1회 출석 후 True가 됨
                 'attendance_count': count,
                 'last_attendance_date': last_attendance_date,
-                'is_twice_weekly': False,
-                'show_twice_weekly_popup': False
+                'is_third_grade': False,
+                'show_third_grade_popup': False
             })
     except Exception as e:
         logging.error(f"출석 상태 확인 중 오류: {e}")
