@@ -117,53 +117,49 @@ def load_student_data(force_reload=False):
             (now - _last_student_data_load_time).seconds > 5):
         logging.debug("학생 데이터 새로 로딩")
         try:
-            # openpyxl을 직접 사용하여 엑셀 파일 읽기 (더 안정적인 방식)
+            # openpyxl을 직접 사용하여 엑셀 파일 읽기 (헤더 없는 구조 대응)
             try:
                 import openpyxl
                 wb = openpyxl.load_workbook('students.xlsx')
                 ws = wb.active
                 
                 student_data = {}
-                headers = []
-                seat_column = 2  # 기본 열 인덱스
                 
-                # 헤더 행 읽기 (첫 번째 행)
-                for cell in ws[1]:
-                    headers.append(cell.value)
+                # 첫 번째 행 확인하여 헤더 유무 판단
+                first_row = [cell.value for cell in ws[1]]
+                has_header = False
                 
-                # 좌석번호 또는 공강좌석번호 열 찾기
-                for i, header in enumerate(headers):
-                    if header in ['좌석번호', '공강좌석번호']:
-                        seat_column = i
-                        break
+                # 첫 번째 행이 숫자(학번)로 시작하면 헤더 없음
+                if first_row[0] and str(first_row[0]).isdigit():
+                    has_header = False
+                    start_row = 1
+                    logging.info("Excel 파일: 헤더 없는 구조 감지")
+                else:
+                    has_header = True
+                    start_row = 2
+                    logging.info("Excel 파일: 헤더 있는 구조 감지")
                 
-                # 학번과 이름 열 인덱스 찾기
-                student_id_column = -1
-                name_column = -1
-                for i, header in enumerate(headers):
-                    if header == '학번':
-                        student_id_column = i
-                    elif header == '이름':
-                        name_column = i
+                # 학생 데이터 읽기 (구조: 학번, 이름, 좌석번호)
+                for row in ws.iter_rows(min_row=start_row, values_only=True):
+                    if row and len(row) >= 2:  # 최소 학번, 이름은 있어야 함
+                        student_id = row[0]
+                        name = row[1] 
+                        seat = row[2] if len(row) > 2 else ''
+                        
+                        # 값이 모두 있는 경우만 추가
+                        if student_id and name:
+                            student_id = str(student_id).strip()
+                            name = str(name).strip()
+                            seat = str(seat).strip() if seat else ''
+                            student_data[student_id] = (name, seat)
                 
-                if student_id_column == -1 or name_column == -1:
-                    logging.error(f"헤더 구조 문제: 학번 또는 이름 열을 찾을 수 없음. 헤더: {headers}")
-                    return {}
+                logging.info(f"Excel에서 로드된 학생 수: {len(student_data)}")
                 
-                # 학생 데이터 읽기 (2번째 행부터)
-                for row in ws.iter_rows(min_row=2):
-                    student_id = row[student_id_column].value
-                    name = row[name_column].value
-                    seat = row[seat_column].value if len(row) > seat_column else ''
-                    
-                    # 값이 모두 있는 경우만 추가
-                    if student_id and name:
-                        student_id = str(student_id).strip()
-                        name = str(name).strip()
-                        seat = str(seat).strip() if seat else ''
-                        student_data[student_id] = (name, seat)
-                
-                logging.debug(f"로드된 학생 수: {len(student_data)}")
+                # 30431 학생 확인 로그
+                if '30431' in student_data:
+                    logging.info(f"30431 학생 데이터 확인: {student_data['30431']}")
+                else:
+                    logging.warning("30431 학생 데이터를 찾을 수 없음")
                 
             except Exception as excel_error:
                 logging.error(f"엑셀 파일 직접 읽기 실패: {excel_error}")
