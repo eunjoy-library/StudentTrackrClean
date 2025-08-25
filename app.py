@@ -1088,7 +1088,26 @@ def by_period():
 
 @app.route('/admin', methods=['GET', 'POST'])
 def admin_login():
-    """Admin login page"""
+    """Admin login page - 자동 로그인 활성화"""
+    # 자동 로그인 (로그인 페이지 우회)
+    if not session.get('admin'):
+        session['admin'] = True
+        flash('관리자 모드로 자동 로그인되었습니다.', 'success')
+        return redirect(url_for('list_attendance'))
+    
+    # 이미 로그인된 경우 바로 관리자 페이지로
+    return redirect(url_for('list_attendance'))
+
+@app.route('/logout')
+def logout():
+    """Logout from admin"""
+    session.pop('admin', None)
+    flash('로그아웃되었습니다.', 'info')
+    return redirect(url_for('attendance'))
+
+@app.route('/admin_manual_login', methods=['GET', 'POST'])
+def admin_manual_login():
+    """수동 관리자 로그인 페이지 (필요시 사용)"""
     if request.method == 'POST':
         access_id = request.form.get('access_id')
         password = request.form.get('password')
@@ -1097,7 +1116,7 @@ def admin_login():
         admin_password = os.environ.get('ADMIN_PASSWORD', '1234')
         
         # 디버깅 로그
-        logging.info(f"로그인 시도 - 입력 ID: {access_id}, 입력 PW: {password}")
+        logging.info(f"수동 로그인 시도 - 입력 ID: {access_id}, 입력 PW: {password}")
         logging.info(f"설정된 ID: {admin_access_id}, 설정된 PW: {admin_password}")
         
         if access_id == admin_access_id and password == admin_password:
@@ -1111,13 +1130,6 @@ def admin_login():
         return redirect(url_for('list_attendance'))  # 출석 목록으로 이동
     
     return render_template('admin.html')
-
-@app.route('/logout')
-def logout():
-    """Logout from admin"""
-    session.pop('admin', None)
-    flash('로그아웃되었습니다.', 'info')
-    return redirect(url_for('attendance'))
 
 @app.route('/admin_add_attendance', methods=['GET', 'POST'])
 def admin_add_attendance():
