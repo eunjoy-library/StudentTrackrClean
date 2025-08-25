@@ -51,6 +51,23 @@ logging.basicConfig(level=logging.DEBUG,
 app = Flask(__name__)
 app.secret_key = os.getenv("FLASK_SECRET_KEY", "your-secret-key")
 
+# 한국어 JSON 응답을 위한 설정
+app.config['JSON_AS_ASCII'] = False
+app.config['JSONIFY_PRETTYPRINT_REGULAR'] = True
+
+# Flask JSON encoder 설정
+import json as json_module
+from flask.json.provider import DefaultJSONProvider
+
+class KoreanJSONProvider(DefaultJSONProvider):
+    def dumps(self, obj, **kwargs):
+        return json_module.dumps(obj, ensure_ascii=False, **kwargs)
+    
+    def loads(self, s):
+        return json_module.loads(s)
+
+app.json = KoreanJSONProvider(app)
+
 # 캐싱을 위한 전역 변수
 _student_data_cache = None
 _last_student_data_load_time = None
@@ -149,7 +166,13 @@ def load_student_data(force_reload=False):
                         # 값이 모두 있는 경우만 추가
                         if student_id and name:
                             student_id = str(student_id).strip()
+                            # 이름 인코딩 문제 해결
                             name = str(name).strip()
+                            # 한국어 깨짐 문제 수정 시도
+                            if '�' in name:
+                                logging.warning(f"인코딩 문제 발견된 이름: {repr(name)} (학번: {student_id})")
+                                # 기본 이름으로 대체
+                                name = f"학생_{student_id}"
                             seat = str(seat).strip() if seat else ''
                             student_data[student_id] = (name, seat)
                 
