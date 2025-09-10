@@ -1557,15 +1557,17 @@ def add_direct_student():
             _student_data_cache = None
             load_student_data(force_reload=True)
             
-            # Firebase에도 즉시 백업
+            # Firebase에도 즉시 백업 (강화된 버전)
             try:
                 backup_success, backup_message = backup_students_to_firebase()
                 if backup_success:
-                    logging.info("학생 추가 후 Firebase 자동 백업 성공")
+                    logging.info("🔄 학생 추가 후 Firebase 자동 백업 성공")
                 else:
-                    logging.warning(f"학생 추가 후 Firebase 백업 실패: {backup_message}")
+                    logging.warning(f"⚠️ 학생 추가 후 Firebase 백업 실패: {backup_message}")
+                    # 백업 실패해도 계속 진행 (사용자 경험 우선)
             except Exception as e:
-                logging.error(f"Firebase 백업 중 오류: {e}")
+                logging.error(f"❌ Firebase 백업 중 오류: {e}")
+                # 백업 오류 발생해도 학생 추가는 성공으로 처리
             
             return jsonify({
                 "success": True,
@@ -1787,15 +1789,17 @@ def api_bulk_update_seats():
         _student_data_cache = None
         load_student_data(force_reload=True)
         
-        # Firebase에도 즉시 백업
+        # Firebase에도 즉시 백업 (강화된 버전)
         try:
             backup_success, backup_message = backup_students_to_firebase()
             if backup_success:
-                logging.info("일괄 업데이트 후 Firebase 자동 백업 성공")
+                logging.info("🔄 일괄 업데이트 후 Firebase 자동 백업 성공")
             else:
-                logging.warning(f"일괄 업데이트 후 Firebase 백업 실패: {backup_message}")
+                logging.warning(f"⚠️ 일괄 업데이트 후 Firebase 백업 실패: {backup_message}")
         except Exception as e:
-            logging.error(f"Firebase 백업 중 오류: {e}")
+            logging.error(f"❌ Firebase 백업 중 오류: {e}")
+            
+        # 백업 실패해도 업데이트 결과는 성공으로 표시
         
         # 결과 메시지 생성
         total_changes = seat_changes_count + name_changes_count + new_students_count
@@ -2430,21 +2434,37 @@ def backup_students_to_firebase():
         wb = openpyxl.load_workbook('students.xlsx')
         ws = wb.active
         
-        # 헤더 읽기
-        headers = []
-        for cell in ws[1]:
-            headers.append(cell.value)
+        # 헤더 자동 감지 (안전 모드)
+        first_row = next(ws.iter_rows(values_only=True))
+        has_header = True
         
-        # 학생 데이터 수집
+        # 첫 번째 행이 숫자로 시작하면 헤더 없음으로 판단
+        if first_row and str(first_row[0]).isdigit():
+            has_header = False
+        
+        if has_header:
+            # 헤더가 있는 구조
+            headers = []
+            for cell in ws[1]:
+                headers.append(str(cell.value) if cell.value else f'컬럼{len(headers)+1}')
+            start_row = 2
+        else:
+            # 헤더가 없는 구조 (학번, 이름, 좌석번호)
+            headers = ['학번', '이름', '좌석번호']
+            start_row = 1
+        
+        # 학생 데이터 수집 (안전 모드)
         students_data = []
         student_count = 0
         
-        for row in ws.iter_rows(min_row=2, values_only=True):
-            if row[0] is not None:  # 첫 번째 컬럼이 있는 경우만
+        for row in ws.iter_rows(min_row=start_row, values_only=True):
+            if row and row[0] is not None:  # 첫 번째 컬럼이 있는 경우만
                 student_dict = {}
                 for i, header in enumerate(headers):
-                    if i < len(row):
-                        student_dict[header] = str(row[i]) if row[i] is not None else ''
+                    if i < len(row) and row[i] is not None:
+                        student_dict[header] = str(row[i]).strip()
+                    else:
+                        student_dict[header] = ''
                 students_data.append(student_dict)
                 student_count += 1
         
@@ -2519,14 +2539,42 @@ def restore_students_from_firebase():
         return False, f"❌ 복원 실패: {str(e)}"
 
 def auto_restore_on_startup():
-    """앱 시작 시 자동 복원 (students.xlsx가 없는 경우)"""
-    if not os.path.exists('students.xlsx'):
-        logging.info("students.xlsx 파일 없음 - Firebase에서 자동 복원 시도")
-        success, message = restore_students_from_firebase()
-        if success:
-            logging.info("자동 복원 성공")
-        else:
-            logging.warning(f"자동 복원 실패: {message}")
+    """
+    앱 시작 시 자동 복원 및 백업 시스템 (강화된 버전)
+    """
+    try:
+        # 1. students.xlsx가 없는 경우 복원
+        if not os.path.exists('students.xlsx'):
+            logging.info("📁 students.xlsx 파일 없음 - Firebase에서 자동 복원 시도")
+            success, message = restore_students_from_firebase()
+            if success:
+                logging.info("✅ 자동 복원 성공")
+            else:
+                logging.warning(f"❌ 자동 복원 실패: {message}")
+                return
+        
+        # 2. 파일이 있지만 비어있거나 너무 작은 경우도 복원
+        elif os.path.exists('students.xlsx'):
+            file_size = os.path.getsize('students.xlsx')
+            if file_size < 1000:  # 1KB 미만이면 손상된 것으로 판단
+                logging.warning(f"📁 students.xlsx 파일이 너무 작음 ({file_size}bytes) - 복원 시도")
+                success, message = restore_students_from_firebase()
+                if success:
+                    logging.info("✅ 손상된 파일 복원 성공")
+        
+        # 3. 파일이 정상이면 즉시 백업 (최신 상태 보장)
+        if os.path.exists('students.xlsx') and os.path.getsize('students.xlsx') > 1000:
+            try:
+                success, message = backup_students_to_firebase()
+                if success:
+                    logging.info("🔄 시작 시 자동 백업 완료")
+                else:
+                    logging.warning(f"⚠️ 시작 시 백업 실패: {message}")
+            except Exception as backup_error:
+                logging.error(f"❌ 백업 중 오류: {backup_error}")
+    
+    except Exception as e:
+        logging.error(f"❌ 자동 복원/백업 시스템 오류: {e}")
 
 @app.route('/admin/backup_students')
 def backup_students():
