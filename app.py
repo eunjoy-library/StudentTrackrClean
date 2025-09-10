@@ -805,26 +805,32 @@ def attendance():
             flash('학번을 입력해주세요.', 'danger')
             return redirect(url_for('attendance'))
         
-        # 주간 출석 제한 확인 (1회만 허용)
+        # 3학년 학생 확인 (학번이 3으로 시작하는 경우 중복 출석 허용)
+        is_third_grade = str(student_id).startswith('3')
+        
+        # 주간 출석 제한 확인 (3학년 제외, 1-2학년만 1회 제한)
         # 출석 API로 직접 확인 (자바스크립트에서 이미 확인했지만 더블체크)
-        try:
-            # 직접 함수 호출로 변경 (API 호출 방식 문제 수정)
-            exceeded, count, recent_dates = check_weekly_attendance_limit(student_id)
-            
-            if exceeded:
-                # 이미 출석한 학생 (주 1회 초과)
-                attendance_date = recent_dates[0] if recent_dates else ""
-                flash(f'이번 주에 이미 출석했습니다. 출석일: {attendance_date}', 'danger')
-                return redirect(url_for('attendance'))
-        except Exception as e:
-            # 확인 중 오류 발생 시 기존 방식으로 확인
-            logging.error(f"출석 확인 중 오류: {e}")
-            exceeded, count, recent_dates = check_weekly_attendance_limit(student_id)
-            if exceeded:
-                # 주간 1회 초과 출석 제한
-                formatted_dates = ', '.join(recent_dates)
-                flash(f'주간 출석 제한 (1회/주)을 초과했습니다. 최근 출석일: {formatted_dates}', 'danger')
-                return redirect(url_for('attendance'))
+        if not is_third_grade:  # 3학년이 아닌 경우만 제한 확인
+            try:
+                # 직접 함수 호출로 변경 (API 호출 방식 문제 수정)
+                exceeded, count, recent_dates = check_weekly_attendance_limit(student_id)
+                
+                if exceeded:
+                    # 이미 출석한 학생 (주 1회 초과)
+                    attendance_date = recent_dates[0] if recent_dates else ""
+                    flash(f'이번 주에 이미 출석했습니다. 출석일: {attendance_date}', 'danger')
+                    return redirect(url_for('attendance'))
+            except Exception as e:
+                # 확인 중 오류 발생 시 기존 방식으로 확인
+                logging.error(f"출석 확인 중 오류: {e}")
+                exceeded, count, recent_dates = check_weekly_attendance_limit(student_id)
+                if exceeded:
+                    # 주간 1회 초과 출석 제한
+                    formatted_dates = ', '.join(recent_dates)
+                    flash(f'주간 출석 제한 (1회/주)을 초과했습니다. 최근 출석일: {formatted_dates}', 'danger')
+                    return redirect(url_for('attendance'))
+        else:
+            logging.info(f"3학년 학생 {student_id} 중복 출석 허용")
         
         # name과 seat이 비어있는 경우 학생 정보 찾기
         if not name or not seat:
@@ -852,19 +858,24 @@ def attendance():
                     flash('해당 학번의 학생 정보를 찾을 수 없습니다.', 'danger')
                     return redirect(url_for('attendance'))
         
-        # 마지막으로 한번 더 중복 출석 확인
+        # 마지막으로 한번 더 중복 출석 확인 (3학년 제외)
         # 다른 탭이나 브라우저에서 동시에 요청이 들어올 경우 대비
-        try:
-            # 다시 한번 더 확인
-            exceeded, count, recent_dates = check_weekly_attendance_limit(student_id)
-            
-            if exceeded:
-                # 이미 출석한 학생
-                attendance_date = recent_dates[0] if recent_dates else ""
-                flash(f'이번 주에 이미 출석했습니다. 출석일: {attendance_date}', 'danger')
+        if not is_third_grade:  # 3학년이 아닌 경우만 다시 확인
+            try:
+                # 다시 한번 더 확인
+                exceeded, count, recent_dates = check_weekly_attendance_limit(student_id)
+                
+                if exceeded:
+                    # 이미 출석한 학생
+                    attendance_date = recent_dates[0] if recent_dates else ""
+                    flash(f'이번 주에 이미 출석했습니다. 출석일: {attendance_date}', 'danger')
+                    return redirect(url_for('attendance'))
+            except Exception as e:
+                flash(f'출석 등록 중 오류가 발생했습니다: {str(e)}', 'danger')
                 return redirect(url_for('attendance'))
                 
-            # 출석 정보 저장
+        # 출석 정보 저장
+        try:
             # 교시 텍스트 설정
             period_text_for_db = period_text
             if period_text == "4교시 (도서실 이용 불가)":
