@@ -2541,38 +2541,68 @@ def restore_students_from_firebase():
 
 def auto_restore_on_startup():
     """
-    앱 시작 시 자동 복원 및 백업 시스템 (강화된 버전)
+    앱 시작 시 자동 복원 및 백업 시스템 (타임스탬프 비교 추가)
     """
     try:
-        # 1. students.xlsx가 없는 경우 복원
-        if not os.path.exists('students.xlsx'):
-            logging.info("📁 students.xlsx 파일 없음 - Firebase에서 자동 복원 시도")
-            success, message = restore_students_from_firebase()
-            if success:
-                logging.info("✅ 자동 복원 성공")
-            else:
-                logging.warning(f"❌ 자동 복원 실패: {message}")
-                return
+        local_file_exists = os.path.exists('students.xlsx')
+        local_file_time = None
         
-        # 2. 파일이 있지만 비어있거나 너무 작은 경우도 복원
-        elif os.path.exists('students.xlsx'):
+        # 1. 로컬 파일 타임스탬프 확인
+        if local_file_exists:
             file_size = os.path.getsize('students.xlsx')
-            if file_size < 1000:  # 1KB 미만이면 손상된 것으로 판단
-                logging.warning(f"📁 students.xlsx 파일이 너무 작음 ({file_size}bytes) - 복원 시도")
+            
+            # 파일이 너무 작으면 손상된 것으로 판단
+            if file_size < 1000:
+                logging.warning(f"📁 students.xlsx 파일이 너무 작음 ({file_size}bytes) - Firebase에서 복원")
                 success, message = restore_students_from_firebase()
                 if success:
                     logging.info("✅ 손상된 파일 복원 성공")
+                return
+            
+            # 로컬 파일 수정 시간
+            local_file_time = datetime.fromtimestamp(os.path.getmtime('students.xlsx'), tz=KST)
+            logging.info(f"📁 로컬 파일 시간: {local_file_time}")
         
-        # 3. 파일이 정상이면 즉시 백업 (최신 상태 보장)
-        if os.path.exists('students.xlsx') and os.path.getsize('students.xlsx') > 1000:
+        # 2. Firebase 백업 타임스탬프 확인
+        firebase_backup_time = None
+        if db:
             try:
+                backup_ref = db.collection('backups').document('students_backup')
+                backup_doc = backup_ref.get()
+                
+                if backup_doc.exists:
+                    backup_data = backup_doc.to_dict()
+                    firebase_backup_time = backup_data.get('backup_date')
+                    logging.info(f"☁️ Firebase 백업 시간: {firebase_backup_time}")
+            except Exception as e:
+                logging.warning(f"Firebase 백업 시간 확인 실패: {e}")
+        
+        # 3. 타임스탬프 비교하여 최신 데이터 유지
+        if not local_file_exists:
+            # 로컬 파일 없음 -> Firebase에서 복원
+            logging.info("📁 students.xlsx 파일 없음 - Firebase에서 복원")
+            success, message = restore_students_from_firebase()
+            if success:
+                logging.info("✅ Firebase 복원 완료")
+        elif firebase_backup_time and local_file_time:
+            # 둘 다 있음 -> 최신 것 선택
+            if firebase_backup_time > local_file_time:
+                logging.info("☁️ Firebase 백업이 더 최신 - 복원 시작")
+                success, message = restore_students_from_firebase()
+                if success:
+                    logging.info("✅ 최신 데이터 복원 완료")
+            else:
+                logging.info("📁 로컬 파일이 최신 - Firebase에 백업")
                 success, message = backup_students_to_firebase()
                 if success:
-                    logging.info("🔄 시작 시 자동 백업 완료")
-                else:
-                    logging.warning(f"⚠️ 시작 시 백업 실패: {message}")
-            except Exception as backup_error:
-                logging.error(f"❌ 백업 중 오류: {backup_error}")
+                    logging.info("✅ 최신 데이터 백업 완료")
+        else:
+            # Firebase 백업 없거나 시간 확인 불가 -> 로컬 파일 백업
+            if local_file_exists:
+                logging.info("📁 로컬 파일 존재 - Firebase에 백업")
+                success, message = backup_students_to_firebase()
+                if success:
+                    logging.info("✅ 백업 완료")
     
     except Exception as e:
         logging.error(f"❌ 자동 복원/백업 시스템 오류: {e}")
