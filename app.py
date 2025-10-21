@@ -398,9 +398,10 @@ def load_attendance():
         # 2. Firebase에서 추가 데이터 로드 (가능한 경우)
         if db:
             try:
-                # admin 컬렉션에서 최신 데이터 확인
-                admin_docs = list(db.collection('admin').limit(50).get())
-                logging.info(f"Firebase admin 컬렉션: {len(admin_docs)}개 문서")
+                # admin 컬렉션에서 모든 데이터 조회 (limit 제거)
+                # 날짜 필터링은 클라이언트 측에서 수행
+                admin_docs = list(db.collection('admin').get())
+                logging.info(f"Firebase admin 컬렉션: {len(admin_docs)}개 문서 (전체 조회)")
                 
                 # admin 컬렉션에서 데이터 추가
                 for admin_doc in admin_docs:
