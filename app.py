@@ -73,15 +73,47 @@ _student_data_cache = None
 _last_student_data_load_time = None
 
 # ================== [UTILITY 함수] ==================
+
+def get_schedule_from_firebase():
+    """Firebase에서 시간표 설정을 가져옴 (없으면 기본값 반환)"""
+    try:
+        if not db:
+            return None
+        
+        schedule_ref = db.collection('settings').document('schedule')
+        schedule_doc = schedule_ref.get()
+        
+        if schedule_doc.exists:
+            schedule_data = schedule_doc.to_dict()
+            periods = schedule_data.get('periods', [])
+            
+            # Firebase 시간표를 Python time 객체로 변환
+            from datetime import time
+            converted_periods = []
+            for p in periods:
+                try:
+                    start_parts = p['start'].split(':')
+                    end_parts = p['end'].split(':')
+                    converted_periods.append((
+                        time(int(start_parts[0]), int(start_parts[1])),
+                        time(int(end_parts[0]), int(end_parts[1])),
+                        p['period_num']
+                    ))
+                except Exception as e:
+                    logging.error(f"시간표 변환 오류: {e}")
+                    continue
+            
+            return converted_periods if converted_periods else None
+        
+        return None
+    except Exception as e:
+        logging.error(f"Firebase 시간표 로드 실패: {e}")
+        return None
+
 def get_current_period():
     """
     현재 시간 기준으로 교시를 결정하는 함수
-    1교시: 7:50 - 9:15
-    2교시: 9:15 - 10:40
-    3교시: 10:40 - 12:05
-    4교시: 12:05 - 12:30
-    5교시: 12:30 - 14:25
-    6교시: 14:25 - 15:50
+    Firebase에서 시간표를 먼저 확인하고, 없으면 기본 시간표 사용
     
     Returns:
         int: 1~10 교시, -1 (시간 외), 0 (4교시)
@@ -93,7 +125,17 @@ def get_current_period():
     if now.weekday() > 4:  # 토요일(5), 일요일(6)
         return -1
     
-    # 교시 시간대 정의 (datetime 모듈에서 직접 time 사용)
+    # Firebase에서 시간표 가져오기 시도
+    firebase_periods = get_schedule_from_firebase()
+    
+    if firebase_periods:
+        # Firebase 시간표 사용
+        for start, end, period in firebase_periods:
+            if start <= current_time < end:
+                return period
+        return -1
+    
+    # 기본 시간표 (Firebase 없을 때 fallback)
     from datetime import time
     periods = [
         (time(7, 50), time(9, 15), 1),   # 1교시
@@ -2646,6 +2688,109 @@ def restore_students():
         flash(message, 'danger')
     
     return redirect(url_for('list_attendance'))
+
+# ================== [시간표 관리] ==================
+
+@app.route('/admin/schedule')
+def schedule_settings():
+    """시간표 설정 페이지"""
+    if not session.get('admin'):
+        flash('관리자 권한이 필요합니다.', 'danger')
+        return redirect(url_for('admin_login'))
+    
+    return render_template('schedule_settings.html')
+
+@app.route('/api/schedule/get', methods=['GET'])
+def get_schedule():
+    """현재 시간표 조회 API"""
+    if not session.get('admin'):
+        return jsonify({"error": "관리자 권한이 필요합니다."}), 403
+    
+    try:
+        # Firebase에서 시간표 가져오기
+        schedule_ref = db.collection('settings').document('schedule')
+        schedule_doc = schedule_ref.get()
+        
+        if schedule_doc.exists:
+            schedule_data = schedule_doc.to_dict()
+            return jsonify({
+                "success": True,
+                "schedule": schedule_data.get('periods', []),
+                "source": "firebase"
+            })
+        else:
+            # 기본 시간표 반환
+            default_schedule = [
+                {"period_num": 1, "period_name": "1교시", "start": "07:50", "end": "09:15"},
+                {"period_num": 2, "period_name": "2교시", "start": "09:15", "end": "10:40"},
+                {"period_num": 3, "period_name": "3교시", "start": "10:40", "end": "12:05"},
+                {"period_num": 0, "period_name": "4교시 (이용불가)", "start": "12:05", "end": "12:30"},
+                {"period_num": 5, "period_name": "5교시", "start": "12:30", "end": "14:25"},
+                {"period_num": 6, "period_name": "6교시", "start": "14:25", "end": "15:50"}
+            ]
+            return jsonify({
+                "success": True,
+                "schedule": default_schedule,
+                "source": "default"
+            })
+    except Exception as e:
+        logging.error(f"시간표 조회 실패: {e}")
+        return jsonify({"error": str(e)}), 500
+
+@app.route('/api/schedule/update', methods=['POST'])
+def update_schedule():
+    """시간표 업데이트 API"""
+    if not session.get('admin'):
+        return jsonify({"error": "관리자 권한이 필요합니다."}), 403
+    
+    try:
+        data = request.json
+        if not data or 'periods' not in data:
+            return jsonify({"error": "시간표 데이터가 필요합니다."}), 400
+        
+        periods = data['periods']
+        
+        # 시간 형식 검증
+        for period in periods:
+            if not all(k in period for k in ['period_num', 'start', 'end']):
+                return jsonify({"error": "시간표 형식이 잘못되었습니다."}), 400
+        
+        # Firebase에 저장
+        schedule_ref = db.collection('settings').document('schedule')
+        schedule_ref.set({
+            'periods': periods,
+            'updated_at': firestore.SERVER_TIMESTAMP,
+            'updated_by': 'admin'
+        })
+        
+        logging.info(f"시간표 업데이트 완료: {len(periods)}개 교시")
+        return jsonify({
+            "success": True,
+            "message": f"시간표가 성공적으로 업데이트되었습니다. ({len(periods)}개 교시)"
+        })
+    except Exception as e:
+        logging.error(f"시간표 업데이트 실패: {e}")
+        return jsonify({"error": str(e)}), 500
+
+@app.route('/api/schedule/reset', methods=['POST'])
+def reset_schedule():
+    """기본 시간표로 리셋"""
+    if not session.get('admin'):
+        return jsonify({"error": "관리자 권한이 필요합니다."}), 403
+    
+    try:
+        # Firebase에서 시간표 삭제 (기본 시간표 사용)
+        schedule_ref = db.collection('settings').document('schedule')
+        schedule_ref.delete()
+        
+        logging.info("시간표가 기본값으로 리셋되었습니다.")
+        return jsonify({
+            "success": True,
+            "message": "시간표가 기본값으로 리셋되었습니다."
+        })
+    except Exception as e:
+        logging.error(f"시간표 리셋 실패: {e}")
+        return jsonify({"error": str(e)}), 500
 
 # 앱 시작 시 자동 복원 실행
 auto_restore_on_startup()
