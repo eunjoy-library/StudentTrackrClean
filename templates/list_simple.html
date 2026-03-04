@@ -4,8 +4,8 @@
 
 {% block content %}
 <div class="alert alert-info py-1 mb-2 d-flex justify-content-between align-items-center" style="font-size: 0.85rem;">
-    <span><i class="fas fa-sync-alt fa-spin me-2"></i>60초마다 자동으로 새로고침됩니다.</span>
-    <span id="refresh-timer" class="badge bg-primary">60s</span>
+    <span><i class="fas fa-sync-alt fa-spin me-2"></i>30초마다 자동으로 새로고침됩니다.</span>
+    <span id="refresh-timer" class="badge bg-primary">30s</span>
 </div>
 <div class="card">
     <div class="card-header bg-primary text-white">
@@ -210,9 +210,9 @@
 
 {% block scripts %}
     <script>
-        // 60초마다 자동 새로고침 기능 (에너지 절약 및 부하 감소)
+        // 30초마다 자동 새로고침 기능
         (function() {
-            let timeLeft = 60;
+            let timeLeft = 30;
             const timerElement = document.getElementById('refresh-timer');
             
             const countdown = setInterval(() => {
