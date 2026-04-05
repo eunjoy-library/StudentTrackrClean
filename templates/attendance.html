@@ -136,24 +136,30 @@ document.addEventListener('DOMContentLoaded', function() {
         const hourMin = hour * 60 + minute; // 현재 시간을 분 단위로 변환
 
         // 교시 정의
-        if (hourMin >= 7*60+50 && hourMin < 9*60+15) {
+        if (hourMin >= 7*60+50 && hourMin < 8*60+50) {
             periodText = '1교시';
-            timeRangeText = '7:50 ~ 9:15';
-        } else if (hourMin >= 9*60+15 && hourMin < 10*60+40) {
+            timeRangeText = '7:50 ~ 8:50';
+        } else if (hourMin >= 8*60+50 && hourMin < 9*60+50) {
             periodText = '2교시';
-            timeRangeText = '9:15 ~ 10:40';
-        } else if (hourMin >= 10*60+40 && hourMin < 12*60+5) {
+            timeRangeText = '8:50 ~ 9:50';
+        } else if (hourMin >= 9*60+50 && hourMin < 10*60+50) {
             periodText = '3교시';
-            timeRangeText = '10:40 ~ 12:05';
-        } else if (hourMin >= 12*60+5 && hourMin < 12*60+30) {
+            timeRangeText = '9:50 ~ 10:50';
+        } else if (hourMin >= 10*60+50 && hourMin < 11*60+50) {
             periodText = '4교시';
-            timeRangeText = '12:05 ~ 12:30';
-        } else if (hourMin >= 12*60+30 && hourMin < 14*60+25) {
+            timeRangeText = '10:50 ~ 11:50';
+        } else if (hourMin >= 11*60+50 && hourMin < 12*60+30) {
+            periodText = '점심시간';
+            timeRangeText = '11:50 ~ 12:30';
+        } else if (hourMin >= 12*60+30 && hourMin < 13*60+50) {
             periodText = '5교시';
-            timeRangeText = '12:30 ~ 14:25';
-        } else if (hourMin >= 14*60+25 && hourMin < 15*60+50) {
+            timeRangeText = '12:30 ~ 13:50';
+        } else if (hourMin >= 13*60+50 && hourMin < 14*60+50) {
             periodText = '6교시';
-            timeRangeText = '14:25 ~ 15:50';
+            timeRangeText = '13:50 ~ 14:50';
+        } else if (hourMin >= 14*60+50 && hourMin < 15*60+50) {
+            periodText = '7교시';
+            timeRangeText = '14:50 ~ 15:50';
         } else {
             periodText = '시간 외';
             timeRangeText = '모든 시간 이용 가능';
@@ -171,8 +177,8 @@ document.addEventListener('DOMContentLoaded', function() {
         
         // 버튼 텍스트 업데이트
         if (submitBtnText) {
-            if (periodText === '4교시') {
-                submitBtnText.textContent = '4교시는 도서실 이용 시간이 아닙니다';
+            if (periodText === '점심시간') {
+                submitBtnText.textContent = '점심시간은 도서실 이용 시간이 아닙니다';
                 submitBtn.disabled = true;
                 submitBtn.classList.remove('btn-primary');
                 submitBtn.classList.add('btn-secondary');

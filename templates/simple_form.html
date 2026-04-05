@@ -369,24 +369,30 @@ document.addEventListener('DOMContentLoaded', function() {
         var timeRange = '';
         
         // 교시 정의
-        if (totalMinutes >= 7*60+50 && totalMinutes < 9*60+15) {
+        if (totalMinutes >= 7*60+50 && totalMinutes < 8*60+50) {
             period = '1교시';
-            timeRange = '7:50 ~ 9:15';
-        } else if (totalMinutes >= 9*60+15 && totalMinutes < 10*60+40) {
+            timeRange = '7:50 ~ 8:50';
+        } else if (totalMinutes >= 8*60+50 && totalMinutes < 9*60+50) {
             period = '2교시';
-            timeRange = '9:15 ~ 10:40';
-        } else if (totalMinutes >= 10*60+40 && totalMinutes < 12*60+5) {
+            timeRange = '8:50 ~ 9:50';
+        } else if (totalMinutes >= 9*60+50 && totalMinutes < 10*60+50) {
             period = '3교시';
-            timeRange = '10:40 ~ 12:05';
-        } else if (totalMinutes >= 12*60+5 && totalMinutes < 12*60+30) {
+            timeRange = '9:50 ~ 10:50';
+        } else if (totalMinutes >= 10*60+50 && totalMinutes < 11*60+50) {
             period = '4교시';
-            timeRange = '12:05 ~ 12:30';
-        } else if (totalMinutes >= 12*60+30 && totalMinutes < 14*60+25) {
+            timeRange = '10:50 ~ 11:50';
+        } else if (totalMinutes >= 11*60+50 && totalMinutes < 12*60+30) {
+            period = '점심시간';
+            timeRange = '11:50 ~ 12:30';
+        } else if (totalMinutes >= 12*60+30 && totalMinutes < 13*60+50) {
             period = '5교시';
-            timeRange = '12:30 ~ 14:25';
-        } else if (totalMinutes >= 14*60+25 && totalMinutes < 15*60+50) {
+            timeRange = '12:30 ~ 13:50';
+        } else if (totalMinutes >= 13*60+50 && totalMinutes < 14*60+50) {
             period = '6교시';
-            timeRange = '14:25 ~ 15:50';
+            timeRange = '13:50 ~ 14:50';
+        } else if (totalMinutes >= 14*60+50 && totalMinutes < 15*60+50) {
+            period = '7교시';
+            timeRange = '14:50 ~ 15:50';
         } else {
             period = '시간 외';
             timeRange = '모든 시간 이용 가능';
@@ -403,8 +409,8 @@ document.addEventListener('DOMContentLoaded', function() {
         periodTimeRange.textContent = timeRange;
         
         // 버튼 텍스트 업데이트
-        if (period === '4교시') {
-            submitBtnText.textContent = '4교시는 도서실 이용 시간이 아닙니다';
+        if (period === '점심시간') {
+            submitBtnText.textContent = '점심시간은 도서실 이용 시간이 아닙니다';
             submitBtn.disabled = true;
             submitBtn.classList.remove('btn-primary');
             submitBtn.classList.add('btn-secondary');
