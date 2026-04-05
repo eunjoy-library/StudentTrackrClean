@@ -138,12 +138,14 @@ def get_current_period():
     # 기본 시간표 (Firebase 없을 때 fallback)
     from datetime import time
     periods = [
-        (time(7, 50), time(9, 15), 1),   # 1교시
-        (time(9, 15), time(10, 40), 2),  # 2교시
-        (time(10, 40), time(12, 5), 3),  # 3교시
-        (time(12, 5), time(12, 30), 0),  # 4교시 (도서실 이용 불가 시간)
-        (time(12, 30), time(14, 25), 5), # 5교시
-        (time(14, 25), time(15, 50), 6)  # 6교시
+        (time(7, 50), time(8, 50), 1),   # 1교시
+        (time(8, 50), time(9, 50), 2),   # 2교시
+        (time(9, 50), time(10, 50), 3),  # 3교시
+        (time(10, 50), time(11, 50), 4), # 4교시
+        (time(11, 50), time(12, 30), 0), # 점심시간 (도서실 이용 불가)
+        (time(12, 30), time(13, 50), 5), # 5교시
+        (time(13, 50), time(14, 50), 6), # 6교시
+        (time(14, 50), time(15, 50), 7), # 7교시
     ]
     
     # 현재 시간이 어느 교시에 해당하는지 확인
@@ -2721,12 +2723,14 @@ def get_schedule():
         else:
             # 기본 시간표 반환
             default_schedule = [
-                {"period_num": 1, "period_name": "1교시", "start": "07:50", "end": "09:15"},
-                {"period_num": 2, "period_name": "2교시", "start": "09:15", "end": "10:40"},
-                {"period_num": 3, "period_name": "3교시", "start": "10:40", "end": "12:05"},
-                {"period_num": 0, "period_name": "4교시 (이용불가)", "start": "12:05", "end": "12:30"},
-                {"period_num": 5, "period_name": "5교시", "start": "12:30", "end": "14:25"},
-                {"period_num": 6, "period_name": "6교시", "start": "14:25", "end": "15:50"}
+                {"period_num": 1, "period_name": "1교시", "start": "07:50", "end": "08:50"},
+                {"period_num": 2, "period_name": "2교시", "start": "08:50", "end": "09:50"},
+                {"period_num": 3, "period_name": "3교시", "start": "09:50", "end": "10:50"},
+                {"period_num": 4, "period_name": "4교시", "start": "10:50", "end": "11:50"},
+                {"period_num": 0, "period_name": "점심시간 (이용불가)", "start": "11:50", "end": "12:30"},
+                {"period_num": 5, "period_name": "5교시", "start": "12:30", "end": "13:50"},
+                {"period_num": 6, "period_name": "6교시", "start": "13:50", "end": "14:50"},
+                {"period_num": 7, "period_name": "7교시", "start": "14:50", "end": "15:50"},
             ]
             return jsonify({
                 "success": True,
@@ -2794,6 +2798,32 @@ def reset_schedule():
 
 # 앱 시작 시 자동 복원 실행
 auto_restore_on_startup()
+
+def save_new_schedule_to_firebase():
+    """새 시간표를 Firebase에 저장 (앱 시작 시 1회 실행)"""
+    try:
+        if not db:
+            return
+        new_schedule = [
+            {"period_num": 1, "period_name": "1교시", "start": "07:50", "end": "08:50"},
+            {"period_num": 2, "period_name": "2교시", "start": "08:50", "end": "09:50"},
+            {"period_num": 3, "period_name": "3교시", "start": "09:50", "end": "10:50"},
+            {"period_num": 4, "period_name": "4교시", "start": "10:50", "end": "11:50"},
+            {"period_num": 0, "period_name": "점심시간 (이용불가)", "start": "11:50", "end": "12:30"},
+            {"period_num": 5, "period_name": "5교시", "start": "12:30", "end": "13:50"},
+            {"period_num": 6, "period_name": "6교시", "start": "13:50", "end": "14:50"},
+            {"period_num": 7, "period_name": "7교시", "start": "14:50", "end": "15:50"},
+        ]
+        schedule_ref = db.collection('settings').document('schedule')
+        schedule_ref.set({
+            'periods': new_schedule,
+            'updated_at': datetime.now(KST).isoformat()
+        })
+        logging.info("새 시간표(7교시)가 Firebase에 저장되었습니다.")
+    except Exception as e:
+        logging.error(f"시간표 Firebase 저장 실패: {e}")
+
+save_new_schedule_to_firebase()
 
 if __name__ == '__main__':
     app.run(debug=True, host='0.0.0.0')
