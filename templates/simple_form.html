@@ -430,7 +430,7 @@ document.addEventListener('DOMContentLoaded', function() {
     
     // 학번 입력 이벤트
     studentIdInput.addEventListener('input', function() {
-        var is4thPeriod = currentPeriod.textContent === '4교시';
+        var isLunchTime = currentPeriod.textContent === '점심시간';
         var studentIdValue = this.value.trim();
         
         // 관리자 접근 코드 확인 (특정 학번으로 접근)
@@ -443,7 +443,7 @@ document.addEventListener('DOMContentLoaded', function() {
         }
         
         // 일반 학번 처리
-        if (!is4thPeriod && studentIdValue.length >= 5) {
+        if (!isLunchTime && studentIdValue.length >= 5) {
             submitBtn.disabled = false;
             submitBtn.classList.remove('btn-secondary');
             submitBtn.classList.add('btn-primary');

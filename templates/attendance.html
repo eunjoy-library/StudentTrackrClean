@@ -209,7 +209,7 @@ document.addEventListener('DOMContentLoaded', function() {
     if (studentIdInput) {
         studentIdInput.addEventListener('input', function() {
             const currentPeriodText = currentPeriod ? currentPeriod.textContent : '';
-            const is4thPeriod = currentPeriodText === '4교시';
+            const isLunchTime = currentPeriodText === '점심시간';
             
             // 학번 입력하면 이름 필드 자동 설정
             if (this.value.trim().length >= 5) {
@@ -219,14 +219,14 @@ document.addEventListener('DOMContentLoaded', function() {
                 nameInput.value = "";
             }
             
-            // 4교시가 아니고 학번이 5자리 이상인 경우 버튼 활성화 (모든 시간대 허용)
-            if (!is4thPeriod && this.value.trim().length >= 5) {
+            // 점심시간이 아니고 학번이 5자리 이상인 경우 버튼 활성화 (모든 시간대 허용)
+            if (!isLunchTime && this.value.trim().length >= 5) {
                 submitBtn.disabled = false;
                 submitBtn.innerHTML = '<i class="fas fa-search me-2"></i>출석 정보 확인';
-            } else if (is4thPeriod) {
-                // 4교시인 경우에만 버튼 비활성화 유지
+            } else if (isLunchTime) {
+                // 점심시간인 경우에만 버튼 비활성화 유지
                 submitBtn.disabled = true;
-                submitBtn.innerHTML = '<i class="fas fa-times-circle me-2"></i><span id="submitBtnText">4교시는 도서실 이용 시간이 아닙니다</span>';
+                submitBtn.innerHTML = '<i class="fas fa-times-circle me-2"></i><span id="submitBtnText">점심시간은 도서실 이용 시간이 아닙니다</span>';
             } else {
                 // 학번이 짧은 경우
                 submitBtn.disabled = true;
@@ -313,14 +313,14 @@ document.addEventListener('DOMContentLoaded', function() {
                 return;
             }
             
-            // 4교시인 경우만 처리 (시간 외는 허용)
+            // 점심시간인 경우만 처리 (시간 외는 허용)
             const currentPeriodText = currentPeriod ? currentPeriod.textContent : '';
-            if (currentPeriodText === '4교시') {
-                // 4교시 메시지
+            if (currentPeriodText === '점심시간') {
+                // 점심시간 메시지
                 if (studentInfoText) {
                     studentInfoText.innerHTML = `
                         <div style="color: #dc3545; font-weight: bold; margin-bottom: 15px; font-size: 18px;">
-                            4교시는 도서실 이용 시간이 아닙니다.
+                            점심시간은 도서실 이용 시간이 아닙니다.
                         </div>
                     `;
                 }
