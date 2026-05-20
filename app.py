@@ -1552,6 +1552,13 @@ def update_seat():
         _student_data_cache = None
         _student_data_timestamp = None
         
+        # Firebase에 백업 (재시작 시 덮어쓰임 방지)
+        backup_success, backup_message = backup_students_to_firebase()
+        if backup_success:
+            logging.info(f"🔄 좌석번호 변경 후 Firebase 자동 백업 성공")
+        else:
+            logging.warning(f"⚠️ 좌석번호 변경 후 Firebase 백업 실패: {backup_message}")
+        
         return jsonify({
             "success": True, 
             "message": f"학번 {student_id}의 좌석번호가 {old_seat}에서 {new_seat}로 업데이트되었습니다."
