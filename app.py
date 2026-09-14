@@ -687,6 +687,10 @@ def api_check_attendance():
     
     if not student_id:
         return jsonify({'error': '학번이 필요합니다.', 'has_attendance': False})
+
+    # 3학년은 같은 주에도 중복 출석을 허용한다.
+    # 실제 저장 로직(save_attendance)과 동일한 정책을 사전 확인 API에도 적용한다.
+    is_third_grade = str(student_id).startswith('3')
     
     # 경고받은 학생인지 확인 (추가)
     try:
@@ -708,6 +712,16 @@ def api_check_attendance():
     except Exception as e:
         logging.error(f"경고 확인 오류: {e}")
         # 경고 확인 실패 시에도 계속 진행하여 출석은 확인
+
+    if is_third_grade:
+        return jsonify({
+            'has_attendance': False,
+            'attendance_date': '',
+            'formatted_date': '',
+            'is_third_grade': True,
+            'cached': False,
+            'timestamp': str(datetime.now(KST))
+        })
     
     try:
         # 현재 주의 범위 계산 (일요일부터 토요일까지)
