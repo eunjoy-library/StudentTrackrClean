@@ -71,11 +71,20 @@ app.json = KoreanJSONProvider(app)
 # 캐싱을 위한 전역 변수
 _student_data_cache = None
 _last_student_data_load_time = None
+_schedule_cache = None
+_schedule_cache_time = 0
+SCHEDULE_CACHE_EXPIRY = 300  # 시간표는 5분 동안 캐시
 
 # ================== [UTILITY 함수] ==================
 
 def get_schedule_from_firebase():
     """Firebase에서 시간표 설정을 가져옴 (없으면 기본값 반환)"""
+    global _schedule_cache, _schedule_cache_time
+
+    if (_schedule_cache is not None and
+            time.time() - _schedule_cache_time < SCHEDULE_CACHE_EXPIRY):
+        return _schedule_cache
+
     try:
         if not db:
             return None
@@ -88,23 +97,27 @@ def get_schedule_from_firebase():
             periods = schedule_data.get('periods', [])
             
             # Firebase 시간표를 Python time 객체로 변환
-            from datetime import time
+            from datetime import time as datetime_time
             converted_periods = []
             for p in periods:
                 try:
                     start_parts = p['start'].split(':')
                     end_parts = p['end'].split(':')
                     converted_periods.append((
-                        time(int(start_parts[0]), int(start_parts[1])),
-                        time(int(end_parts[0]), int(end_parts[1])),
+                        datetime_time(int(start_parts[0]), int(start_parts[1])),
+                        datetime_time(int(end_parts[0]), int(end_parts[1])),
                         p['period_num']
                     ))
                 except Exception as e:
                     logging.error(f"시간표 변환 오류: {e}")
                     continue
             
-            return converted_periods if converted_periods else None
+            _schedule_cache = converted_periods if converted_periods else None
+            _schedule_cache_time = time.time()
+            return _schedule_cache
         
+        _schedule_cache = None
+        _schedule_cache_time = time.time()
         return None
     except Exception as e:
         logging.error(f"Firebase 시간표 로드 실패: {e}")
@@ -391,9 +404,12 @@ def save_attendance(student_id, name, seat, period_text, admin_override=False):
         
         logging.info(f"학생 {student_id}({name})의 출석이 성공적으로 등록되었습니다. 좌석: {seat}, 날짜: {date_str}")
         
-        # 캐시 초기화
+        # 출석 상태 및 관리자 목록 캐시 초기화
         global attendance_status_cache
         attendance_status_cache.clear()
+        global attendance_records_cache, attendance_records_cache_time
+        attendance_records_cache = None
+        attendance_records_cache_time = 0
         
         return True
         
@@ -406,6 +422,12 @@ def load_attendance():
     출석 기록을 CSV 파일과 Firebase에서 로드하는 통합 방식
     Firebase가 실패하는 경우 CSV를 백업으로 사용
     """
+    global attendance_records_cache, attendance_records_cache_time
+
+    if (attendance_records_cache is not None and
+            time.time() - attendance_records_cache_time < ATTENDANCE_RECORDS_CACHE_EXPIRY):
+        return [record.copy() for record in attendance_records_cache]
+
     try:
         attendance_records = []
         
@@ -506,7 +528,9 @@ def load_attendance():
         final_records = sorted(attendance_records, key=lambda x: x.get('date', ''), reverse=True)
         logging.info(f"최종 출석 기록: {len(final_records)}개 (CSV: {sum(1 for r in final_records if r.get('source') == 'csv')}, Firebase: {sum(1 for r in final_records if r.get('source') == 'firebase')})")
         
-        return final_records
+        attendance_records_cache = final_records
+        attendance_records_cache_time = time.time()
+        return [record.copy() for record in final_records]
         
     except Exception as e:
         logging.error(f"출석 기록 로딩 중 치명적 오류: {e}")
@@ -517,6 +541,11 @@ attendance_status_cache = {}
 CACHE_EXPIRY = 5  # 5초로 대폭 감소 (중복 출석 방지 강화)
 student_data_cache = {}  # 학생 정보 캐시
 STUDENT_CACHE_EXPIRY = 600  # 학생 정보는 10분 동안 캐시 (성능 향상)
+
+# 관리자 출석 목록 캐시 (Firebase 전체 조회를 반복하지 않도록 함)
+attendance_records_cache = None
+attendance_records_cache_time = 0
+ATTENDANCE_RECORDS_CACHE_EXPIRY = 5
 
 # 중복 출석 방지를 위한 잠금 메커니즘 (동시 요청 처리용)
 attendance_locks = {}
@@ -700,32 +729,38 @@ def api_check_attendance():
         sunday_str = sunday.strftime('%Y-%m-%d')
         saturday_str = saturday.strftime('%Y-%m-%d')
         
-        # Firebase 직접 쿼리
+        # 학생별 하위 컬렉션만 조회한다.
+        # 기존에는 attendances 전체 컬렉션을 읽은 뒤 학생 ID를 파이썬에서
+        # 필터링해서, 데이터가 늘수록 응답이 느려지는 문제가 있었다.
         if not db:
             logging.error("Firebase DB 연결이 설정되지 않았습니다.")
             return jsonify({'error': 'Firebase 연결 오류', 'has_attendance': False})
             
         try:
-            # 학생 ID로 필터링하여 쿼리 실행 (인덱스 오류 없는 단순 쿼리)
-            records = db.collection('attendances').where('student_id', '==', student_id).get()
-            
-            # 이번 주에 해당하는 기록만 필터링 (직접 확인)
-            has_attendance = False
+            records = (
+                db.collection('attendance')
+                .document(student_id)
+                .collection('records')
+                .where('date_only', '>=', sunday_str)
+                .where('date_only', '<=', saturday_str)
+                .get()
+            )
+
+            # 쿼리 자체에서 이번 주 기록만 가져오므로 전체 컬렉션 스캔이 필요 없다.
+            has_attendance = len(records) > 0
             attendance_date = ""
             recent_dates = []
             
             for record in records:
                 data = record.to_dict()
                 date_only = data.get('date_only', '')
-                
-                # 이번 주 날짜 범위에 있는지 확인 
-                if sunday_str <= date_only <= saturday_str:
-                    has_attendance = True
-                    attendance_date = date_only
+                if date_only:
                     recent_dates.append(date_only)
             
             # 결과 정리 (캐시 사용 안함)
             recent_dates = sorted(recent_dates, reverse=True)  # 최신 날짜 먼저
+            if recent_dates:
+                attendance_date = recent_dates[0]
             
             # 한국어 요일 추가
             formatted_date = ""
@@ -903,22 +938,6 @@ def attendance():
                     flash('해당 학번의 학생 정보를 찾을 수 없습니다.', 'danger')
                     return redirect(url_for('attendance'))
         
-        # 마지막으로 한번 더 중복 출석 확인 (3학년 제외)
-        # 다른 탭이나 브라우저에서 동시에 요청이 들어올 경우 대비
-        if not is_third_grade:  # 3학년이 아닌 경우만 다시 확인
-            try:
-                # 다시 한번 더 확인
-                exceeded, count, recent_dates = check_weekly_attendance_limit(student_id)
-                
-                if exceeded:
-                    # 이미 출석한 학생
-                    attendance_date = recent_dates[0] if recent_dates else ""
-                    flash(f'이번 주에 이미 출석했습니다. 출석일: {attendance_date}', 'danger')
-                    return redirect(url_for('attendance'))
-            except Exception as e:
-                flash(f'출석 등록 중 오류가 발생했습니다: {str(e)}', 'danger')
-                return redirect(url_for('attendance'))
-                
         # 출석 정보 저장
         try:
             # 교시 텍스트 설정
@@ -2773,6 +2792,9 @@ def update_schedule():
             'updated_at': firestore.SERVER_TIMESTAMP,
             'updated_by': 'admin'
         })
+        global _schedule_cache, _schedule_cache_time
+        _schedule_cache = None
+        _schedule_cache_time = 0
         
         logging.info(f"시간표 업데이트 완료: {len(periods)}개 교시")
         return jsonify({
@@ -2793,6 +2815,9 @@ def reset_schedule():
         # Firebase에서 시간표 삭제 (기본 시간표 사용)
         schedule_ref = db.collection('settings').document('schedule')
         schedule_ref.delete()
+        global _schedule_cache, _schedule_cache_time
+        _schedule_cache = None
+        _schedule_cache_time = 0
         
         logging.info("시간표가 기본값으로 리셋되었습니다.")
         return jsonify({

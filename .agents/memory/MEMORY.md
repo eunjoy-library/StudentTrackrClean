@@ -1,0 +1,1 @@
+- [Firebase request performance](firebase-request-performance.md) — keep Firestore reads scoped and avoid duplicate sequential checks in user actions.

@@ -490,41 +490,12 @@ document.addEventListener('DOMContentLoaded', function() {
         
         var studentId = studentIdInput.value.trim();
         
-        // 출석 전 한번 더 API 호출로 확인 (중복 출석 방지)
-        fetch('/api/check_attendance?student_id=' + studentId + '&t=' + new Date().getTime())
-            .then(function(response) { return response.json(); })
-            .then(function(checkData) {
-                if (checkData.has_attendance) {
-                    // 이미 출석한 경우 (다른 탭이나 브라우저에서 처리된 경우)
-                    // 에러 사운드 재생
-                    playErrorSound();
-                    alert('이번 주에 이미 출석 처리되었습니다. 중복 출석이 방지되었습니다.');
-                    closeModal();
-                    return;
-                }
-                
-                // 출석이 없는 경우에만 제출
-                // 성공 사운드 재생
-                playSuccessSound();
-                closeModal();
-                form.submit();
-            })
-            .catch(function(error) {
-                console.error('최종 출석 확인 오류:', error);
-                
-                // 오류 발생 즉시 소리 재생
-                playErrorSound();
-                
-                // 에러 시 사용자에게 확인 후 진행
-                if (confirm('출석 상태 확인 중 오류가 발생했습니다. 계속 진행하시겠습니까?')) {
-                    playSuccessSound();
-                    closeModal();
-                    form.submit();
-                } else {
-                    // 소리 없이 모달 닫기
-                    closeModal();
-                }
-            });
+        // 모달을 열 때 이미 출석 상태를 확인했으므로, 확인 버튼에서는
+        // 같은 Firebase 조회를 반복하지 않고 바로 서버 제출한다.
+        // 최종 중복 방지는 서버의 저장 로직에서 다시 수행한다.
+        playSuccessSound();
+        closeModal();
+        form.submit();
     });
     
     // 폼 제출 이벤트
